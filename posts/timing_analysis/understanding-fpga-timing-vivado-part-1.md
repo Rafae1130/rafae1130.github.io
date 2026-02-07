@@ -1,4 +1,4 @@
-# Understanding FPGA Timing Analysis: Setup Time for Reg-to-Reg Paths
+# Understanding FPGA Timing Analysis in Vivado: Part 1
 
 # **1\. Introduction**
 
