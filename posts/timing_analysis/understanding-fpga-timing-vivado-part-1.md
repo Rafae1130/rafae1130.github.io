@@ -120,6 +120,10 @@ And the final check is simply: if the required time minus the arrival time is po
 
 This covers the basics of reading and understanding setup timing reports in Vivado. In the next post, we'll dig into clock pessimism removal, clock uncertainty and clock skew. Specifically, what they are, how are they calculated, and why they matter.
 
+<p align="center">
+  <em>— Abdur Rafae Haqqani</em><br>
+  <a href="mailto:rafae50@yahoo.com">rafae50@yahoo.com</a>
+</p>
 [image1]: images/image1_p1.png
 
 [image2]: images/image2_p1.png
