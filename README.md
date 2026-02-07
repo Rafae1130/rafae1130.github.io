@@ -6,3 +6,11 @@ This site contains my notes and blogs on varioius FPGA tips, techniques and desi
 ## Posts
 
 - [Understanding FPGA Timing Analysis in Vivado: Part 1](posts/timing_analysis/understanding-fpga-timing-vivado-part-1.md)
+
+
+
+
+<div style="text-align: right; margin-top: 50px;">
+  <em>— Abdur Rafae Haqqani</em><br>
+  <a href="mailto:rafae50@yahoo.com">rafae50@yahoo.com</a>
+</div>
