@@ -88,9 +88,9 @@ The calculation starts from the latch edge. For a 50 MHz clock (period \= 20 ns)
 
 # **6\. A Note on Negative Setup Time**
 
-You might notice something odd in Vivado's required time calculation: the setup time appears to be added rather than subtracted. Intuitively, we'd want to subtract it,  after all, data needs to arrive some time before the clock edge, so subtracting setup time from the required time should make the constraint tighter.
+You might notice something odd in Vivado's required time calculation: the setup time appears to be added rather than subtracted. Intuitively, we'd want to subtract it,  as data needs to arrive some time before the clock edge, so subtracting setup time from the required time should make the constraint tighter.
 
-The reason  is that setup time in Vivado is reported as a signed value. For most registers it's positive, and adding a positive setup time in the report is equivalent to subtracting it from the available window. But for some cells, the setup time is actually negative,  meaning the data is allowed to arrive slightly after the clock edge and the register will still capture it correctly. Vivado's sign convention handles both cases consistently.
+The reason  is that setup time in Vivado can be both positive and negative. For most registers it's positive. But for some cells, the setup time is actually negative. Positive setup time means data needs to be stable for the setup time before the clock edge. However, if setup time is negative, then it means that the data can arrive that much time after the clock edge and it will still be caputured correctly. In Vivado if setup time is postive than it means it should be added in required time and if negative then it should be subtracted.
 
 There's a good thread on this on the AMD support forum: [https://adaptivesupport.amd.com/s/question/0D54U00008CQt22SAD/data-required-time-and-setup-time](https://adaptivesupport.amd.com/s/question/0D54U00008CQt22SAD/data-required-time-and-setup-time)
 
@@ -101,6 +101,7 @@ Here are the two core formulas that drive setup timing analysis:
 **Data Arrival Time \= Launch Edge \+ Source Clock Delay \+ Tcq \+ T\_datapath**
 
 **Data Required Time \= Latch Edge \+ Dest Clock Delay − Setup Time \+ CPR − Clock Uncertainty**
+
 
 Where:
 
