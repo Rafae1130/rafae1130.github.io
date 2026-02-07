@@ -41,7 +41,7 @@ At the top of the path view, just below the path name, you'll see the slack valu
 ![][image3]  
 						
 
-**Figure 2: slack calculation equation**
+**Figure 3: slack calculation equation**
 
 The slack formula is straightforward:
 
@@ -58,7 +58,7 @@ Let's now break down how Vivado calculates the arrival time and the required tim
 The source clock path is the route the clock takes from its origin to the clock pin of the source register.
 
 ![][image4]  
-**Figure 3: Source clock path delay breakdown**
+**Figure 4: Source clock path delay breakdown**
 
 In the Vivado report, the "Incr" column shows the delay contribution of each component along the clock's path. For example, if BUFG shows an increment of 0.101, that means the global clock buffer adds 0.101 ns of delay. The "Path" column gives the running total. So if the final entry in the Path column reads 3.049 ns, that's the total source clock path delay.
 
@@ -67,7 +67,7 @@ In the Vivado report, the "Incr" column shows the delay contribution of each com
 The data path covers everything between the source register's Q output and the destination register's D input. This includes the Tcq delay of the source register, any combinational logic, and the routing between them.
 
 ![][image5]  
-**Figure 4: Data path delay breakdown.**
+**Figure 5: Data path delay breakdown.**
 
 One thing that might confuse  you: the cumulative delay in the Path column doesn't start from zero. It picks up where the source clock path left off. That's because the arrival time is computed  as the sum of the source clock path delay and the data path delay:
 
@@ -82,7 +82,7 @@ So the final row in the data path section gives you the total arrival time direc
 The destination clock path is the route the clock takes to reach the destination register. Vivado uses this to calculate the required time i.e  the maximum time data can take   to arrive at destination register.
 
 ![][image6]  
-**Figure 5: Destination clock path and required time calculation**
+**Figure 6: Destination clock path and required time calculation**
 
 The calculation starts from the latch edge. For a 50 MHz clock (period \= 20 ns), the latch edge sits at 20 ns. From there, Vivado adds the destination clock path delay and applies corrections for clock pessimism removal (CPR) and clock uncertainty. It also accounts for the setup time of the destination register.
 
@@ -120,14 +120,14 @@ And the final check is simply: if the required time minus the arrival time is po
 
 This covers the basics of reading and understanding setup timing reports in Vivado. In the next post, we'll dig into clock pessimism removal and clock uncertainty — what they are, why they matter, and how they affect your timing margins.
 
-[image1]: images/image1.png
+[image1]: images/image1_p1.png
 
-[image2]: images/image2.png
+[image2]: images/image2_p1.png
 
-[image3]: images/image3.png
+[image3]: images/image3_p1.png
 
-[image4]: images/image4.png
+[image4]: images/image4_p1.png
 
-[image5]: images/image5.png
+[image5]: images/image5_p1.png
 
-[image6]: images/image6.png
+[image6]: images/image6_p1.png
