@@ -5,4 +5,4 @@ This site contains my notes and blogs on varioius FPGA tips, techniques and desi
 
 ## Posts
 
-- [Understanding FPGA Timing Analysis in Vivado: Part 1](posts/timing_analysis/Understanding FPGA Timing Analysis in Vivado: Part 1.md)
+- [Understanding FPGA Timing Analysis in Vivado: Part 1](posts/timing_analysis/understanding-fpga-timing-vivado-part-1.md)
