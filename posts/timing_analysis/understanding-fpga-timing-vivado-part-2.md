@@ -114,7 +114,9 @@ For negative clock skew the effective clock period gets smaller, hence reducing 
 
 In Vivado clock skew is defined as:
 
+
 ![][image6]
+
 **Figure 6: Clock path skew equation in Vivado**
 
 $$\text{Clock Skew} = DCD - SCD + CPR$$
@@ -170,6 +172,7 @@ This wraps up our discussion on setup time anaylysis in Vivado. Next week, we'll
 [image7]: images/image7_p2.png
 
 [image8]: images/image8_p2.png
+
 
 
 
