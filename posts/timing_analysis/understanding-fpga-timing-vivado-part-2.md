@@ -142,6 +142,7 @@ $$\text{Clock Uncertainty} = \frac{\sqrt{TSJ^2 + TIJ^2} + DJ}{2} + PE$$
 * **Phase Error (PE):** The static phase offset or alignment error introduced by clock management blocks like MMCMs or PLLs.
 
 In Vivado, TSJ and TIJ are random jitter components, so they are combined using root-mean-square (RMS). TSJ, TIJ and DJ represents peak-to-peak variation, since we're only interested in one clock edge and not both, it is divided by 2 to get the jitter of a single clock edge. Discrete Jitter (DJ) is deterministic i.e. no need for RMS as its not random, so it is added linearly before the division. Phase Error (PE), on the other hand, is a one-sided static phase offset introduced by clocking resources, so it is added directly and is not divided by 2.
+
 ![][image8]
 **Figure 8: Effect of jitter on clock edge arrival time**
 
@@ -169,6 +170,7 @@ This wraps up our discussion on setup time anaylysis in Vivado. Next week, we'll
 [image7]: images/image7_p2.png
 
 [image8]: images/image8_p2.png
+
 
 
 
