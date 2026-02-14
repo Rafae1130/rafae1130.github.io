@@ -141,10 +141,10 @@ $$\text{Clock Uncertainty} = \frac{\sqrt{TSJ^2 + TIJ^2} + DJ}{2} + PE$$
 * **Discrete Jitter (DJ):** Deterministic, bounded jitter caused by predictable effects like duty-cycle distortion or periodic interference.
 * **Phase Error (PE):** The static phase offset or alignment error introduced by clock management blocks like MMCMs or PLLs.
 
-**For setup, uncertainty is subtracted from required time (reduces slack).**
-
 ![][image8]
 **Figure 8: Effect of jitter on clock edge arrival time**
+
+For setup, uncertainty is subtracted from required time, because as mentioned before, we want to ensure the slack is positive even for worst case scenario. And subtracting the uncertainity means the clock edge arrives early at the destination register, hence reducing the available time for data to settle.
 
 # **4\. What's Next**
 
@@ -168,6 +168,7 @@ This wraps up our discussion on setup time anaylysis in Vivado. Next week, we'll
 [image7]: images/image7_p2.png
 
 [image8]: images/image8_p2.png
+
 
 
 
