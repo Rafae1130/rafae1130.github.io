@@ -1,3 +1,11 @@
+---
+layout: default
+math: mathjax
+---
+
+<script type="text/javascript" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+</script>
 # Timing Analysis in Vivado: Part 2
 
 # **1\. Clock Pessimism Removal (CPR)**
@@ -164,6 +172,7 @@ This wraps up our discussion on setup time anaylysis in Vivado. Next week, we'll
 [image7]: images/image7_p2.png
 
 [image8]: images/image8_p2.png
+
 
 
 
