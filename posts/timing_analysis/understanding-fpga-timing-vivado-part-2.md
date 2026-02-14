@@ -149,18 +149,19 @@ $$\text{Clock Uncertainty} = \frac{\sqrt{TSJ^2 + TIJ^2} + DJ}{2} + PE$$
 
 This wraps up our discussion on clock pessimism removal, clock skew, and clock uncertainty — three key factors that directly affect your timing slack in Vivado. Understanding how these are calculated and how they interact gives you a much clearer picture of what the timing reports are actually telling you. Next week, we'll build on this foundation and take a closer look at hold time analysis: how it differs from setup, why it's checked against the same clock edge, and how Vivado reports it. Stay tuned.
 
-[image1]: images_p2/image1.png
+[image1]: images/image1_p2.png
 
-[image2]: images_p2/image2.png
+[image2]: images/image2_p2.png
 
-[image3]: images_p2/image3.png
+[image3]: images/image3_p2.png
 
-[image4]: images_p2/image4.png
+[image4]: images/image4_p2.png
 
-[image5]: images_p2/image5.png
+[image5]: images/image5_p2.png
 
-[image6]: images_p2/image6.png
+[image6]: images/image6_p2.png
 
-[image7]: images_p2/image7.png
+[image7]: images/image7_p2.png
 
-[image8]: images_p2/image8.png
+[image8]: images/image8_p2.png
+
