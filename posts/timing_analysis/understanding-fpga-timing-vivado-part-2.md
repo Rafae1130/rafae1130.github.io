@@ -52,7 +52,7 @@ However, during slack analysis, if we consider the clock path delays for source 
 This means that the same clock signal will reach the diverging point at different times. That cannot physically happen.
 
 ![][image3]
-**Figure 3: Treating the common path with different delays**
+**Figure 3: Clock delay calculation without CPR**
 
 The shared clock wire cannot be both slow and fast at the same time.
 
@@ -164,5 +164,6 @@ This wraps up our discussion on setup time anaylysis in Vivado. Next week, we'll
 [image7]: images/image7_p2.png
 
 [image8]: images/image8_p2.png
+
 
 
