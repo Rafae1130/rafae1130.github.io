@@ -151,7 +151,7 @@ $$\text{Clock Uncertainty} = \frac{\sqrt{TSJ^2 + TIJ^2} + DJ}{2} + PE$$
 This wraps up our discussion on setup time anaylysis in Vivado. Next week, we'll take a closer look at hold time analysis: how it differs from setup, and how Vivado reports it. 
 
 
-*This is Part 2 of the Timing Analysis in Vivado series. Read [Understanding FPGA Timing Analysis in Vivado: Part 1](https://rafae1130.github.io/posts/timing_analysis/understanding-fpga-timing-vivado-part-1.html) if you haven't already.*
+This is Part 2 of the Timing Analysis in Vivado series. Read [Understanding FPGA Timing Analysis in Vivado: Part 1](https://rafae1130.github.io/posts/timing_analysis/understanding-fpga-timing-vivado-part-1.html) if you haven't already.
 
 [image1]: images/image1_p2.png
 
@@ -168,6 +168,7 @@ This wraps up our discussion on setup time anaylysis in Vivado. Next week, we'll
 [image7]: images/image7_p2.png
 
 [image8]: images/image8_p2.png
+
 
 
 
