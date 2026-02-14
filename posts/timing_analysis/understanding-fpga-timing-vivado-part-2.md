@@ -52,7 +52,7 @@ However, during slack analysis, if we consider the clock path delays for source 
 This means that the same clock signal will reach the diverging point at different times. That cannot physically happen.
 
 ![][image3]
-**Figure 3: Clock pessimism — treating the common path with different delays is physically impossible**
+**Figure 3: Treating the common path with different delays**
 
 The shared clock wire cannot be both slow and fast at the same time.
 
@@ -88,14 +88,14 @@ We know what skew is. But what is its importance? What does it tell us? To under
 Means clock edge arrives at destination register earlier. Can cause setup violation as it will reduce the window available for data to settle down.
 
 ![][image4]
-**Figure 4: Negative clock skew — effective period is shorter than actual period**
+**Figure 4: Negative clock skew: effective period is shorter than actual period**
 
 ## **2.2 Positive Clock Skew**
 
 Means clock arrives earlier at source register. This is good for preventing setup time violation but this can cause hold violation as the clock arrives later at destination, giving not enough time for data to remain stable and meet hold time.
 
 ![][image5]
-**Figure 5: Positive clock skew — effective period is longer than actual period**
+**Figure 5: Positive clock skew: effective period is longer than actual period**
 
 ## **2.3 Zero Clock Skew**
 
@@ -147,7 +147,7 @@ $$\text{Clock Uncertainty} = \frac{\sqrt{TSJ^2 + TIJ^2} + DJ}{2} + PE$$
 
 # **4\. What's Next**
 
-This wraps up our discussion on clock pessimism removal, clock skew, and clock uncertainty — three key factors that directly affect your timing slack in Vivado. Understanding how these are calculated and how they interact gives you a much clearer picture of what the timing reports are actually telling you. Next week, we'll build on this foundation and take a closer look at hold time analysis: how it differs from setup, why it's checked against the same clock edge, and how Vivado reports it. Stay tuned.
+This wraps up our discussion on setup time anaylysis in Vivado. Next week, we'll take a closer look at hold time analysis: how it differs from setup, and how Vivado reports it. 
 
 [image1]: images/image1_p2.png
 
@@ -164,4 +164,5 @@ This wraps up our discussion on clock pessimism removal, clock skew, and clock u
 [image7]: images/image7_p2.png
 
 [image8]: images/image8_p2.png
+
 
