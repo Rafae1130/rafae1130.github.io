@@ -43,6 +43,7 @@ Now imagine both clock paths have some common path before diverting towards sour
 That shared portion can physically result in the same delay value for source clock path and destination clock path.
 
 ![][image2]
+
 **Figure 2: Detailed clock path showing common elements (MMCM1, BUFG) and path-specific elements**
 
 However, during slack analysis, if we consider the clock path delays for source and destination without considering the common path:
@@ -53,6 +54,7 @@ However, during slack analysis, if we consider the clock path delays for source 
 This means that the same clock signal will reach the diverging point at different times. That cannot physically happen.
 
 ![][image3]
+
 **Figure 3: Clock delay calculation without CPR**
 
 The shared clock wire cannot be both slow and fast at the same time.
@@ -89,6 +91,7 @@ We know what skew is. But what is its importance? What does it tell us? To under
 Means clock edge arrives at destination register earlier. Can cause setup violation as it will reduce the window available for data to settle down.
 
 ![][image4]
+
 **Figure 4: Negative clock skew: effective period is shorter than actual period**
 
 ## **2.2 Positive Clock Skew**
@@ -96,6 +99,7 @@ Means clock edge arrives at destination register earlier. Can cause setup violat
 Means clock arrives earlier at source register. This is good for preventing setup time violation but this can cause hold violation as the clock arrives later at destination, giving not enough time for data to remain stable and meet hold time.
 
 ![][image5]
+
 **Figure 5: Positive clock skew: effective period is longer than actual period**
 
 ## **2.3 Zero Clock Skew**
@@ -172,6 +176,7 @@ This wraps up our discussion on setup time anaylysis in Vivado. Next week, we'll
 [image7]: images/image7_p2.png
 
 [image8]: images/image8_p2.png
+
 
 
 
