@@ -1,4 +1,5 @@
 # Timing Analysis in Vivado: Part 2
+In [Part 1](https://rafae1130.github.io/posts/timing_analysis/understanding-fpga-timing-vivado-part-1.html), we covered the basics of setup timing analysis for reg-to-reg paths in Vivado — how to read timing reports, what arrival time and required time mean, and how slack is calculated. We left a few terms unexplained: Clock Pessimism Removal (CPR) and clock uncertainty. In this post, we'll unpack both of those, along with clock skew, and see how they fit into the timing equations we built up last time.
 
 # **1\. Clock Pessimism Removal (CPR)**
 
@@ -149,6 +150,9 @@ $$\text{Clock Uncertainty} = \frac{\sqrt{TSJ^2 + TIJ^2} + DJ}{2} + PE$$
 
 This wraps up our discussion on setup time anaylysis in Vivado. Next week, we'll take a closer look at hold time analysis: how it differs from setup, and how Vivado reports it. 
 
+
+*This is Part 2 of the Timing Analysis in Vivado series. Read [Part 1: Setup Time for Reg-to-Reg Paths]((https://rafae1130.github.io/posts/timing_analysis/understanding-fpga-timing-vivado-part-1.html)) if you haven't already.*
+
 [image1]: images/image1_p2.png
 
 [image2]: images/image2_p2.png
@@ -164,6 +168,7 @@ This wraps up our discussion on setup time anaylysis in Vivado. Next week, we'll
 [image7]: images/image7_p2.png
 
 [image8]: images/image8_p2.png
+
 
 
 
