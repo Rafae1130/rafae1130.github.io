@@ -79,6 +79,8 @@ For hold analysis, the corners are flipped: launch uses MIN delay and capture us
 
 **Figure 6: Hold Analysis — Pessimistic MIN/MAX Delays on Shared Segment; A later capture clock arrival increases Required Time, which reduces Hold Slack.**
 
+*This is Part 3 of the Timing Analysis in Vivado series. Read [Understanding FPGA Timing Analysis in Vivado: Part 1](https://rafae1130.github.io/posts/timing_analysis/understanding-fpga-timing-vivado-part-1.html) and [Understanding FPGA Timing Analysis in Vivado: Part 2](https://rafae1130.github.io/posts/timing_analysis/understanding-fpga-timing-vivado-part-2.html) if you haven't already.*
+
 [image1]: images/image1_p3.png
 
 [image2]: images/image2_p3.png
