@@ -1,15 +1,6 @@
 # Reg-to-Pin Timing Analysis
 
-> **Series:** Understanding FPGA Timing in Vivado
->
-> | Part | Topic |
-> |------|-------|
-> | [Part 1](https://rafae1130.github.io/posts/timing_analysis/understanding-fpga-timing-vivado-part-1.html) | Setup Analysis Basics — Arrival Time, Required Time, Slack |
-> | [Part 2](https://rafae1130.github.io/posts/timing_analysis/understanding-fpga-timing-vivado-part-2.html) | Clock Pessimism Removal, Clock Uncertainty & Clock Skew |
-> | [Part 3](https://rafae1130.github.io/posts/timing_analysis/understanding-fpga-timing-vivado-part-3.html) | Hold Analysis |
-> | **Part 4 (this post)** | **Reg-to-Pin Timing & Output Delay Constraints** |
 
----
 
 # **1\. Introduction**
 
@@ -27,6 +18,7 @@ For now, we will focus on the reg-to-pin path.
 In a reg-to-pin path, the source register is inside the FPGA, but the destination register resides in an external device i.e. a memory chip, ADC, DAC, or any other peripheral on the board. The data travels from the source register through the FPGA's internal routing, out through the FPGA output pin, across the PCB trace, and finally into the destination register of the external device.
 
 ![][image1]
+
 **Figure 1: Reg-to-pin path to the external device**
 
 # **3\. Output Delay and Why It Is Needed**
@@ -68,6 +60,7 @@ $$T_{arrival} = T_{clk,\,launch} + T_{co,\,max} + T_{route,\,int} \tag{3}$$
 $T_{co,\,max}$ is the maximum clock-to-output delay of the source register and $T_{route,\,int}$ is the internal routing delay from the register to the output pin.
 
 ![][image2]
+
 **Figure 2: Vivado's visibility of paths**
 
 ### **4.2 Data Required Time — Setup Analysis**
@@ -101,21 +94,25 @@ The `output_delay` constraint is applied using the `set_output_delay` command. I
 **Step 1.** After synthesis, open the synthesized design from the Flow Navigator and click on **Edit Timing Constraints**.
 
 ![][image3]
+
 **Figure 3: Vivado Flow Navigator — navigate to Open Synthesized Design → Edit Timing Constraints.**
 
 **Step 2.** In the Timing Constraints window, double-click on **Set Output Delay**. The configuration dialog shown in Figure 4 will open.
 
 ![][image4]
+
 **Figure 4: Set Output Delay dialog in Vivado.**
 
 **Step 3.** Click the **…** button next to Clock. In the Specify Clock dialog, click Find to list all available clocks in the design. Select the clock that drives the source register and the external peripheral, move it to the selected list using the right-arrow button, and click OK.
 
 ![][image5]
+
 **Figure 5: Specify Clock dialog.**
 
 **Step 4.** Click the **…** button next to Objects (ports). In the Specify Delay Objects dialog, click Find to list the available output ports. Select the ports you want to constrain and click Set. If you previously added some ports and want to add more, use Append instead, so the existing selection is not overwritten.
 
 ![][image6]
+
 **Figure 6: Specify Delay Objects dialog.**
 
 **Step 5.** Configure the delay options in the dialog:
@@ -127,6 +124,7 @@ The `output_delay` constraint is applied using the `set_output_delay` command. I
 * **Delay value already includes latencies:** This controls whether the clock latencies modelled internally by Vivado (source and/or network latency) are already embedded in the delay value you are entering. In almost all standard FPGA designs, this should be left as None, allowing Vivado to add its internal clock latency on top of the specified output delay. Only change this in advanced scenarios where clock latencies are manually specified with `set_clock_latency`.
 
 ![][image7]
+
 **Figure 7: Completed Set Output Delay dialog configured for setup analysis.**
 
 **Step 6.** Click OK and press Ctrl+S to save. Vivado will write the corresponding `set_output_delay` entry into the XDC file. Repeat the above steps for hold time analysis, setting Min/Max to min and entering the appropriate (typically negative) delay value.
@@ -136,16 +134,19 @@ The `output_delay` constraint is applied using the `set_output_delay` command. I
 After completing both the setup and hold configurations, the XDC file will contain entries similar to those shown in Figure 8.
 
 ![][image8]
+
 **Figure 8: Generated set_output_delay constraints in the XDC file.**
 
 After synthesis, in the Setup analysis window, the output delay is subtracted from the required time:
 
 ![][image9]
 
+**Figure 9: Setup Path window for Reg to pin path.**
 And added to the required time in hold analysis:
 
 ![][image10]
 
+**Figure 10: Hold Path window for Reg to pin path.**
 ---
 
 # **6\. What's Next**
@@ -154,6 +155,17 @@ In this post we covered the reg-to-pin direction — data flowing *out* of the F
 
 **Up next → Part 5: Pin-to-Reg Timing & Input Delay Constraints**
 
+
+> **Series:** Understanding FPGA Timing in Vivado
+>
+> | Part | Topic |
+> |------|-------|
+> | [Part 1](https://rafae1130.github.io/posts/timing_analysis/understanding-fpga-timing-vivado-part-1.html) | Setup Analysis Basics — Arrival Time, Required Time, Slack |
+> | [Part 2](https://rafae1130.github.io/posts/timing_analysis/understanding-fpga-timing-vivado-part-2.html) | Clock Pessimism Removal, Clock Uncertainty & Clock Skew |
+> | [Part 3](https://rafae1130.github.io/posts/timing_analysis/understanding-fpga-timing-vivado-part-3.html) | Hold Analysis |
+> | **Part 4 (this post)** | **Reg-to-Pin Timing & Output Delay Constraints** |
+
+---
 ---
 
 [image1]: images/image1_p4.png
