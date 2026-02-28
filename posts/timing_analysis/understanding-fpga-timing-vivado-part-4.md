@@ -33,9 +33,9 @@ We need to supply these values manually so that Vivado has a complete picture of
 
 As with all delays, these values vary across process, voltage, and temperature (PVT) corners, so `output_delay` has both a maximum and a minimum value:
 
-$$\text{output\_delay}_{max} = T_{pcb,\,max} + T_{su,\,ext} \tag{1}$$
+$$\text{output_delay}_{max} = T_{pcb,\,max} + T_{su,\,ext} \tag{1}$$
 
-$$\text{output\_delay}_{min} = T_{pcb,\,min} - T_{h,\,ext} \tag{2}$$
+$$\text{output_delay}_{min} = T_{pcb,\,min} - T_{h,\,ext} \tag{2}$$
 
 Note that `output_delay_min` can be negative when the minimum PCB delay is smaller than the external device's hold requirement.
 
@@ -47,8 +47,7 @@ $$T_{pcb,\,min} = 0.5\ \text{ns}$$
 
 The external device needs data stable 2 ns after the clock edge, but the board only provides 0.5 ns of natural delay — so the FPGA must "hold" the data longer. The constraint becomes:
 
-$$\text{output\_delay}_{min} = T_{pcb,\,min} - T_{hold,\,ext} = 0.5 - 2 = -1.5\ \text{ns}$$
-
+$$\text{output_delay}_{min} = T_{pcb,\,min} - T_{hold,\,ext} = 0.5 - 2 = -1.5\ \text{ns}$$
 # **4\. Timing Equations for Reg-to-Pin**
 
 ### **4.1 Data Arrival Time**
@@ -67,7 +66,7 @@ $T_{co,\,max}$ is the maximum clock-to-output delay of the source register and $
 
 For the data to arrive at the external device's destination register in time, it must be present at the FPGA output pin early enough to still travel across the PCB and satisfy the external setup requirement. The data required time at the output pin is therefore:
 
-$$T_{required} = T_{period} - \text{output\_delay}_{max} - \text{clock uncertainty} \tag{4}$$
+$$T_{required} = T_{period} - \text{output_delay}_{max} - \text{clock uncertainty} \tag{4}$$
 
 Subtracting `output_delay_max` pushes the required time window earlier, forcing the timing analysis to ensure that data out of the FPGA pin has enough time to cross the PCB and meet the external device setup time before the next capture edge. The setup slack is:
 
@@ -79,7 +78,7 @@ For hold timing, the minimum delay path is analysed using `output_delay_min`.
 
 The hold slack is:
 
-$$\text{Slack}_{hold} = T_{arrival,\,min} - \text{output\_delay}_{min} \geq 0 \tag{6}$$
+$$\text{Slack}_{hold} = T_{arrival,\,min} - \text{output_delay}_{min} \geq 0 \tag{6}$$
 
 where $T_{arrival,\,min}$ uses the minimum clock-to-output and minimum internal routing delays. Since `output_delay_min` can be negative, the hold constraint is less restrictive in such cases.
 
