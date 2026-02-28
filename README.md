@@ -8,7 +8,7 @@ This site contains my notes and blogs on varioius FPGA tips, techniques and desi
 - [Understanding FPGA Timing Analysis in Vivado: Part 1](posts/timing_analysis/understanding-fpga-timing-vivado-part-1.md)
 - [Understanding FPGA Timing Analysis in Vivado: Part 2](posts/timing_analysis/understanding-fpga-timing-vivado-part-2.md)
 - [Understanding FPGA Timing Analysis in Vivado: Part 3](posts/timing_analysis/understanding-fpga-timing-vivado-part-3.md)
-
+- [Understanding FPGA Timing Analysis in Vivado: Part 4](posts/timing_analysis/understanding-fpga-timing-vivado-part-4.md)
 
 <div style="text-align: right; margin-top: 50px;">
   <em>— Abdur Rafae Haqqani</em><br>
