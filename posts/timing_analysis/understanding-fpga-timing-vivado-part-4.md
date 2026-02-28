@@ -74,11 +74,13 @@ $$\text{Slack}_{setup} = T_{required} - T_{arrival} \geq 0 \tag{5}$$
 
 ### **4.3 Hold Analysis**
 
+$$T_{required} = T_{period} - \text{output_delay}_{max} + \text{clock uncertainty} \tag{5}$$
+
 For hold timing, the minimum delay path is analysed using `output_delay_min`.
 
 The hold slack is:
 
-$$\text{Slack}_{hold} = T_{arrival,\,min} - \text{output_delay}_{min} \geq 0 \tag{6}$$
+$$\text{Slack}_{hold} = T_{arrival,\,min} - \text{output_delay}_{min} \geq 0 \tag{7}$$
 
 where $T_{arrival,\,min}$ uses the minimum clock-to-output and minimum internal routing delays. Since `output_delay_min` can be negative, the hold constraint is less restrictive in such cases.
 
