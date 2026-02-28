@@ -165,7 +165,6 @@ In this post we covered the reg-to-pin direction — data flowing *out* of the F
 > | [Part 3](https://rafae1130.github.io/posts/timing_analysis/understanding-fpga-timing-vivado-part-3.html) | Hold Analysis |
 > | **Part 4 (this post)** | **Reg-to-Pin Timing & Output Delay Constraints** |
 
----
 
 
 [image1]: images/image1_p4.png
