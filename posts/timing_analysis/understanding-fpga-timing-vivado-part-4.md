@@ -48,6 +48,7 @@ $$T_{pcb,\,min} = 0.5\ \text{ns}$$
 The external device needs data stable 2 ns after the clock edge, but the board only provides 0.5 ns of natural delay — so the FPGA must "hold" the data longer. The constraint becomes:
 
 $$\text{output_delay}_{min} = T_{pcb,\,min} - T_{hold,\,ext} = 0.5 - 2 = -1.5\ \text{ns}$$
+
 # **4\. Timing Equations for Reg-to-Pin**
 
 ### **4.1 Data Arrival Time**
