@@ -4,7 +4,7 @@
 
 # **1\. Introduction**
 
-So far, we have been looking at timing analysis for paths entirely inside the FPGA — specifically reg-to-reg paths. But those are not the only paths that exist in a design. When a signal enters an external FPGA pin or leaves through one, reg-to-reg analysis methods are no longer applicable. For such cases, we use pin-to-reg and reg-to-pin paths.
+So far, we have been looking at timing analysis for paths entirely inside the FPGA known as reg-to-reg paths. But those are not the only paths that exist in a design. When a signal enters an external FPGA pin or leaves through one, reg-to-reg analysis methods are no longer applicable. For such cases, we use pin-to-reg and reg-to-pin paths.
 
 As the names suggest:
 
