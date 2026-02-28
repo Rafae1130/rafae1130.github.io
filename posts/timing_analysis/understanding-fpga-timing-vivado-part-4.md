@@ -152,10 +152,9 @@ And added to the required time in hold analysis:
 
 In this post we covered the reg-to-pin direction — data flowing *out* of the FPGA to an external device. The complementary case is **pin-to-reg**: data arriving *into* the FPGA from an external pin and being captured by an internal register. In the next post we will look at how to model that path, how `set_input_delay` works, and how the arrival and required time equations change when the launch register is outside the FPGA.
 
-**Up next → Part 5: Pin-to-Reg Timing & Input Delay Constraints**
 
 
-> **Series:** Understanding FPGA Timing in Vivado
+> **Blogs in this Series:** Understanding FPGA Timing in Vivado
 >
 > | Part | Topic |
 > |------|-------|
@@ -165,7 +164,7 @@ In this post we covered the reg-to-pin direction — data flowing *out* of the F
 > | **Part 4 (this post)** | **Reg-to-Pin Timing & Output Delay Constraints** |
 
 ---
----
+
 
 [image1]: images/image1_p4.png
 
