@@ -141,11 +141,13 @@ After synthesis, in the Setup analysis window, the output delay is subtracted fr
 ![][image9]
 
 **Figure 9: Setup Path window for Reg to pin path.**
+
 And added to the required time in hold analysis:
 
 ![][image10]
 
 **Figure 10: Hold Path window for Reg to pin path.**
+
 ---
 
 # **6\. What's Next**
