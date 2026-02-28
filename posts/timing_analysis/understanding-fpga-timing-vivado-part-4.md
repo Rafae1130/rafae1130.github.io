@@ -154,7 +154,7 @@ In this post we covered the reg-to-pin direction — data flowing *out* of the F
 
 
 
-> **Blogs in this Series:** Understanding FPGA Timing in Vivado
+# **Blogs in this Series:** Understanding FPGA Timing in Vivado
 >
 > | Part | Topic |
 > |------|-------|
