@@ -13,6 +13,7 @@ The fundamental challenge is the same as before. Vivado can see everything insid
 In a pin-to-reg path, the source register resides in an external device i.e. a memory chip, ADC, sensor, or any other peripheral on the board, while the destination register is inside the FPGA. The data travels from the source register, across the PCB trace, into the FPGA input pin, through internal routing, and is finally captured at the destination register's data input.
 
 ![][image1]
+
 **Figure 1: Pin-to-reg path from the external device to the FPGA**
 
 # **3\. Input Delay and Why It Is Needed**
@@ -43,6 +44,7 @@ $$T_{arrival} = \text{input_delay}_{max} + T_{route,\,int} \tag{3}$$
 $$T_{route,\,int}$$ is the internal routing delay from the FPGA input pin to the destination register. The launch clock path — which runs from the clock source through the external device and back — is entirely outside the FPGA and is not modelled by Vivado. Its effect is fully captured inside the `input_delay` value.
 
 ![][image3]
+
 **Figure 2: Vivado's visibility of pin-to-reg paths**
 
 ### **4.2 Data Required Time — Setup Analysis**
@@ -78,6 +80,7 @@ The `input_delay` constraint is applied using the `set_input_delay` command. As 
 The steps are the same as described in Part 4 for reg-to-pin. The only difference is that after opening the timing constraint window in the synthesized design, you select **Set Input Delay** instead of **Set Output Delay**.
 
 ![][image2]
+
 **Figure 3: Set Input Delay dialog in Vivado.**
 
 In the timing report, `input_delay_max` is added to the data arrival time in setup analysis, pushing the arrival time later and consuming slack:
