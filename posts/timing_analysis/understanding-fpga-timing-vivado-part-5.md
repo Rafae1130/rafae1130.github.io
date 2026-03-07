@@ -40,7 +40,7 @@ For a pin-to-reg path, Vivado models only the portion of the data path it can se
 
 $$T_{arrival} = \text{input_delay}_{max} + T_{route,\,int} \tag{3}$$
 
-$T_{route,\,int}$ is the internal routing delay from the FPGA input pin to the destination register. The launch clock path — which runs from the clock source through the external device and back — is entirely outside the FPGA and is not modelled by Vivado. Its effect is fully captured inside the `input_delay` value.
+$$T_{route,\,int}$$ is the internal routing delay from the FPGA input pin to the destination register. The launch clock path — which runs from the clock source through the external device and back — is entirely outside the FPGA and is not modelled by Vivado. Its effect is fully captured inside the `input_delay` value.
 
 ![][image3]
 **Figure 2: Vivado's visibility of pin-to-reg paths**
