@@ -38,7 +38,7 @@ Unlike `output_delay_min`, which can be negative, `input_delay_min` is always a 
 
 For a pin-to-reg path, Vivado models only the portion of the data path it can see: from the FPGA input pin, through internal routing, to the destination register's data input. The input delay accounts for everything before that pin. The data arrival time at the destination register is therefore:
 
-$$T_{arrival} = \text{input\_delay}_{max} + T_{route,\,int} \tag{3}$$
+$$T_{arrival} = \text{input_delay}_{max} + T_{route,\,int} \tag{3}$$
 
 $T_{route,\,int}$ is the internal routing delay from the FPGA input pin to the destination register. The launch clock path — which runs from the clock source through the external device and back — is entirely outside the FPGA and is not modelled by Vivado. Its effect is fully captured inside the `input_delay` value.
 
