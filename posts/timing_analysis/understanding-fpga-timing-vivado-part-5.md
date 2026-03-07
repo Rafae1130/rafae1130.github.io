@@ -67,7 +67,7 @@ The hold slack is:
 
 $$\text{Slack}_{hold} = T_{arrival,\,min} - T_{required,\,hold} \geq 0 \tag{6}$$
 
-where $T_{arrival,\,min} = \text{input\_delay}_{min} + T_{route,\,int,\,min}$.
+where $$T_{arrival,\,min} = \text{input\_delay}_{min} + T_{route,\,int,\,min}$$.
 
 One thing worth noting is that there is no CPR in these equations. That is because CPR removes pessimism from the shared segment of the launch and capture clock paths. Here, the launch clock path is entirely external and invisible to Vivado, so there is no shared segment to optimise. The destination clock is fully modelled, and its delay appears as a non-zero value in the timing report, but that alone is not sufficient to enable CPR.
 
