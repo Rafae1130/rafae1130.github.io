@@ -1,16 +1,6 @@
 # Pin-to-Reg Timing Analysis
 
-> **Series:** Understanding FPGA Timing in Vivado
->
-> | Part | Topic |
-> |------|-------|
-> | [Part 1](https://rafae1130.github.io/posts/timing_analysis/understanding-fpga-timing-vivado-part-1.html) | Setup Analysis Basics — Arrival Time, Required Time, Slack |
-> | [Part 2](https://rafae1130.github.io/posts/timing_analysis/understanding-fpga-timing-vivado-part-2.html) | Clock Pessimism Removal, Clock Uncertainty & Clock Skew |
-> | [Part 3](https://rafae1130.github.io/posts/timing_analysis/understanding-fpga-timing-vivado-part-3.html) | Hold Analysis |
-> | [Part 4](https://rafae1130.github.io/posts/timing_analysis/understanding-fpga-timing-vivado-part-4.html) | Reg-to-Pin Timing & Output Delay Constraints |
-> | **Part 5 (this post)** | **Pin-to-Reg Timing & Input Delay Constraints** |
 
----
 
 # **1\. Introduction**
 
@@ -92,16 +82,31 @@ The steps are the same as described in Part 4 for reg-to-pin. The only differenc
 
 In the timing report, `input_delay_max` is added to the data arrival time in setup analysis, pushing the arrival time later and consuming slack:
 
-![][image4]
-
 And `input_delay_min` is added to the minimum arrival time in hold analysis:
 
-![][image5]
+# **6\. What's Next**
+
+With this post, the core timing analysis series comes to a close. We started with the fundamentals of setup analysis — arrival time, required time, and slack — and progressively worked through clock pessimism removal, hold analysis, and finally the two external interface path types: reg-to-pin and pin-to-reg. Together, these five parts cover the timing analysis model that underlies every path Vivado analyses in a synchronous FPGA design.
+
+The next series will shift focus to **clock domain crossing (CDC)**. Once a design has more than one clock domain, the synchronous timing model no longer applies across domain boundaries, and a different set of techniques is needed — synchronisers, handshake protocols, and FIFOs — each with its own implications for metastability, latency, and throughput. That will be the starting point for the next series.
 
 ---
 
+
+---
+> **Series:** Understanding FPGA Timing in Vivado
+>
+> | Part | Topic |
+> |------|-------|
+> | [Part 1](https://rafae1130.github.io/posts/timing_analysis/understanding-fpga-timing-vivado-part-1.html) | Setup Analysis Basics — Arrival Time, Required Time, Slack |
+> | [Part 2](https://rafae1130.github.io/posts/timing_analysis/understanding-fpga-timing-vivado-part-2.html) | Clock Pessimism Removal, Clock Uncertainty & Clock Skew |
+> | [Part 3](https://rafae1130.github.io/posts/timing_analysis/understanding-fpga-timing-vivado-part-3.html) | Hold Analysis |
+> | [Part 4](https://rafae1130.github.io/posts/timing_analysis/understanding-fpga-timing-vivado-part-4.html) | Reg-to-Pin Timing & Output Delay Constraints |
+> | **Part 5 (this post)** | **Pin-to-Reg Timing & Input Delay Constraints** |
+
+---
 [image1]: images/image1_p5.png
 
 [image2]: images/image2_p5.png
-
+[image34]: images/image3_p5.png
 
