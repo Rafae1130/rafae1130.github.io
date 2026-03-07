@@ -108,5 +108,5 @@ The next series will shift focus to **clock domain crossing (CDC)**. Once a desi
 [image1]: images/image1_p5.png
 
 [image2]: images/image2_p5.png
-[image34]: images/image3_p5.png
+[image3]: images/image3_p5.png
 
