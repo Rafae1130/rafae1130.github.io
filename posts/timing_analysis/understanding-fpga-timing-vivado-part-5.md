@@ -42,7 +42,7 @@ $$T_{arrival} = \text{input\_delay}_{max} + T_{route,\,int} \tag{3}$$
 
 $T_{route,\,int}$ is the internal routing delay from the FPGA input pin to the destination register. The launch clock path — which runs from the clock source through the external device and back — is entirely outside the FPGA and is not modelled by Vivado. Its effect is fully captured inside the `input_delay` value.
 
-![][image2]
+![][image3]
 **Figure 2: Vivado's visibility of pin-to-reg paths**
 
 ### **4.2 Data Required Time — Setup Analysis**
