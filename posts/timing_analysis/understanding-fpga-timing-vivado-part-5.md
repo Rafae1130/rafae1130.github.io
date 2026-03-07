@@ -26,9 +26,9 @@ We supply these values manually through `set_input_delay`. The constraint value 
 
 As with all delays, the values vary across process, voltage, and temperature (PVT) corners, so `input_delay` has both a maximum and a minimum value:
 
-$$\text{input\_delay}_{max} = T_{co,\,ext,\,max} + T_{pcb,\,max} \tag{1}$$
+$$\text{input_delay}_{max} = T_{co,\,ext,\,max} + T_{pcb,\,max} \tag{1}$$
 
-$$\text{input\_delay}_{min} = T_{co,\,ext,\,min} + T_{pcb,\,min} \tag{2}$$
+$$\text{input_delay}_{min} = T_{co,\,ext,\,min} + T_{pcb,\,min} \tag{2}$$
 
 Unlike `output_delay_min`, which can be negative, `input_delay_min` is always a positive quantity. Both the external clock-to-output time and the PCB trace delay are inherently positive, so their sum is too.
 
