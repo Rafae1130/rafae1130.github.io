@@ -87,7 +87,7 @@ The `input_delay` constraint is applied using the `set_input_delay` command. As 
 
 The steps are the same as described in Part 4 for reg-to-pin. The only difference is that after opening the timing constraint window in the synthesized design, you select **Set Input Delay** instead of **Set Output Delay**.
 
-![][image3]
+![][image2]
 **Figure 3: Set Input Delay dialog in Vivado.**
 
 In the timing report, `input_delay_max` is added to the data arrival time in setup analysis, pushing the arrival time later and consuming slack:
@@ -104,8 +104,4 @@ And `input_delay_min` is added to the minimum arrival time in hold analysis:
 
 [image2]: images/image2_p5.png
 
-[image3]: images/image3_p5.png
 
-[image4]: images/image4_p5.png
-
-[image5]: images/image5_p5.png
