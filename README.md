@@ -1,4 +1,3 @@
-# FPGA Design Notes
 
 ## Embedded Systems / FPGA Blogs
 
