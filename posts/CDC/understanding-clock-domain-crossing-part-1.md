@@ -243,6 +243,9 @@ Static timing analysis is not reliable for paths between asynchronous clocks. Th
 The clock interaction report is the right starting point for any CDC analysis. Before looking at individual paths, use it to understand which clock pairs in your design are asynchronous, which are already constrained, and which are being timed unsafely. Any red tile in that matrix is a crossing that needs to be handled.
 ---
 
+If you are new to FPGA timing analysis and want to understand the timning analysis fundamentals before diving deeper into CDC, check out the [Understanding FPGA Timing in Vivado](https://rafae1130.github.io/posts/timing_analysis/understanding-fpga-timing-vivado-part-1.html) series which covers setup and hold analysis, clock skew, and reg-to-pin paths from the ground up.
+
+
 [image1]: images/image1-p1.png
 
 [image2]: images/image2-p1.png
