@@ -236,7 +236,7 @@ Example: Two generated clocks from the same MMCM — say 100 MHz and 200 MHz. Vi
 
 ---
 
-For more information, check out Vivado design suite userguide 906.
+For more information, check out Vivado userguide 906.
 
 
 # **8\. Conclusion**
