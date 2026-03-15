@@ -42,7 +42,7 @@ This is the core problem in CDC. When a signal crosses from one clock domain to 
 
 # **5\. Why Do We Need Proper CDC?**
 
-If the source and destination clocks are both primary clocks, Vivado has no way to know their phase relationship if the clocks are derived from different sources. Specifically, how the positive edges of these two clocks align relative to each other. Because of this, timing analysis can pass while the design still fails in hardware. This is why proper CDC techniques are necessary when asynchronous clocks are used.
+If the source and destination clocks are both primary clocks, Vivado has no way to know their phase relationship if the clocks are derived from different sources i.e. how the positive edges of these two clocks align relative to each other as Vivado has no knowledge of their phase relationship because they are coming from an external source. Because of this, timing analysis can pass while the design still fails in hardware. This is why proper CDC techniques are necessary when asynchronous clocks are used.
 
 ![][image2]
 
@@ -132,7 +132,7 @@ All crossing paths are covered by a `set_max_delay -datapath_only` constraint.
 
 To understand why this constraint exists, we start with normal setup timing:
 
-$$\text{setup slack} = \text{capture\_edge} - \text{launch\_edge} - \text{clock\_skew} - \text{clock\_uncertainty} - \text{datapath\_delay} - \text{FF\_setup\_time} \tag{1}$$
+$$\text{setup slack} = \text{capture_edge} - \text{launch_edge} - \text{clock_skew} - \text{clock_uncertainty} - \text{datapath_delay} - \text{FF_setup_time} \tag{1}$$
 
 `set_max_delay -datapath_only X` throws all of that out and replaces it with one check: is the combinational path delay shorter than X? Nothing else is used i.e. `clock_skew`, `clock_uncertainity` etc.
 
