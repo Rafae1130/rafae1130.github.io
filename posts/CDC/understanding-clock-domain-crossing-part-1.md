@@ -21,6 +21,7 @@ A primary clock is a system-level clock that enters the Vivado design through an
 A virtual clock is a clock object that is not physically attached to any netlist elements in the design. For example, if a signal is coming on an input port through an external clock but this clock is not entering the FPGA, then to perform timing analysis we need a way to define this signal's clock frequency. We use virtual clocks for this.
 
 ![][image1]
+
 **Figure 1: Virtual clock — `clk_ext` drives the external peripheral but does not enter the FPGA. A virtual clock is defined to represent it for timing analysis on the input path.**
 
 ### **2.3 Generated Clocks**
@@ -44,11 +45,13 @@ This is the core problem in CDC. When a signal crosses from one clock domain to 
 If the source and destination clocks are both primary clocks, Vivado has no way to know their phase relationship if the clocks are derived from different sources. Specifically, how the positive edges of these two clocks align relative to each other. Because of this, timing analysis can pass while the design still fails in hardware. This is why proper CDC techniques are necessary when asynchronous clocks are used.
 
 ![][image2]
+
 **Figure 2: A CDC crossing — the source register runs on `clk1`, the destination register on `clk2`. The two clocks are independent.**
 
 For example, the phase relationship between two asynchronous clocks can look like any of these:
 
 ![][image3]
+
 **Figure 3: Possible phase relationships between two asynchronous clocks — Vivado cannot determine which one applies at runtime.**
 
 Vivado can't determine these relations from static analysis. When it times these paths, it picks an edge alignment based on what it can infer — but since the clocks are truly asynchronous, the actual phase relationship shifts continuously at runtime. A clean timing report on these paths doesn't mean much. Timing can still fail in hardware even with no violations reported.
@@ -70,7 +73,8 @@ So the solution is not better timing constraints. It is synchronizer circuits. A
 # **7\. The Clock Interaction Report**
 
 ![][image4]
-**Figure 4: Vivado clock interaction report — each tile shows the timing relationship between a source and destination clock pair.**
+
+**Figure 4: Vivado clock interaction report — each tile shows the timing relationship between a source and destination clock pair. Source: Vivado Design Suite User Guide: Design Analysis and Closure Techniques (UG90)**
 
 ### **7.1 Color Meanings**
 
@@ -137,6 +141,7 @@ The reason path delay still matters for CDC is that assume you have a 16-bit bus
 `set_false_path` removes all delay constraints. The router can make your 16-bit bus bits take 0.5 ns to 15 ns and Vivado will not flag it. `set_max_delay -datapath_only` is the middle ground which basically says I have handled the CDC myself, but still make sure all bits arrive within a bounded window.
 
 ![][image5]
+
 **Figure 5: Multi-bit skew — bits with different combinational path delays get captured in different clock cycles, resulting in corrupted data.**
 
 **When to use which:**
