@@ -74,7 +74,7 @@ So the solution is not better timing constraints. It is synchronizer circuits. A
 
 ![][image4]
 
-**Figure 4: Vivado clock interaction report — each tile shows the timing relationship between a source and destination clock pair. Source: Vivado Design Suite User Guide: Design Analysis and Closure Techniques (UG90)**
+**Figure 4: Vivado clock interaction report — each tile shows the timing relationship between a source and destination clock pair. Source: Vivado Design Suite User Guide: Design Analysis and Closure Techniques (UG906)**
 
 ### **7.1 Color Meanings**
 
