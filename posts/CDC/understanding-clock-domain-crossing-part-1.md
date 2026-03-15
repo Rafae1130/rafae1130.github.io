@@ -104,8 +104,7 @@ Example: You have a FIFO crossing from `clk_100` to `clk_200`, both generated fr
 
 **Light Blue: Partial False Path**
 
-Some paths between the source clock to the destination clock are ignored due to the constraints and properly managed CDC, but not all.
-
+Some paths between the synchronous source and destination clocks are ignored using constraints (like set_false_path), but not all paths. Vivado will still time the remaining unconstrained paths. This indicates that CDC has been partially managed, and you need to ensure the unconstrained paths are also handled correctly.
 Example: Same setup as dark blue, but you only constrained 6 of the 10 crossing paths and missed the rest. It shows light blue instead.
 
 ---
@@ -120,8 +119,7 @@ Example: `clk_sys` comes from a crystal oscillator on one input pin, `clk_eth` c
 
 **Orange: Partial False Path (Unsafe)**
 
-Similar to Timed (Unsafe), but at least one crossing path is ignored by a constraint exception.
-
+This means the clocks are asynchronous, and some paths between them are ignored using constraints, while others are still being timed.
 Example: Same as the red scenario, but you applied `set_false_path` to some of the crossing paths. The tile goes orange — those specific paths are excluded from timing, but the situation is still fundamentally unsafe.
 
 ---
