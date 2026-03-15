@@ -1,12 +1,6 @@
 # Clock Domain Crossing
 
-> **Series:** Clock Domain Crossing (CDC)
->
-> | Part | Topic |
-> |------|-------|
-> | **Part 1 (this post)** | **Clock Types, Metastability & the Clock Interaction Report** |
 
----
 
 # **1\. Introduction**
 
