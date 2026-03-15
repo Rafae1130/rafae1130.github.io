@@ -114,7 +114,7 @@ Example: Same setup as dark blue, but you only constrained 6 of the 10 crossing 
 
 **Red: Timed (Unsafe)**
 
-The clocks are asynchronous (they do not share a common primary clock) but Vivado is still trying to time the paths. An unexpandable period means the two clock periods have no common integer multiple within a reasonable analysis window. Any CDC path between these clocks is unsafe regardless of what the timing report says.
+The clocks are asynchronous (they do not share a common primary clock) but Vivado is still trying to time the paths. An unexpandable period means that Vivado can't find common integer multiple of periods of the two clock within its analysis window. Any CDC path between these clocks is unsafe regardless of what the timing report says.
 
 Example: `clk_sys` comes from a crystal oscillator on one input pin, `clk_eth` comes from an Ethernet PHY. No shared ancestry. Any path between them is red.
 
@@ -136,7 +136,7 @@ To understand why this constraint exists, we start with normal setup timing:
 
 $$\text{setup slack} = \text{capture\_edge} - \text{launch\_edge} - \text{clock\_skew} - \text{clock\_uncertainty} - \text{datapath\_delay} - \text{FF\_setup\_time} \tag{1}$$
 
-`set_max_delay -datapath_only X` throws all of that out and replaces it with one check: is the combinational path delay shorter than X? Nothing else is used i.e. `clock_skew`, `clock_uncertainity`, `datapath_delay` etc.
+`set_max_delay -datapath_only X` throws all of that out and replaces it with one check: is the combinational path delay shorter than X? Nothing else is used i.e. `clock_skew`, `clock_uncertainity` etc.
 
 The reason path delay still matters for CDC is that assume you have a 16-bit bus crossing from `clk_a` to `clk_b` with a handshake. Bit 0 takes 1 ns through the combinational logic, bit 15 takes 7 ns. Destination clock period is 5 ns. When `clk_b` edge arrives, bit 0 is stable but bit 15 is still in transit. `clk_b` captures bit 0 from the new value and bit 15 from the old value which would result in corrupted data.
 
@@ -189,7 +189,7 @@ Example: `clk_sys` and `clk_eth` — two independent primary clocks with no shar
 
 The clock periods cannot be reduced to a common integer ratio, so Vivado can't find a reliable launch/capture edge pair.
 
-To time paths between two clocks, Vivado needs a common time window — the LCM of both periods. 10 ns and 5 ns gives an LCM of 10 ns, fine. But 7.3 ns and 10.17 ns have no clean ratio. Finding aligned edges would take thousands of cycles. Vivado has an expansion limit and gives up.
+To time paths between two clocks, Vivado needs to know how many cycles of clock A fit into how many cycles of clock B. Vivado tries to find the timing window (the LCM) and enumerate which launch/capture edge pairs to analyze. 10 ns and 5 ns gives an LCM of 10 ns, fine. But 7.3 ns and 10.17 ns have no clean ratio. Finding aligned edges would take thousands of cycles. Vivado has an expansion limit and gives up.
 
 Example: A 7.3 ns and 10.17 ns clock has no clean integer relationship, so Vivado can't find aligned edges within a usable analysis window.
 
@@ -199,11 +199,12 @@ Example: A 7.3 ns and 10.17 ns clock has no clean integer relationship, so Vivad
 
 The two clocks are synchronous, but the crossing paths do not have a common node.
 
-When Vivado times paths between two synchronous clocks, it looks for the physical point in the netlist where their clock paths diverge — the common node. It measures the routing delay from that node to each destination FF, subtracts them, and gets the real skew. Without a common node there is no anchor for that calculation. The clocks may be related on paper, but Vivado cannot establish the timing from the actual routed netlist.
+When Vivado times paths between two synchronous clocks, it looks for the physical point in the netlist where their clock paths diverge i.e. the common node. Vivado measures the routing delay from that node to each destination FF, subtracts them, and gets the real skew. Without a common node there is no anchor for that calculation. The clocks may be related on paper, but Vivado cannot establish the timing from the actual routed netlist.
 
-Example: Two generated clocks both derived from `clk_sys` but routed through different BUFG instances. Same primary clock, but the paths diverge before any common node Vivado can use for timing.
+Example: Two generated clocks both derived from `clk_sys` but routed through different BUFG/MMCM instances. The primary clock is same, but the paths diverge before any common node Vivado can use for timing.
 
 ![][image6]
+
 **Figure 6: `sys_clk` fans out to two separate BUFG instances. There is no common node between `clk_out1` and `clk_out2` in the FPGA clock network — Vivado cannot anchor the skew calculation.**
 
 Here there is no common node in the clock network tree internal to the FPGA. Hence, the path between `clk_out1` and `clk_out2` will be flagged as No Common Node.
@@ -224,9 +225,9 @@ Example: Two clocks both derived from the same MMCM, but one CDC path routes thr
 
 The clocks lack a known phase relationship.
 
-Period and phase are separate things. Period is the frequency ratio — it lets Vivado find the timing window. Phase is the absolute alignment of edges within that window. You need both. Two clocks can have a perfectly expandable period ratio but an unknown phase offset if the constraints don't capture it. This happens when clocks go through a mux where the active path depends on a config bit, or when a phase shift in the MMCM isn't reflected in the `create_generated_clock` constraint. Vivado knows the rate but not when the edges actually fire relative to each other.
+Period and phase are separate things. Period is the frequency ratio i.e. in common period it tries the find integer multiple relation between the two clock's period. Phase is the absolute alignment of edges of those clocks. i.e. where clock edge occur relative to the other clocks edge. You need both. Two clocks can have a perfectly expandable period ratio but an unknown phase offset if the constraints don't capture it. This happens when clocks go through a mux where the active path depends on a config bit, or when a phase shift in the MMCM isn't reflected in the `create_generated_clock` constraint. Vivado knows the rate but not when the edges actually fire relative to each other.
 
-Example: Two different primary 100 MHz clocks, Vivado knows the frequency from constraints but cannot determine the phase relationship.
+Example: Two different primary 100 MHz clocks, Vivado knows the frequency from constraints but cannot determine the phase relationship because the clocks are external.
 
 ---
 
@@ -240,8 +241,12 @@ Example: Two generated clocks from the same MMCM — say 100 MHz and 200 MHz. Vi
 
 For more information, check out Vivado design suite userguide 906.
 
-This clock interaction report is the first step in CDC analysis in analyzing the different clock present in the design and their relations with each other.
 
+# **8\. Conclusion**
+
+Static timing analysis is not reliable for paths between asynchronous clocks. The phase relationship between async clocks shifts continuously at runtime, so a passing timing report on these paths carries no guarantee and the design can still fail in hardware. Proper CDC techniques must be used to handle these crossings, whether that's synchronizers for single-bit signals, handshake protocols, or FIFOs for multi-bit data.
+
+The clock interaction report is the right starting point for any CDC analysis. Before looking at individual paths, use it to understand which clock pairs in your design are asynchronous, which are already constrained, and which are being timed unsafely. Any red tile in that matrix is a crossing that needs to be handled.
 ---
 
 [image1]: images/image1-p1.png
