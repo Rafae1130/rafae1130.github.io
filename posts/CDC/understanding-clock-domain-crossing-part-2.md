@@ -1,7 +1,6 @@
 # The report_cdc Report
 
-> **Series:** Clock Domain Crossing (CDC)
->
+
 
 ---
 
@@ -157,7 +156,8 @@ The Critical Warning entries from No Synchronizer are the highest priority. Warn
 
 Together with the clock interaction report, `report_cdc` gives a complete picture of all clock domain crossings in the design before a single simulation or hardware test is run. Any unresolved Critical Warning in this report is a potential source of intermittent failures in hardware that will not reproduce in simulation.
 
-
+> **Series:** Clock Domain Crossing (CDC)
+>
 > | Part | Topic |
 > |------|-------|
 > | [Part 1](https://rafae1130.github.io/posts/cdc/understanding-clock-domain-crossing-part-1.html) | Clock Types, Metastability & the Clock Interaction Report |
