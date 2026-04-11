@@ -50,11 +50,11 @@ The purpose of this table is to quickly orient you before diving into individual
 
 The severity column follows three levels:
 
-**Critical Warning** — A signal crosses a clock domain boundary with no recognized synchronization structure, or with a structure that is known to be unreliable. These are the crossings most likely to cause hardware failures. Every Critical Warning needs to be resolved, either by adding proper synchronization or by applying an appropriate constraint after confirming the path is already safe.
+**Critical Warning**:  A signal crosses a clock domain boundary with no recognized synchronization structure, or with a structure that is known to be unreliable. These are the crossings most likely to cause hardware failures. Every Critical Warning needs to be resolved, either by adding proper synchronization or by applying an appropriate constraint after confirming the path is already safe.
 
-**Warning** — A synchronization structure was detected, but something about it is suspicious. Most commonly this is a multi-bit bus where each bit has its own synchronizer but there is no mechanism to ensure all bits are captured in the same clock cycle. The synchronizers themselves are fine, but the multi-bit data can still be corrupted.
+**Warning**: A synchronization structure was detected, but something about it is suspicious. Most commonly this is a multi-bit bus where each bit has its own synchronizer but there is no mechanism to ensure all bits are captured in the same clock cycle. The synchronizers themselves are fine, but the multi-bit data can still be corrupted.
 
-**Info** — The crossing has a recognized synchronization structure and Vivado is satisfied it is handled correctly. Info entries do not require action, but it is worth reviewing them occasionally to make sure the synchronizer is where you actually think it is.
+**Info**: The crossing has a recognized synchronization structure and Vivado is satisfied it is handled correctly. Info entries do not require action, but it is worth reviewing them occasionally to make sure the synchronizer is where you actually think it is.
 
 # **5\. The Details Table**
 
@@ -102,21 +102,21 @@ The Exception column tells you whether a constraint has been applied but not whe
 
 The CDC Type column tells you what Vivado found at each crossing. The types and their severities are:
 
-**No Synchronizer** — Critical Warning. A signal crosses directly from one clock domain to another with no synchronization structure present.
+**No Synchronizer**: Critical Warning. A signal crosses directly from one clock domain to another with no synchronization structure present.
 
-**Single Bit Synchronizer** — Info. A properly recognized 2-FF chain clocked by the destination clock. This is the correct structure for a single-bit crossing.
+**Single Bit Synchronizer**: Info. A properly recognized 2-FF chain clocked by the destination clock. This is the correct structure for a single-bit crossing.
 
-**Multi-Bit Synchronizer** — Warning. Each bit of a bus has its own synchronizer, but there is no guarantee all bits resolve in the same clock cycle. Can corrupt multi-bit data.
+**Multi-Bit Synchronizer**: Warning. Each bit of a bus has its own synchronizer, but there is no guarantee all bits resolve in the same clock cycle. Can corrupt multi-bit data.
 
-**Multi-Stage Synchronizer** — Info. A synchronizer with more than two flip-flops in the chain. Not a problem — shows as Info.
+**Multi-Stage Synchronizer**: Info. A synchronizer with more than two flip-flops in the chain. Not a problem — shows as Info.
 
-**Combinatorial** — Warning. Combinatorial logic sits between the source flip-flop and the first synchronizer stage, introducing glitch risk before the synchronizer captures the signal.
+**Combinatorial**: Warning. Combinatorial logic sits between the source flip-flop and the first synchronizer stage, introducing glitch risk before the synchronizer captures the signal.
 
-**Shift Register** — Warning. The synchronizer chain was inferred as an SRL primitive instead of individual flip-flops. SRL timing properties do not meet the MTBF assumptions of a flip-flop synchronizer. Fixed with the `(* ASYNC_REG = "TRUE" *)` attribute.
+**Shift Register**: Warning. The synchronizer chain was inferred as an SRL primitive instead of individual flip-flops. SRL timing properties do not meet the MTBF assumptions of a flip-flop synchronizer. Fixed with the `(* ASYNC_REG = "TRUE" *)` attribute.
 
-**Fan-out** — Warning. A single CDC source drives a large number of destinations, creating routing skew that may cause different registers to capture the value in different cycles.
+**Fan-out**: Warning. A single CDC source drives a large number of destinations, creating routing skew that may cause different registers to capture the value in different cycles.
 
-Each of these types — what circuits trigger them, why they are a problem, and how to fix them — is covered in depth in Part 3.
+Each of these types will be covered in future blogs in the series.
 
 # **7\. Acting on the Report**
 
@@ -146,11 +146,11 @@ create_waiver -type CDC -id {CDC-1} -from [get_cells src_reg] -to [get_cells dst
 
 **Figure 10: Waiver entry in the report — waived crossings are excluded from the active CDC count and annotated in the output.**
 
-Waivers are stored in the project and persist across report runs. They are not timing constraints — they do not affect analysis, only the reporting. Use them deliberately and document the reason in the `-description` field. A waiver with an empty or vague description is not useful if someone later needs to understand why that crossing was signed off.
+Waivers are stored in the project and persist across report runs. They are not timing constraints i.e. they do not affect analysis, only the reporting. Use them deliberately and document the reason in the `-description` field. A waiver with an empty or vague description is not useful if someone later needs to understand why that crossing was signed off.
 
 # **9\. Conclusion**
 
-The clock interaction report from Part 1 identifies which clock pairs have crossings and what their relationship is. `report_cdc` goes further and identifies exactly what is crossing, what structure — if any — is handling it, and where the problem is in the design hierarchy.
+The clock interaction report from Part 1 identifies which clock pairs have crossings and what their relationship is. `report_cdc` goes further and identifies exactly what is crossing, what structure is handling it, and where the problem is in the design hierarchy.
 
 The Critical Warning entries from No Synchronizer are the highest priority. Warnings from Multi-Bit Synchronizer require understanding whether the data crossing needs coherency. Combinatorial and Shift Register entries require fixing the synchronizer implementation even when the synchronizer itself is present. Info entries confirm that Vivado recognizes the synchronization correctly.
 
