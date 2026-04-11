@@ -2,10 +2,6 @@
 
 > **Series:** Clock Domain Crossing (CDC)
 >
-> | Part | Topic |
-> |------|-------|
-> | [Part 1](https://rafae1130.github.io/posts/cdc/understanding-clock-domain-crossing-part-1.html) | Clock Types, Metastability & the Clock Interaction Report |
-> | **Part 2 (this post)** | **The report\_cdc Report** |
 
 ---
 
@@ -28,6 +24,7 @@ report_cdc -file cdc_report.txt
 From the GUI, go to **Reports → Report CDC**. This opens the dialog shown below.
 
 ![][image1]
+
 **Figure 1: Report CDC dialog**
 
 The `-file` option writes the report to a file. Without it, the report appears only in the Vivado console. Running it after implementation gives more accurate results since routing delays are known, but running it after synthesis is also valid and is the more common point in the flow.
@@ -37,6 +34,7 @@ The `-file` option writes the report to a file. Without it, the report appears o
 The report has two main sections: a **Summary** and a **Details** table.
 
 ![][image2]
+
 **Figure 2: Full report\_cdc output**
 
 The Summary gives you an aggregate view: how many crossings of each type exist and at what severity. The Details table lists every individual crossing with its source, destination, type, and any timing constraints that have been applied.
@@ -44,6 +42,7 @@ The Summary gives you an aggregate view: how many crossings of each type exist a
 # **4\. The Summary Section**
 
 ![][image3]
+
 **Figure 3: Summary section of report\_cdc**
 
 The Summary groups all detected CDC crossings by **CDC type** and **severity**. Each row is one category of crossing. The columns show the count of crossings in that category.
@@ -61,6 +60,7 @@ The severity column follows three levels:
 # **5\. The Details Table**
 
 ![][image4]
+
 **Figure 4: Details table**
 
 Each row in the Details table represents a single crossing from one flip-flop to another. The columns are:
@@ -144,6 +144,7 @@ create_waiver -type CDC -id {CDC-1} -from [get_cells src_reg] -to [get_cells dst
 ```
 
 ![][image10]
+
 **Figure 10: Waiver entry in the report — waived crossings are excluded from the active CDC count and annotated in the output.**
 
 Waivers are stored in the project and persist across report runs. They are not timing constraints — they do not affect analysis, only the reporting. Use them deliberately and document the reason in the `-description` field. A waiver with an empty or vague description is not useful if someone later needs to understand why that crossing was signed off.
@@ -155,6 +156,12 @@ The clock interaction report from Part 1 identifies which clock pairs have cross
 The Critical Warning entries from No Synchronizer are the highest priority. Warnings from Multi-Bit Synchronizer require understanding whether the data crossing needs coherency. Combinatorial and Shift Register entries require fixing the synchronizer implementation even when the synchronizer itself is present. Info entries confirm that Vivado recognizes the synchronization correctly.
 
 Together with the clock interaction report, `report_cdc` gives a complete picture of all clock domain crossings in the design before a single simulation or hardware test is run. Any unresolved Critical Warning in this report is a potential source of intermittent failures in hardware that will not reproduce in simulation.
+
+
+> | Part | Topic |
+> |------|-------|
+> | [Part 1](https://rafae1130.github.io/posts/cdc/understanding-clock-domain-crossing-part-1.html) | Clock Types, Metastability & the Clock Interaction Report |
+> | **Part 2 (this post)** | **The report\_cdc Report** |
 
 ---
 
