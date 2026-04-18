@@ -31,7 +31,7 @@ FF1 will go metastable sometimes. When the source signal transitions near the de
 
 **Figure 1: Double flip-flop synchronizer**
 
-The benefit over XPMs: it's portable. A 2-FF chain works the same on Xilinx, Intel, Lattice, or anything else. The downside is that theres's no abstraction and an increases chance of an error or unoptimzed design.
+The benefit over XPMs: it's portable. A 2-FF chain works the same on Xilinx, Intel, Lattice, or anything else. The downside is that there's no abstraction and an increased chance of an error or unoptimized design.
 
 ### **3.1 ASYNC\_REG Attribute**
 
@@ -73,7 +73,7 @@ This is the second option for CDC i.e. using XPMs. Before picking a primitive, t
 
 # **5\. XPM\_CDC\_SYNC\_RST**
 
-This is used to synchorize a reset to a different clock domain. The assertion is synchronous to the destination clock. Both edges go through the synchronizer FF chain. `INIT` is present here because the entire path travels through the FFs meaning it will the input will take cycles equal to FFs in the XPM. `INIT` defines if the the output is 0 or 1 before input reaches the output.
+Used to synchronize a reset to a different clock domain. Both assertion and deassertion are synchronous to the destination clock — both edges travel through the synchronizer FF chain. `INIT` is present because the FFs are in the path at power-on: `INIT=1` means the design starts in reset, `INIT=0` means it doesn't.
 
 ![][image4]
 
@@ -104,11 +104,11 @@ xpm_cdc_sync_rst_inst (
 
 `DEST_SYNC_FF` sets the number of metastability protection registers in the synchronizer chain. Higher values improve MTBF at the cost of latency and a few extra FFs. The right process for picking a value:
 
-- **Step 1:** Run the design throh the full Vivado implementation flow.
+- **Step 1:** Run the design through the full Vivado implementation flow.
 
 - **7-series devices:** Use the default `DEST_SYNC_FF` value. It's conservative and meets typical reliability requirements. For critical designs, do a proper MTBF analysis.
 
-- **UltraScale/UltraScale+:** Run `report_synchronizer_mtbf` after implementation and iterate. Increase `DEST_SYNC_FF` if MTBF is too low, decrease it if you want to reduce latency or area. Figure 88 in 949 shows the full flow.
+- **UltraScale/UltraScale+:** Run `report_synchronizer_mtbf` after implementation and iterate. Increase `DEST_SYNC_FF` if MTBF is too low, decrease it if you want to reduce latency or area. Figure 88 in UG949 shows the full flow.
 
 The same process applies to manual CDC circuits where `ASYNC_REG` is correctly applied to all synchronization registers. It's not XPM-only.
 
@@ -161,7 +161,7 @@ This is the XPM equivalent of the manual 2-FF synchronizer. It handles a single-
 
 - **`SRC_INPUT_REG`:** Enable this when the input is driven by combinational logic rather than a registered output in the source clock domain. It adds a register on the input clocked by `src_clk`, so the signal is stable for at least one full source clock period before entering the synchronizer chain. This prevents combinational glitches from entering the first sync FF. `src_clk` only needs to be connected when this parameter is enabled.
 
-Why not use this for resets? `XPM_CDC_SINGLE` treats both edges the same — assertion and deassertion both travel through the synchronizer pipeline and are delayed by `DEST_SYNC_FF` cycles. For a reset, that's a problem. You either need immediate assertion (async reset) or you need both edges handled synchronously (sync reset). `XPM_CDC_SINGLE` gives you same behaviour as 'XPM_CDC_SYNC_RST', but `XPM_CDC_SYNC_RST` is the better choice for a sync reset because it includes the `INIT` parameter, which sets the power-on state of the synchronizer chain before the reset signal propagates through it.
+Why not use this for resets? `XPM_CDC_SINGLE` treats both edges the same — assertion and deassertion both travel through the synchronizer pipeline and are delayed by `DEST_SYNC_FF` cycles. For a reset, that's a problem. You either need immediate assertion (async reset) or you need both edges handled synchronously (sync reset). `XPM_CDC_SINGLE` gives you the same behavior as `XPM_CDC_SYNC_RST`, but `XPM_CDC_SYNC_RST` is the better choice for a sync reset because it includes the `INIT` parameter, which sets the power-on state of the synchronizer chain before the reset signal propagates through it.
 
 ```verilog
 // xpm_cdc_single: Single-bit Synchronizer
