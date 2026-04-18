@@ -73,7 +73,7 @@ This is the second option for CDC i.e. using XPMs. Before picking a primitive, t
 
 # **5\. XPM\_CDC\_SYNC\_RST**
 
-Used to synchronize a reset to a different clock domain. Both assertion and deassertion are synchronous to the destination clock. `INIT` parameters sets the output of XPM at power-on i.e. before the input reaches the output through FF chain: `INIT=1` means the design starts in reset i.e. output will be 1, `INIT=0` mean output will be 0.
+Used to synchronize a reset to a different clock domain. Both assertion and deassertion are synchronous to the destination clock. `INIT` parameters sets the output of XPM at power-on i.e. before the input reaches the output through FF chain: `INIT=1` means the design starts with flipflops initialized to 1, i.e. output will be 1, `INIT=0` mean output will be 0.
 
 ![][image4]
 
