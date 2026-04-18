@@ -73,7 +73,7 @@ This is the second option for CDC i.e. using XPMs. Before picking a primitive, t
 
 # **5\. XPM\_CDC\_SYNC\_RST**
 
-Used to synchronize a reset to a different clock domain. Both assertion and deassertion are synchronous to the destination clock — both edges travel through the synchronizer FF chain. `INIT` is present because the FFs are in the path at power-on: `INIT=1` means the design starts in reset, `INIT=0` means it doesn't.
+Used to synchronize a reset to a different clock domain. Both assertion and deassertion are synchronous to the destination clock. `INIT` parameters sets the output of XPM at power-on i.e. before the input reaches the output through FF chain: `INIT=1` means the design starts in reset i.e. output will be 1, `INIT=0` mean output will be 0.
 
 ![][image4]
 
@@ -155,12 +155,13 @@ xpm_cdc_async_rst_inst (
 
 This is the XPM equivalent of the manual 2-FF synchronizer. It handles a single-bit level signal crossing from one clock domain to another. Functionally it's the same circuit, but with the XPM benefits e.g. `ASYNC_REG` handled automatically, recognized by `report_cdc` and `report_synchronizer_mtbf`, and `DEST_SYNC_FF` for tuning the number of sync stages.
 
-![][image5]
 
-**Figure 5: `XPM_CDC_SINGLE`.**
 
 - **`SRC_INPUT_REG`:** Enable this when the input is driven by combinational logic rather than a registered output in the source clock domain. It adds a register on the input clocked by `src_clk`, so the signal is stable for at least one full source clock period before entering the synchronizer chain. This prevents combinational glitches from entering the first sync FF. `src_clk` only needs to be connected when this parameter is enabled.
+- 
+![][image5]
 
+**Figure 5: `Proper CDC after combinational logic`.**
 Why not use this for resets? `XPM_CDC_SINGLE` treats both edges the same — assertion and deassertion both travel through the synchronizer pipeline and are delayed by `DEST_SYNC_FF` cycles. For a reset, that's a problem. You either need immediate assertion (async reset) or you need both edges handled synchronously (sync reset). `XPM_CDC_SINGLE` gives you the same behavior as `XPM_CDC_SYNC_RST`, but `XPM_CDC_SYNC_RST` is the better choice for a sync reset because it includes the `INIT` parameter, which sets the power-on state of the synchronizer chain before the reset signal propagates through it.
 
 ```verilog
