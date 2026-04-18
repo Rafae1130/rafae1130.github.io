@@ -31,7 +31,7 @@ FF1 will go metastable sometimes. When the source signal transitions near the de
 
 **Figure 1: Double flip-flop synchronizer**
 
-The benefit over XPMs: it's portable. A 2-FF chain works the same on Xilinx, Intel, Lattice, or anything else. The downside is that you own all the details.
+The benefit over XPMs: it's portable. A 2-FF chain works the same on Xilinx, Intel, Lattice, or anything else. The downside is that theres's no abstraction and an increases chance of an error or unoptimzed design.
 
 ### **3.1 ASYNC\_REG Attribute**
 
