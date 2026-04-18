@@ -162,6 +162,7 @@ Together with the clock interaction report, `report_cdc` gives a complete pictur
 > |------|-------|
 > | [Part 1](https://rafae1130.github.io/posts/cdc/understanding-clock-domain-crossing-part-1.html) | Clock Types, Metastability & the Clock Interaction Report |
 > | **Part 2 (this post)** | **The report\_cdc Report** |
+> | [Part 3](https://rafae1130.github.io/posts/cdc/understanding-clock-domain-crossing-part-3.html) | Single-Bit CDC Synchronizers |
 
 ---
 
