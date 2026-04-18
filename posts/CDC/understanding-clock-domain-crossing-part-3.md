@@ -97,7 +97,7 @@ xpm_cdc_sync_rst_inst (
 
 // End of xpm_cdc_sync_rst_inst instantiation
 ```
-# **5\. XPM\_CDC\_ASYNC\_RST**
+# **6\. XPM\_CDC\_ASYNC\_RST**
 
 An asynchronous reset needs to assert immediately — you don't want the design sitting in an unknown state while the reset propagates through a synchronizer pipeline. But deassertion (reset removal) needs to be synchronized to the destination clock. If reset deasserts asynchronously, different parts of the design may come out of reset on different clock cycles and that causes corruption.
 
@@ -110,7 +110,7 @@ An asynchronous reset needs to assert immediately — you don't want the design 
 ![][image3]
 
 
-**Figure 3: `XPM_CDC_ASYNC_RST`, assertion is immediate [A], deassertion is synchronized through `DEST_SYNC_FF` stages [B].**
+**Figure 4: `XPM_CDC_ASYNC_RST`, assertion is immediate [A], deassertion is synchronized through `DEST_SYNC_FF` stages [B].**
 
 Why is `INIT` not present here? In `XPM_CDC_SYNC_RST`, both assertion and deassertion go through the synchronizer FFs, so their power-on state determines whether the design starts in reset — `INIT` controls that. In `XPM_CDC_ASYNC_RST`, assertion bypasses the FFs entirely. The output is driven directly by the input, so at power-on, if the reset is asserted, the output is already asserted regardless of what state the FFs are in. `INIT` would have nothing to do on the assertion side, and by the time deassertion happens the FFs are already overridden by the active reset input.
 
