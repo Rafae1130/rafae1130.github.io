@@ -14,7 +14,7 @@ For single-bit CDC there are two options: a manual double flip-flop synchronizer
 
 Before covering the primitives, it helps to understand why they exist. A manual 2-FF synchronizer does the same job for handling single-bit CDC, but you have to handle everything yourself. XPMs give you three things that a manual synchronizer does not get by default:
 
-- **MTBF optimization:** when `place_design` sees the CDC XPM, it knows to place the flip-flop stages in nearby slices to improve the CDC and reduce MTBF. A manual FF chain doesn't get this unless `ASYNC_REG` is applied correctly — without it, Vivado won't know that these flip-flops are for CDC and won't optimize the placement accordingly.
+- **MTBF optimization:** when `place_design` sees the CDC XPM, it knows to place the flip-flop stages in nearby slices to improve the CDC and reduce MTBF. A manual FF chain doesn't get this unless `ASYNC_REG` is applied correctly, without it, Vivado won't know that these flip-flops are for CDC and won't optimize the placement accordingly.
 
 - **Clean `report_cdc`:** XPMs don't show up as violations in `report_cdc`. With a manual synchronizer, getting the report clean requires `ASYNC_REG` and the right timing constraints.
 
