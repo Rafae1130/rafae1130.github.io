@@ -12,7 +12,7 @@ For single-bit CDC there are two options: a manual double flip-flop synchronizer
 
 # **2\. Why Use XPM Primitives?**
 
-Before covering the primitives, it helps to understand why they exist. A manual 2-FF synchronizer does the same job for handling single-bit CDC, but you have to handle everything yourself. XPMs give you three things that a manual synchronizer does not get by default (UG949, p.141):
+Before covering the primitives, it helps to understand why they exist. A manual 2-FF synchronizer does the same job for handling single-bit CDC, but you have to handle everything yourself. XPMs give you three things that a manual synchronizer does not get by default:
 
 - **MTBF optimization:** when `place_design` sees the CDC XPM, it knows to place the flip-flop stages in nearby slices to improve the CDC and reduce MTBF. A manual FF chain doesn't get this unless `ASYNC_REG` is applied correctly — without it, Vivado won't know that these flip-flops are for CDC and won't optimize the placement accordingly.
 
@@ -21,16 +21,7 @@ Before covering the primitives, it helps to understand why they exist. A manual 
 - **Ease of handling and design abstractions:** these designs abstract the underlying CDC details, reducing development time and chances of errors.
 
 The rest of this post walks through each option.
-
-# **3\. The Single-Bit XPM CDC Decision Tree**
-
-Before picking a primitive, there are two questions: is it a reset signal, and if not, is it a pulse? Resets need different handling from data signals because assertion and deassertion have different timing requirements. A pulse needs different handling from a level signal. UG949 Figure 86 captures this:
-
-![][image1]
-
-**Figure 1: Single-bit CDC decision tree — two questions determine which primitive to use.**
-
-# **4\. Double Flip-Flop Synchronizer**
+# **3\. Double Flip-Flop Synchronizer**
 
 The manual option. Two flip-flops clocked by the destination clock. The source signal feeds FF1, FF1 feeds FF2, FF2's output is what you use downstream.
 
@@ -38,7 +29,17 @@ FF1 will go metastable sometimes. When the source signal transitions near the de
 
 ![][image2]
 
-**Figure 2: Double flip-flop synchronizer — `src_data` transitions asynchronously. FF1 captures it (possibly metastable), FF2 captures the resolved output one `dst_clk` cycle later.**
+**Figure 1: Double flip-flop synchronizer**
+
+# **4\. The Single-Bit XPM CDC Decision Tree**
+
+Before picking a primitive, there are two questions: is it a reset signal, and if not, is it a pulse? Resets need different handling from data signals because assertion and deassertion have different timing requirements. A pulse needs different handling from a level signal. UG949 Figure 86 captures this:
+
+![][image1]
+
+
+**Figure 2: Single-bit CDC decision tree**
+
 
 The benefit over XPMs: it's portable. A 2-FF chain works the same on Xilinx, Intel, Lattice, or anything else. The downside is that you own all the details.
 
@@ -65,6 +66,37 @@ Using `ASYNC_REG`:
 
 You still need to add `set_max_delay -datapath_only` on the CDC path manually. This tells Vivado to skip normal setup timing on it since the synchronizer handles the metastability, not the timing constraint.
 
+
+
+# **5\. XPM\_CDC\_SYNC\_RST**
+
+Same purpose as `XPM_CDC_ASYNC_RST` but assertion is also synchronous to the destination clock. Both edges go through the synchronizer FF chain. `INIT` is present here because the entire path travels through the FFs — `INIT` defines what state those FFs start in at power-on, which determines whether the design comes up in reset.
+
+![][image4]
+
+**Figure 3: `XPM_CDC_SYNC_RST`, both assertion [B] and deassertion [C] are synchronized to `dst_clk`, each delayed by `DEST_SYNC_FF` cycles.**
+
+```verilog
+// xpm_cdc_sync_rst: Synchronous Reset Synchronizer
+// Xilinx Parameterized Macro, version 2024.2
+
+xpm_cdc_sync_rst #(
+   .DEST_SYNC_FF(4),    // DECIMAL; range: 2-10
+   .INIT(1),            // DECIMAL; 0=initialize synchronization registers to 0,
+                        // 1=initialize synchronization registers to 1
+   .INIT_SYNC_FF(0),    // DECIMAL; 0=disable simulation init values, 1=enable simulation init values
+   .SIM_ASSERT_CHK(0)   // DECIMAL; 0=disable simulation messages, 1=enable simulation messages
+)
+xpm_cdc_sync_rst_inst (
+   .dest_rst(dest_rst), // 1-bit output: src_rst synchronized to the destination clock domain.
+                        // This output is registered.
+
+   .dest_clk(dest_clk), // 1-bit input: Destination clock.
+   .src_rst(src_rst)    // 1-bit input: Source reset signal.
+);
+
+// End of xpm_cdc_sync_rst_inst instantiation
+```
 # **5\. XPM\_CDC\_ASYNC\_RST**
 
 An asynchronous reset needs to assert immediately — you don't want the design sitting in an unknown state while the reset propagates through a synchronizer pipeline. But deassertion (reset removal) needs to be synchronized to the destination clock. If reset deasserts asynchronously, different parts of the design may come out of reset on different clock cycles and that causes corruption.
@@ -77,7 +109,8 @@ An asynchronous reset needs to assert immediately — you don't want the design 
 
 ![][image3]
 
-**Figure 3: `XPM_CDC_ASYNC_RST` — assertion is immediate [A], deassertion is synchronized through `DEST_SYNC_FF` stages [B].**
+
+**Figure 3: `XPM_CDC_ASYNC_RST`, assertion is immediate [A], deassertion is synchronized through `DEST_SYNC_FF` stages [B].**
 
 Why is `INIT` not present here? In `XPM_CDC_SYNC_RST`, both assertion and deassertion go through the synchronizer FFs, so their power-on state determines whether the design starts in reset — `INIT` controls that. In `XPM_CDC_ASYNC_RST`, assertion bypasses the FFs entirely. The output is driven directly by the input, so at power-on, if the reset is asserted, the output is already asserted regardless of what state the FFs are in. `INIT` would have nothing to do on the assertion side, and by the time deassertion happens the FFs are already overridden by the active reset input.
 
@@ -103,43 +136,13 @@ xpm_cdc_async_rst_inst (
 // End of xpm_cdc_async_rst_inst instantiation
 ```
 
-# **6\. XPM\_CDC\_SYNC\_RST**
-
-Same purpose as `XPM_CDC_ASYNC_RST` but assertion is also synchronous to the destination clock. Both edges go through the synchronizer FF chain. `INIT` is present here because the entire path travels through the FFs — `INIT` defines what state those FFs start in at power-on, which determines whether the design comes up in reset.
-
-![][image4]
-
-**Figure 4: `XPM_CDC_SYNC_RST` — both assertion [B] and deassertion [C] are synchronized to `dst_clk`, each delayed by `DEST_SYNC_FF` cycles.**
-
-```verilog
-// xpm_cdc_sync_rst: Synchronous Reset Synchronizer
-// Xilinx Parameterized Macro, version 2024.2
-
-xpm_cdc_sync_rst #(
-   .DEST_SYNC_FF(4),    // DECIMAL; range: 2-10
-   .INIT(1),            // DECIMAL; 0=initialize synchronization registers to 0,
-                        // 1=initialize synchronization registers to 1
-   .INIT_SYNC_FF(0),    // DECIMAL; 0=disable simulation init values, 1=enable simulation init values
-   .SIM_ASSERT_CHK(0)   // DECIMAL; 0=disable simulation messages, 1=enable simulation messages
-)
-xpm_cdc_sync_rst_inst (
-   .dest_rst(dest_rst), // 1-bit output: src_rst synchronized to the destination clock domain.
-                        // This output is registered.
-
-   .dest_clk(dest_clk), // 1-bit input: Destination clock.
-   .src_rst(src_rst)    // 1-bit input: Source reset signal.
-);
-
-// End of xpm_cdc_sync_rst_inst instantiation
-```
-
 # **7\. XPM\_CDC\_SINGLE**
 
 This is the XPM equivalent of the manual 2-FF synchronizer. It handles a single-bit level signal crossing from one clock domain to another. Functionally it's the same circuit, but with the XPM benefits — `ASYNC_REG` handled automatically, recognized by `report_cdc` and `report_synchronizer_mtbf`, and `DEST_SYNC_FF` for tuning the number of sync stages.
 
 ![][image5]
 
-**Figure 5: `XPM_CDC_SINGLE` block diagram — `DEST_SYNC_FF` flip-flop chain with optional `SRC_INPUT_REG` stage.**
+**Figure 5: `XPM_CDC_SINGLE`.**
 
 - **`SRC_INPUT_REG`:** Enable this when the input is driven by combinational logic rather than a registered output in the source clock domain. It adds a register on the input clocked by `src_clk`, so the signal is stable for at least one full source clock period before entering the synchronizer chain. This prevents combinational glitches from entering the first sync FF. `src_clk` only needs to be connected when this parameter is enabled.
 
@@ -181,7 +184,7 @@ The same process applies to manual CDC circuits where `ASYNC_REG` is correctly a
 
 ![][image6]
 
-**Figure 6: `XPM_CDC_SINGLE` — `src_data` transitions asynchronously; `dst_data` is stable after `DEST_SYNC_FF` cycles (2 shown here).**
+**Figure 6: `XPM_CDC_SINGLE`**
 
 # **8\. XPM\_CDC\_PULSE**
 
@@ -201,7 +204,7 @@ This is for the default `DEST_SYNC_FF = 2`. The toggle needs enough time to prop
 
 ![][image7]
 
-**Figure 7: `XPM_CDC_PULSE` — toggle-based pulse transfer. Each source pulse generates a one-cycle pulse in the destination domain after sync latency.**
+**Figure 7: `XPM_CDC_PULSE`. Each source pulse generates a one-cycle pulse in the destination domain after sync latency.**
 
 ```verilog
 // xpm_cdc_pulse: Pulse Transfer
