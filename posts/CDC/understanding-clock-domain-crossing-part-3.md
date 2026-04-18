@@ -31,19 +31,9 @@ FF1 will go metastable sometimes. When the source signal transitions near the de
 
 **Figure 1: Double flip-flop synchronizer**
 
-# **4\. The Single-Bit XPM CDC Decision Tree**
-
-Before picking a primitive, there are two questions: is it a reset signal, and if not, is it a pulse? Resets need different handling from data signals because assertion and deassertion have different timing requirements. A pulse needs different handling from a level signal. UG949 Figure 86 shows this:
-
-![][image1]
-
-
-**Figure 2: Single-bit CDC decision tree**
-
-
 The benefit over XPMs: it's portable. A 2-FF chain works the same on Xilinx, Intel, Lattice, or anything else. The downside is that you own all the details.
 
-### **4.1 ASYNC\_REG Attribute**
+### **3.1 ASYNC\_REG Attribute**
 
 `ASYNC_REG` must be applied to both synchronizer registers. Without it, Vivado treats them as ordinary registers and may optimize them in ways that break the synchronizer.
 
@@ -65,6 +55,19 @@ Using `ASYNC_REG`:
 - **Enables CDC recognition:** `report_cdc` identifies the path as a synchronized single-bit crossing instead of flagging it as No Synchronizer.
 
 You still need to add `set_max_delay -datapath_only` on the CDC path manually. This tells Vivado to skip normal setup timing on it since the synchronizer handles the metastability, not the timing constraint.
+
+
+
+
+# **4\. The Single-Bit XPM CDC Decision Tree**
+
+Before picking a primitive, there are two questions: is it a reset signal, and if not, is it a pulse? Resets need different handling from data signals because assertion and deassertion have different timing requirements. A pulse needs different handling from a level signal. UG949 Figure 86 shows this:
+
+![][image1]
+
+
+**Figure 2: Single-bit CDC decision tree**
+
 
 
 
