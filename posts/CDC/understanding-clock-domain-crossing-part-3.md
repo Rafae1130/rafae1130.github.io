@@ -33,7 +33,7 @@ FF1 will go metastable sometimes. When the source signal transitions near the de
 
 # **4\. The Single-Bit XPM CDC Decision Tree**
 
-Before picking a primitive, there are two questions: is it a reset signal, and if not, is it a pulse? Resets need different handling from data signals because assertion and deassertion have different timing requirements. A pulse needs different handling from a level signal. UG949 Figure 86 captures this:
+Before picking a primitive, there are two questions: is it a reset signal, and if not, is it a pulse? Resets need different handling from data signals because assertion and deassertion have different timing requirements. A pulse needs different handling from a level signal. UG949 Figure 86 shows this:
 
 ![][image1]
 
@@ -97,6 +97,18 @@ xpm_cdc_sync_rst_inst (
 
 // End of xpm_cdc_sync_rst_inst instantiation
 ```
+### **5.1 Selecting DEST\_SYNC\_FF**
+
+`DEST_SYNC_FF` sets the number of metastability protection registers in the synchronizer chain. Higher values improve MTBF at the cost of latency and a few extra FFs. The right process for picking a value:
+
+- **Step 1:** Run the design throh the full Vivado implementation flow.
+
+- **7-series devices:** Use the default `DEST_SYNC_FF` value. It's conservative and meets typical reliability requirements. For critical designs, do a proper MTBF analysis.
+
+- **UltraScale/UltraScale+:** Run `report_synchronizer_mtbf` after implementation and iterate. Increase `DEST_SYNC_FF` if MTBF is too low, decrease it if you want to reduce latency or area. Figure 88 in 949 shows the full flow.
+
+The same process applies to manual CDC circuits where `ASYNC_REG` is correctly applied to all synchronization registers. It's not XPM-only.
+
 # **6\. XPM\_CDC\_ASYNC\_RST**
 
 An asynchronous reset needs to assert immediately — you don't want the design sitting in an unknown state while the reset propagates through a synchronizer pipeline. But deassertion (reset removal) needs to be synchronized to the destination clock. If reset deasserts asynchronously, different parts of the design may come out of reset on different clock cycles and that causes corruption.
@@ -112,7 +124,7 @@ An asynchronous reset needs to assert immediately — you don't want the design 
 
 **Figure 4: `XPM_CDC_ASYNC_RST`, assertion is immediate [A], deassertion is synchronized through `DEST_SYNC_FF` stages [B].**
 
-Why is `INIT` not present here? In `XPM_CDC_SYNC_RST`, both assertion and deassertion go through the synchronizer FFs, so their power-on state determines whether the design starts in reset — `INIT` controls that. In `XPM_CDC_ASYNC_RST`, assertion bypasses the FFs entirely. The output is driven directly by the input, so at power-on, if the reset is asserted, the output is already asserted regardless of what state the FFs are in. `INIT` would have nothing to do on the assertion side, and by the time deassertion happens the FFs are already overridden by the active reset input.
+Why is `INIT` not present here? In `XPM_CDC_SYNC_RST`, both assertion and deassertion go through the synchronizer FFs, so their power-on state determines whether the design starts in reset i.e.`INIT` controls that. In `XPM_CDC_ASYNC_RST`, assertion bypasses the FFs entirely. The output is driven directly by the input, so at power-on, if the reset is asserted, the output is already asserted regardless of what state the FFs are in. `INIT` would have nothing to do on the assertion side, and by the time deassertion happens the FFs are already overridden by the active reset input.
 
 ```verilog
 // xpm_cdc_async_rst: Asynchronous Reset Synchronizer
@@ -170,17 +182,6 @@ xpm_cdc_single_inst (
 // End of xpm_cdc_single_inst instantiation
 ```
 
-### **7.1 Selecting DEST\_SYNC\_FF**
-
-`DEST_SYNC_FF` sets the number of metastability protection registers in the synchronizer chain. Higher values improve MTBF at the cost of latency and a few extra FFs. The right process for picking a value (UG949, p.144):
-
-- **Step 1:** Run the design through the full Vivado implementation flow.
-
-- **7-series devices:** Use the default `DEST_SYNC_FF` value. It's conservative and meets typical reliability requirements. For critical designs, do a proper MTBF analysis.
-
-- **UltraScale/UltraScale+:** Run `report_synchronizer_mtbf` after implementation and iterate. Increase `DEST_SYNC_FF` if MTBF is too low, decrease it if you want to reduce latency or area. Figure 88 in UG949 shows the full flow.
-
-The same process applies to manual CDC circuits where `ASYNC_REG` is correctly applied to all synchronization registers. It's not XPM-only.
 
 ![][image6]
 
