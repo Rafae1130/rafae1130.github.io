@@ -17,6 +17,10 @@ This site contains my notes and blogs on varioius FPGA tips, techniques and desi
 - [Understanding Clock Domain Crossing in Vivado: Part 1](posts/CDC/understanding-clock-domain-crossing-part-1.md)
 - [Understanding Clock Domain Crossing in Vivado: Part 2](posts/CDC/understanding-clock-domain-crossing-part-2.md)
 - [Understanding Clock Domain Crossing in Vivado: Part 3](posts/CDC/understanding-clock-domain-crossing-part-3.md)
+
+
+## On Request
+- [FPGA DSP Quantization Error Reduction](posts/on-request/fpga-dsp-quantization-error-reduction.md)
 <div style="text-align: right; margin-top: 50px;">
   <em>— Abdur Rafae Haqqani</em><br>
   <a href="mailto:rafae50@yahoo.com">rafae50@yahoo.com</a>
