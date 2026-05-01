@@ -1,4 +1,4 @@
-# FPGA DSP Quantization Error Reduction
+# FPGA Quantization Error Reduction
 
 # **1. Introduction**
 
@@ -25,7 +25,7 @@ Picture a ruler with only inch marks measuring a smooth curve. Every reading has
 A uniform quantizer does this digitally: input range split into equally spaced steps of size Δ, every input is snapped to the nearest one. The error per sample is bounded by ±Δ/2. That is all we can say with certainty.
 
 ![](images/figure1_quantization_staircase.png)
-**Figure 1:** A 4-bit quantizer. The red staircase is what comes out; the blue curve is what went in. The error panel below is bounded by ±Δ/2 but clearly tracks the input. It has structure, not randomness.
+**Figure 1:** 4-bit quantizer staircase and error.
 
 The ±Δ/2 bound only tells you how wrong any single reading can be. It says nothing about what the error does over time. Does it average to zero or drift? How loud is the total error compared to the signal? Where in the spectrum does it live? Those are the questions you need to answer to pick a word width, size filter headroom, or predict SFDR. ±Δ/2 alone gives none of them.
 
@@ -36,7 +36,7 @@ So we describe the error statistically instead. To do this, we make some assumpt
 Another way to see it: if mean is 0, the error is just as likely to push the value up as down, so over many samples it cancels itself out instead of building into a constant offset.
 
 ![](images/figure2_uniform_error_pdf.png)
-**Figure 2:** The uniform error model. Left, the theory: error is equally likely anywhere in [-Δ/2, +Δ/2], so the probability density is a flat rectangle of height 1/Δ and the mean (the area-weighted center) is exactly zero. Right, 8192 measured errors from the round-half-up quantizer match the rectangle, with a measured mean of +0.000 LSB.
+**Figure 2:** Uniform error PDF, theory vs measurement.
 
 **Independent between samples ⇒ power spectrum is flat (white).** A flat spectrum spreads the total noise power uniformly across all frequency bins, so the noise at any single bin is tiny. If the spectrum is not flat, the energy piles up at specific frequencies and shows up as spurs, tones that look exactly like real signals. A weak signal sitting near a spur is now invisible, even though the total noise power has not changed. This is why SFDR depends on spectral shape, not just total power, and why the dither section later exists: to force the spectrum flat when determinism tries to create spurs.
 
@@ -51,14 +51,14 @@ Each added bit buys about 6 dB. 12 bits give 74 dB, 16 bits give 98 dB. This is 
 The intuition: every extra bit you carry doubles your dynamic range. If 12 bits is not enough, 13 bits makes the noise floor twice as far below the signal, 14 bits makes it four times as far, and so on.
 
 ![](images/figure3_sqnr_per_bit.png)
-**Figure 3:** Δ²/12 in pictures. Left, theoretical SQNR vs word width: each added bit halves Δ, which quarters the noise power, which is +6 dB of SQNR. The 12-bit quantizer we use throughout this study lands at the predicted 74 dB. Right, the same effect in the spectrum: simulated noise floors of 8-, 12-, and 16-bit quantizers on the same -12 dBFS sine. The floor steps down by ~24 dB between each pair (4 bits × 6 dB).
+**Figure 3:** SQNR per bit and noise floors.
 
 Quantization error is deterministic. And deterministic error doesn't behave like noise. It behaves like signal. The approximation above only holds when the error actually looks random. Recall that quantization (we will define this formally in Section 4 as just dropping the bottom bits of a wider word) is a fixed function of the input meaning for same input it produces the same error, every time. And if the input is periodic, the error is periodic too. Whether it looks random in the FFT depends on how the input moves through the quantizer's steps. If the input is large, each new sample lands in a different cell with a different offset, and the errors from one sample to the next look scrambled.
 
 However, the case is not the same for smaller amplitude signals. A -12 dBFS sine on our 12-bit quantizer has an amplitude of 512 LSBs, so in one period the input crosses about a thousand cells. Plenty of scrambling. A -48 dBFS sine has an amplitude of only 8 LSBs, so in one period it crosses about sixteen cells. The error now walks through the same short pattern every signal period, like a tiny lookup table replaying over and over. That pattern is periodic, so it appears as a spike in the FFT spectrum, similar to a real signal, not noise, and its energy piles up at harmonics of the signal frequency instead of spreading flat. The uniform-independent assumption no longer fits, and equation (1) stops being a useful prediction.
 
 ![](images/figure4_fft_amp_compare.png)
-**Figure 4:** Truncated FFT of the same sine at two amplitudes. Left, -12 dBFS: the noise floor is flat across the spectrum and the white-noise model holds. Right, -48 dBFS: the noise is no longer flat. Discrete tones appear at 2f, 3f, 4f, the harmonics of the signal, because the truncation error is now a short repeating pattern locked to the signal period. Total noise power is similar on both sides; only its distribution changes.
+**Figure 4:** Truncated FFT at two amplitudes.
 
 The same thing happens inside a feedback loop. The quantizer error gets fed back into its own input, which correlates this sample's error with last sample's error, and independence between samples is gone. The whole chain of techniques below exists because of these two cases: low amplitudes and feedback loops, the exact places where the random-error story breaks down.
 
@@ -67,7 +67,7 @@ The same thing happens inside a feedback loop. The quantizer error gets fed back
 This is the cheapest way to drop bits: keep the top ones, discard the rest. In two's complement this is arithmetic floor. It has zero hardware cost as it's just routing.
 
 ![](images/figure5_bit_drop_register.png)
-**Figure 5:** Truncation is wire rerouting. The top 12 bits go to the next stage; the bottom 12 fall on the floor and become the quantization error.
+**Figure 5:** Truncation as wire rerouting.
 
 ```verilog
 // 24-bit signed input, drop the bottom 12 bits, keep the top 12
@@ -87,7 +87,7 @@ The output is always at or below the input, never above.
 **Drawback.** Truncation always rounds toward -∞, so it adds a constant -½ LSB to every sample. That's a DC bias. Harmless in a forward-pass path like FIR filters. Fatal in a feedback loop, where the bias rides the loop, and the error keeps accumulating.
 
 ![](images/figure6_iir_feedback_loop.png)
-**Figure 6:** Inside an IIR, the quantizer's tiny -½ LSB bias is fed back on every sample. The delay integrates it. A constant wins against any finite pole, because the loop keeps feeding the same offset back every cycle and nothing inside the filter cancels it out, so the output drifts.
+**Figure 6:** Truncation bias inside an IIR.
 
 The next technique fixes exactly this.
 
@@ -159,14 +159,14 @@ It might sound counter intuitive, but this adds a small amount of random noise t
 Dither breaks that structure. Random noise is introduced before rounding and by the time the input reaches the rounding stage, it has a tiny random number added to it, so the stage now sees signal + noise instead of signal alone. Whether a sample rounds up or down depends on where the noise pushed it that cycle, not just on the signal. The error is still bounded by ±Δ/2 per sample, but it is no longer a fixed function of the signal. The same input value produces different errors at different times.
 
 ![](images/figure7_dither_breaks_lock.png)
-**Figure 7:** -48 dBFS sine, truncation error vs sample index. Top: without dither, the error walks the same short pattern every signal period. That pattern is what the FFT sees as spurs. Bottom: with TPDF dither added before truncation, the same input produces an error that varies sample to sample. Same bound (±Δ/2), but no repeating pattern for the FFT to lock onto.
+**Figure 7:** Truncation error with and without dither.
 
 Total noise power goes up slightly because we deliberately added noise to the signal. But the noise that comes out is broadband and flat instead of concentrated at a few harmonic bins. A small increase in broadband noise is a great trade for getting rid of spurs, because a spur looks exactly like a real signal at that frequency. Anything downstream that does detection (FFT bin watch, CFAR radar, spectrum analyzer etc) cares about SFDR more than about total noise.
 
 In practice: you trade a small, constant rise in background noise for the disappearance of fake tones. The total noise barely moves, but its shape changes from "a few tall spikes you can mistake for real signals" to "a flat carpet you can ignore".
 
 ![](images/figure8_image_dither_analogy.png)
-**Figure 8:** The same idea on a grayscale gradient. Top: snap to 6 levels and you get visible bands, the visual analogue of harmonic spurs. Bottom: add a sliver of noise before the same 6-level snap and the bands break into texture; the eye reads it as a smooth gradient. Dither trades a structured artifact for broadband noise.
+**Figure 8:** Dither on a grayscale gradient.
 
 On the hardware side, an LFSR (Linear Feedback Shift Register) can be used to create the random noise which is just a shift register with an XOR feedback tap. It costs a few flip-flops and one XOR gate, runs at full clock speed, and produces a long pseudo-random bit stream. That is exactly what we need: cheap, fast, signal-independent random bits. The dither path is then trivial. Take the bottom 12 bits of the LFSR output as a signed random number, add it to the wide input word before slicing off the bottom, and let the truncation see signal + noise instead of signal alone. The same idea creates the texture you saw in the grayscale gradient figure: random bits added below the rounding boundary turn a hard staircase into a textured transition.
 
@@ -194,7 +194,7 @@ wire signed [11:0] out = dithered[23:12];
 ```
 
 ![](images/figure9_fft_lowamp_zoom.png)
-**Figure 9:** -48 dBFS sine, same data, same scale. Left: truncation, with a clearly visible spur at 2f, SFDR pinned at 35 dB. Right: one LFSR of TPDF dither, spur gone, SFDR past 47 dB. Total noise power barely moves; only its shape does.
+**Figure 9:** Truncation vs dither, low-amplitude FFT.
 
 **Drawback.** Dither fixes the small-signal spectrum but does nothing about the wrapping: a sample that's too large for the bitwidth. In two's complement, +max + 1 = -max, so overflow results in sign flips. One such flip inside an IIR can trigger a limit cycle and can result in design failure.
 
@@ -218,7 +218,7 @@ end
 Clipping is non-linear and adds its own distortion when the signal hits the rails. But the output stays bounded.
 
 ![](images/figure10_saturation_demo.png)
-**Figure 10:** +4 dBFS sine into a 12-bit datapath. Top: truncation wraps, sign flipping at every overflow. Bottom: saturation clamps, envelope preserved.
+**Figure 10:** Truncation wrap vs saturation clamp.
 
 AMD DSP58 exposes OVERFLOW/UNDERFLOW flags; Intel Stratix V saturates inside its 64-bit accumulator at full clock speed. Use them by default on any signal-path accumulator.
 

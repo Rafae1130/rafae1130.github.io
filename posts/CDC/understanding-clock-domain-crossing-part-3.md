@@ -261,6 +261,7 @@ If portability matters, the manual 2-FF synchronizer with `ASYNC_REG` works acro
 > | [Part 1](https://rafae1130.github.io/posts/CDC/understanding-clock-domain-crossing-part-1.html) | Clock Types, Metastability & the Clock Interaction Report |
 > | [Part 2](https://rafae1130.github.io/posts/CDC/understanding-clock-domain-crossing-part-2.html) | The report\_cdc Report |
 > | **Part 3 (this post)** | **Single-Bit CDC Synchronizers** |
+> | [Part 4](https://rafae1130.github.io/posts/CDC/understanding-clock-domain-crossing-part-4.html) | Multi-Bit CDC Synchronizers |
 
 ---
 
