@@ -20,9 +20,6 @@ This site contains my notes and blogs on varioius FPGA tips, techniques and desi
 - [Understanding Clock Domain Crossing in Vivado: Part 4](posts/CDC/understanding-clock-domain-crossing-part-4.md)
 
 
-## From FPGA Timing to ASIC STA
-- [Part 1 — Leaving the FPGA Fabric](posts/asic_sta/from-fpga-timing-to-asic-sta-part-1.md)
-
 ## On Request
 - [FPGA Quantization Error Reduction](posts/on-request/fpga-dsp-quantization-error-reduction.md)
 <div style="text-align: right; margin-top: 50px;">
