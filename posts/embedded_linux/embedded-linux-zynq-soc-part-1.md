@@ -2,15 +2,9 @@
 
 
 
-# **1\. Embedded Linux**
+# **1\. Introduction**
 
-Linux powers everything from cloud servers and smartphones to routers, industrial controllers, and FPGA SoCs. If you're an aspiring embedded engineer, sooner or later you'll encounter an embedded system running Linux.
-
-You might think: how can an operating system designed for powerful computer systems run on this low power / low resource device?
-
-That is where the real power of Linux comes from, i.e. customizability. You have the power to modify the OS according to your needs. Make it smaller, larger, add features or remove them, create your own features, etc.
-
-You can find details about the basics of Linux from a lot of resources online. In this series, we'll focus on developing our system. For that, we need some groundwork.
+I remember when I first started diving into Embedded Linux; my main problem was simply not knowing where to start. It can feel incredibly daunting at first. But if we follow a proper flow and hierarchy, the process can be broken down into consumable chunks. Therefore, our first step is to get a bird's-eye view of the whole system.
 
 # **2\. Embedded Linux System**
 
