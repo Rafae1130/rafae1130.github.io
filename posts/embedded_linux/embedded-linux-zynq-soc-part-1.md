@@ -40,7 +40,7 @@ Why is this needed? Because the compilers that you use on your PC compile progra
 
 # **4\. Bootloaders**
 
-On a typical Xilinx Zynq-class flow you will see:
+On a typical Xilinx Zynq flow you will see:
 
 * BootROM  
 * FSBL  
