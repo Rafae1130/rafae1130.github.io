@@ -42,13 +42,13 @@ Why is this needed? Because the compilers that you use on your PC compile progra
 
 On a typical Xilinx Zynq-class flow you will see:
 
-* ROM bootloader  
+* BootROM  
 * FSBL  
 * U-Boot  
 
-The ROM bootloader resides in the ROM of the processor. It doesn't know which kind of RAM is attached to the processor, because that depends on the board manufacturer, so it cannot initialize the DDR by itself. What it can do is load the next stage — the FSBL — into on-chip RAM / SRAM.
+The BootROM resides in the processor's internal ROM. Before we continue, it's important to understand that the processor and the board it is mounted on are separate. They are often designed by different manufacturers. The processor knows about its own internal hardware, but it has no information about the external peripherals connected to the board, such as the DDR memory. Because of this, the BootROM cannot initialize the DDR by itself. What it can do is load the next stage, the First Stage Boot Loader (FSBL), into the processor's on-chip RAM (OCRAM/SRAM).
 
-FSBL is the first stage you control. It initializes the RAM (and on FPGA SoCs it often loads the bitstream as well), then loads U-Boot into DDR. You might think: why can't the BootROM directly load U-Boot? Because U-Boot is larger and cannot fit into the on-chip memory. Therefore FSBL is first required to initialize the RAM for U-Boot. U-Boot then prepares everything else for the kernel.
+The FSBL is the first stage you control. It is configured/built for your board's memory and hardware (typically from the board support package / BSP — the vendor package that already contains board-specific configuration, drivers, and build settings for that platform). Once the DDR is ready, the FSBL loads U-Boot into it. On Zynq-class devices, the FSBL often also loads the FPGA bitstream so the PL is configured before Linux starts. You might wonder, why can't the BootROM load U-Boot directly? The reason is that U-Boot is too large to fit in the processor's on-chip memory. The FSBL must first initialize the DDR so that U-Boot has enough memory to run. U-Boot then prepares everything needed to boot the Linux kernel.
 
 U-Boot performs tasks such as:
 
