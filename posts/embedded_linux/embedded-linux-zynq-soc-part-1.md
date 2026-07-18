@@ -101,7 +101,7 @@ If the FPGA design contains peripherals that Linux needs to access, the Device T
 
 # **9\. PetaLinux**
 
-PetaLinux is AMD/Xilinx's Embedded Linux distribution built on top of the Yocto Project. It provides board support packages (BSPs), preconfigured recipes, and tools that simplify building Linux for Xilinx devices.
+PetaLinux is AMD/Xilinx's Embedded Linux distribution built on top of the Yocto Project. It provides board support packages (BSPs), preconfigured recipes, and tools that simplify building Linux for Xilinx devices. We'll discuss PetaLinux in more detail in upcoming blogs.
 
 # **10\. Summary**
 
