@@ -40,13 +40,13 @@ Why is this needed? Because the compilers that you use on your PC compile progra
 
 # **4\. Bootloaders**
 
-On a typical Xilinx Zynq-class flow you will see:
+On a typical Xilinx Zynq flow you will see:
 
 * ROM bootloader  
 * FSBL  
 * U-Boot  
 
-The ROM bootloader resides in the ROM of the processor. It doesn't know which kind of RAM is attached to the processor, because that depends on the board manufacturer, so it cannot initialize the DDR by itself. What it can do is load the next stage — the FSBL — into on-chip RAM / SRAM.
+The ROM bootloader resides in the ROM of the processor. It doesn't know which kind of RAM is attached to the processor, because that depends on the board manufacturer, so it cannot initialize the DDR by itself. What it can do is load the next stage, that is the FSBL, into on-chip RAM / SRAM.
 
 FSBL is the first stage you control. It initializes the RAM (and on FPGA SoCs it often loads the bitstream as well), then loads U-Boot into DDR. You might think: why can't the BootROM directly load U-Boot? Because U-Boot is larger and cannot fit into the on-chip memory. Therefore FSBL is first required to initialize the RAM for U-Boot. U-Boot then prepares everything else for the kernel.
 
