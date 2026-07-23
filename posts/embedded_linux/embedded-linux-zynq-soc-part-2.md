@@ -184,13 +184,19 @@ cpus {
 };
 ```
 
-And a bus node can have child devices. For example, an I2C controller can have sensors on the bus:
+And a memory controller can have many memories:
 
 ```dts
-i2c@e0004000 {
-    sensor@48 {
-        compatible = "vendor,sensor";
-        reg = <0x48>;
+memory-controller@e000e000 {
+    compatible = "arm,pl353-smc-r2p1", "arm,primecell";
+    reg = <0xe000e000 0x1000>;
+
+    nand-controller@0 {
+        reg = <0>; /* Memory Bank / Chip Select 0 */
+    };
+
+    flash@1 {
+        reg = <1>; /* Memory Bank / Chip Select 1 */
     };
 };
 ```
