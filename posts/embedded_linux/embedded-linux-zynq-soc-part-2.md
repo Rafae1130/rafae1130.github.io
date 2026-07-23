@@ -112,9 +112,9 @@ A cell in a device tree is always 32 bits (4 bytes). Therefore:
 
 Similarly:
 
-**#size-cells = <1> **means the size occupies one 32-bit cell.
+**#size-cells = <1>** means the size occupies one 32-bit cell.
 
-**#size-cells = <2> **means the size occupies two 32-bit cells, i.e. the size cell is 64 bits. So its represented by 2 cells.
+**#size-cells = <2>** means the size occupies two 32-bit cells, i.e. the size cell is 64 bits. So its represented by 2 cells.
 
 In the example above, the root specifies one address cell and one size cell, so the reg property is interpreted as:
 
