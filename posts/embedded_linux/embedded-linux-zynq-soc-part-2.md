@@ -106,15 +106,15 @@ Address cells and size cells:
 
 A cell in a device tree is always 32 bits (4 bytes). Therefore:
 
-#address-cells = <1> means an address is written using one 32-bit cell.
+**#address-cells = <1>** means an address is written using one 32-bit cell. i.e. the address space is 32 bits
 
-#address-cells = <2> means an address is written using two 32-bit cells (typically a 64-bit address).
+**#address-cells = <2>** means an address is written using two 32-bit cells (meaning the address space is 64-bit).
 
 Similarly:
 
-#size-cells = <1> means the size occupies one 32-bit cell.
+**#size-cells = <1> **means the size occupies one 32-bit cell.
 
-#size-cells = <2> means the size occupies two 32-bit cells.
+**#size-cells = <2> **means the size occupies two 32-bit cells, i.e. the size cell is 64 bits. 
 
 In the example above, the root specifies one address cell and one size cell, so the reg property is interpreted as:
 
@@ -141,30 +141,30 @@ memory@0 {
 
 where the address and size are each represented using two 32-bit cells.
 
-chosen:
+**chosen:**
 
 chosen holds boot choices such as the console UART or init arguments.
 
-aliases:
+**aliases:**
 
 aliases holds short names that point at longer node paths.
 
 cpus describes the CPU cores. Child nodes such as cpu@0 and cpu@1 are the individual cores. This tells the kernel how many cores are available in the processor.
 
-memory:
+**memory:**
 
 memory@0 describes system RAM the kernel may use.
 
-reserved-memory:
+**reserved-memory:**
 
 reserved-memory lists regions that must not be treated as normal RAM.
 
-axi:
+**axi:**
 
 axi groups peripherals reached through the AXI bus. PS blocks such as UART and I2C, and custom PL IP nodes, are children of this node.
 
-fpga-region:
-
+**fpga-region:
+**
 fpga-region marks the FPGA region where bitstream-loaded logic can appear. On many Zynq boards this node is an empty placeholder until FPGA manager or overlay support is used.
 
 ![][image2]
@@ -233,21 +233,21 @@ serial@e0000000 {
 
 What each one means:
 
-`compatible` tells which driver this peripheral uses.
+`compatible`: tells which driver this peripheral uses.
 
-`reg` — MMIO window.
+`reg`: defines the register(MMIO) space.
 
-`status` — "okay" vs "disabled", meaning if this peripheral is connected on this board or not.
+`status`: "okay" vs "disabled", meaning if this peripheral is connected on this board or not.
 
-clocks — two values per clock entry: a phandle (see below) to a clock controller, and the clock ID within that controller.
+`clocks`: two values per clock entry: a phandle (see below) to a clock controller, and the clock ID within that controller.
 
-Phandle — a reference to another node. In source form it starts with &, for example &clkc points at the clock-controller node labeled clkc.
+`Phandle`: a reference to another node. In source form it starts with &, for example &clkc points at the clock-controller node labeled clkc.
 
 ![][image4]
 
 **Figure 4: Phandle — &clkc in the UART node points to the clkc: clock-controller node.**
 
-Clock-names: these are the names that are defined in the kernel driver. They map one to one to the clocks, meaning uart_clk maps to <&clkc 23> and pclk maps to <&clkc 40>.
+`Clock-names`: these are the names that are defined in the kernel driver. They map one to one to the clocks, meaning uart_clk maps to <&clkc 23> and pclk maps to <&clkc 40>.
 
 Why are there multiple clocks for a peripheral?
 
@@ -267,7 +267,7 @@ serial@e0001000 {
 };
 ```
 
-In summary, the device tree tells the kernel a peripheral's driver name (compatible), its register space (reg), whether it is enabled (status), and — depending on the peripheral — clocks, interrupts, and other resources.
+In summary, the device tree tells the kernel a peripheral's driver name (compatible), its register space (reg), whether it is enabled (status), and depending on the peripheral, some other peripherals like clocks, interrupts, and other resources.
 
 # **8\. How the Kernel Uses the Device Tree**
 
@@ -277,9 +277,10 @@ U-Boot loads kernel + DTB.
 
 Kernel walks from /, matches compatible, runs probe.
 
-Probe claims reg, interrupts, clocks, …
+Probe reads reg, interrupts, clocks, …
 
-Wrong DT/status → failed probe, missing /dev, or bad accesses. On Zynq, treat a DTB as required.
+Knowing these the driver has all the required information to run that peripheral.
+
 
 # **9\. What's Next**
 
