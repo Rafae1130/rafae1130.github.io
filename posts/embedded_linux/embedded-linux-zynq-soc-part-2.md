@@ -81,9 +81,9 @@ Here is a skeleton that shows the overall shape such as node names and hierarchy
 
 How to read this structure:
 
-/dts-v1/; marks the file as device tree source.
+**/dts-v1/;** marks the file as device tree source.
 
-/ is the root node. It represents the whole board or platform and sits at the top of the hierarchy. Every other node is under it, directly or nested deeper.
+**/** is the root node. It represents the whole board or platform and sits at the top of the hierarchy. Every other node is under it, directly or nested deeper.
 
 Model and compatible:
 
