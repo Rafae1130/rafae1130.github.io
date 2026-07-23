@@ -22,6 +22,7 @@ This site contains my notes and blogs on varioius FPGA tips, techniques and desi
 
 ## Embedded Linux (Zynq SoC)
 - [Embedded Linux (Zynq SoC): Part 1](posts/embedded_linux/embedded-linux-zynq-soc-part-1.md)
+- [Embedded Linux (Zynq SoC): Part 2 - Device Tree](posts/embedded_linux/embedded-linux-zynq-soc-part-2.md)
 
 ## On Request
 - [FPGA Quantization Error Reduction](posts/on-request/fpga-dsp-quantization-error-reduction.md)
