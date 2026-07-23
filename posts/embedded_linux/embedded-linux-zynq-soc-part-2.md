@@ -118,18 +118,19 @@ Similarly:
 
 In the example above, the root specifies one address cell and one size cell, so the reg property is interpreted as:
 
+```text
 reg = <address size>
+```
 
 Therefore,
-
+```text
 reg = <0x00000000 0x40000000>;
-
+```
 means:
-
+```text
 Start address: 0x00000000
-
 Size: 0x40000000 (1 GB)
-
+```
 If instead the root used #address-cells = <2> and #size-cells = <2>, the same memory region would be written as:
 
 ```dts
@@ -163,8 +164,8 @@ reserved-memory lists regions that must not be treated as normal RAM.
 
 axi groups peripherals reached through the AXI bus. PS blocks such as UART and I2C, and custom PL IP nodes, are children of this node.
 
-**fpga-region:
-**
+**fpga-region:**
+
 fpga-region marks the FPGA region where bitstream-loaded logic can appear. On many Zynq boards this node is an empty placeholder until FPGA manager or overlay support is used.
 
 ![][image2]
@@ -214,9 +215,9 @@ axi {
 # **6\. MMIO**
 
 These peripherals use MMIO, which stands for memory-mapped I/O. Peripheral registers are mapped into the CPU address space. The driver talks to a peripheral by reading and writing these registers, not by driving individual I/O pins. That is why, in the device tree, we define each peripheral's register space with reg, not its physical pins.
-
+```text
 Example: reg = <0xe0000000 0x1000> → base 0xe0000000, length 0x1000 bytes.
-
+```
 ![][image3]
 
 **Figure 3: reg selects a slice of the CPU address map — base 0xE0000000, size 0x1000 bytes.**
