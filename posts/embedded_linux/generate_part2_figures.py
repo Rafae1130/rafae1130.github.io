@@ -43,27 +43,44 @@ def draw_arrow(draw: ImageDraw.ImageDraw, points: list[tuple[int, int]], width: 
         draw.polygon([(x2, y2), (x2 - 4, y2 - dy), (x2 + 4, y2 - dy)], fill="#111111")
 
 
+def draw_arrow_h(draw: ImageDraw.ImageDraw, x1: int, y: int, x2: int, width: int = 2) -> None:
+    draw.line([x1, y, x2, y], fill="#111111", width=width)
+    draw.polygon([(x2, y), (x2 - 8, y - 4), (x2 - 8, y + 4)], fill="#111111")
+
+
+def draw_arrow_v(draw: ImageDraw.ImageDraw, x: int, y1: int, y2: int, width: int = 2) -> None:
+    draw.line([x, y1, x, y2], fill="#111111", width=width)
+    draw.polygon([(x, y2), (x - 4, y2 - 8), (x + 4, y2 - 8)], fill="#111111")
+
+
 def draw_overall_structure(path: Path) -> None:
-    W, H = 920, 820
+    W, H = 980, 520
     img = Image.new("RGB", (W, H), "white")
     draw = ImageDraw.Draw(img)
     title_font = load_font(18)
-    label_font = load_font(11)
+    label_font = load_font(10)
     code_font = load_font(10, mono=True)
     note_font = load_font(10)
+    sub_font = load_font(9)
 
     title = "Overall device tree structure"
     tw, _ = text_size(draw, title, title_font)
-    draw.text(((W - tw) / 2, 14), title, fill="#111", font=title_font)
+    draw.text(((W - tw) / 2, 12), title, fill="#111", font=title_font)
 
-    box_w, box_h, gap = 96, 24, 12
+    lx0, ly0, lw, lh = 20, 42, 400, 460
+    draw.rectangle([lx0, ly0, lx0 + lw, ly0 + lh], outline="#dddddd", width=1)
+    draw.text((lx0 + 10, ly0 + 8), "Node hierarchy under /", fill="#555", font=note_font)
 
-    def node_box(x, y, text, fill="#f5f5f5", width=None, font=None):
-        w = width or box_w
+    box_h = 22
+    pad_x = 10
+
+    def node_box(x, y, text, fill="#f5f5f5", font=None):
         font = font or label_font
+        tw, th = text_size(draw, text, font)
+        w = tw + 2 * pad_x
         draw.rectangle([x, y, x + w, y + box_h], fill=fill, outline="#333", width=1)
-        ttw, tth = text_size(draw, text, font)
-        draw.text((x + (w - ttw) / 2, y + (box_h - tth) / 2 - 1), text, fill="#111", font=font)
+        draw.text((x + pad_x, y + (box_h - th) / 2 - 1), text, fill="#111", font=font)
+        return x, y, x + w, y + box_h
 
     def hline(x1, x2, y):
         draw.line([x1, y, x2, y], fill="#333", width=1)
@@ -71,62 +88,53 @@ def draw_overall_structure(path: Path) -> None:
     def vline(x, y1, y2):
         draw.line([x, y1, x, y2], fill="#333", width=1)
 
-    root_x = W // 2 - box_w // 2
-    root_y = 44
-    node_box(root_x, root_y, "/")
-    root_cx = W // 2
-    root_bot = root_y + box_h
+    root_x = lx0 + 28
+    root = node_box(root_x, ly0 + 34, "/")
+    trunk_x = root[0] + pad_x + text_size(draw, "/", label_font)[0] // 2
 
-    tops = ["chosen", "aliases", "cpus", "memory@0", "reserved-memory", "axi", "fpga-region"]
-    total = len(tops) * box_w + (len(tops) - 1) * gap
-    start_x = (W - total) // 2
-    child_y = root_y + 58
-    mids = []
-    bus_y = root_bot + (child_y - root_bot) // 2
-    for i, name in enumerate(tops):
-        x = start_x + i * (box_w + gap)
-        node_box(x, child_y, name)
-        cx = x + box_w // 2
-        mids.append(cx)
-        vline(cx, bus_y, child_y)
-    vline(root_cx, root_bot, bus_y)
-    hline(mids[0], mids[-1], bus_y)
+    entries = [
+        ("chosen", []),
+        ("aliases", []),
+        ("cpus", ["cpu@0", "cpu@1"]),
+        ("memory@0", []),
+        ("reserved-memory", []),
+        ("axi", ["serial@e0000000", "i2c@e0004000", "my_ip@40000000"]),
+        ("fpga-region", []),
+    ]
 
-    sub_y = child_y + 58
-    sub_w = 104
-    sub_font = load_font(8)
+    child_x = root_x + 28
+    y_cursor = root[3] + 16
+    prev_mid = None
+    for name, children in entries:
+        parent = node_box(child_x, y_cursor, name)
+        mid_y = parent[1] + box_h // 2
+        if prev_mid is None:
+            vline(trunk_x, root[3], mid_y)
+        else:
+            vline(trunk_x, prev_mid, mid_y)
+        hline(trunk_x, child_x, mid_y)
+        prev_mid = mid_y
 
-    cpus_i = tops.index("cpus")
-    cpus_cx = start_x + cpus_i * (box_w + gap) + box_w // 2
-    cpu_names = ["cpu@0", "cpu@1"]
-    cpu_total = len(cpu_names) * sub_w + gap
-    cpu_start = cpus_cx - cpu_total // 2
-    cpu_bus = child_y + box_h + (sub_y - child_y - box_h) // 2
-    for i, name in enumerate(cpu_names):
-        x = cpu_start + i * (sub_w + gap)
-        node_box(x, sub_y, name, fill="#eef3ff", width=sub_w, font=sub_font)
-        cx = x + sub_w // 2
-        vline(cx, cpu_bus, sub_y)
-    vline(cpus_cx, child_y + box_h, cpu_bus)
-    hline(cpu_start + sub_w // 2, cpu_start + sub_w + gap + sub_w // 2, cpu_bus)
+        if children:
+            sub_x = child_x + 34
+            sub_y = parent[3] + 8
+            sub_mids = []
+            for child in children:
+                sub = node_box(sub_x, sub_y, child, fill="#eef3ff", font=sub_font)
+                sub_mids.append(sub[1] + box_h // 2)
+                branch_x = child_x + 18
+                hline(branch_x, sub_x, sub_mids[-1])
+                sub_y = sub[3] + 6
+            branch_x = child_x + 18
+            vline(branch_x, parent[3], sub_mids[0])
+            vline(branch_x, sub_mids[0], sub_mids[-1])
+            y_cursor = sub_y + 4
+        else:
+            y_cursor = parent[3] + 10
 
-    axi_i = tops.index("axi")
-    axi_cx = start_x + axi_i * (box_w + gap) + box_w // 2
-    axi_children = ["serial@e0000000", "i2c@e0004000", "my_ip@40000000"]
-    sub_total = len(axi_children) * sub_w + (len(axi_children) - 1) * 8
-    sub_start = axi_cx - sub_total // 2
-    axi_bus = cpu_bus
-    sub_centers = []
-    for i, name in enumerate(axi_children):
-        x = sub_start + i * (sub_w + 8)
-        node_box(x, sub_y, name, fill="#eef3ff", width=sub_w, font=sub_font)
-        cx = x + sub_w // 2
-        sub_centers.append(cx)
-        vline(cx, axi_bus, sub_y)
-    vline(axi_cx, child_y + box_h, axi_bus)
-    hline(sub_centers[0], sub_centers[-1], axi_bus)
-
-    draw.text((24, sub_y + 36), "Node hierarchy under /", fill="#555", font=note_font)
+    rx0, ry0, rw, rh = 440, 42, 520, 460
+    draw.rectangle([rx0, ry0, rx0 + rw, ry0 + rh], outline="#dddddd", width=1)
+    draw.text((rx0 + 10, ry0 + 8), "Matching DTS skeleton", fill="#555", font=note_font)
 
     skeleton = """/dts-v1/;
 
@@ -156,71 +164,111 @@ def draw_overall_structure(path: Path) -> None:
     fpga-region { };
 };"""
 
-    code_y = sub_y + 62
-    rx, ry, rw, rh = 36, code_y, W - 72, 300
-    draw.rectangle([rx, ry, rx + rw, ry + rh], fill="#fafafa", outline="#ccc", width=1)
-    draw.text((rx + 8, ry - 18), "Matching DTS skeleton", fill="#555", font=note_font)
-    y = ry + 10
+    y = ry0 + 34
     for line in skeleton.splitlines():
-        draw.text((rx + 12, y), line, fill="#222", font=code_font)
+        draw.text((rx0 + 14, y), line, fill="#222", font=code_font)
         y += 14
 
     img.save(path)
 
 
+def draw_arrow_up(draw: ImageDraw.ImageDraw, x: int, y_from: int, y_tip: int, width: int = 2) -> None:
+    """Vertical arrow with tip at y_tip (y_tip < y_from)."""
+    draw.line([x, y_from, x, y_tip], fill="#111111", width=width)
+    draw.polygon([(x, y_tip), (x - 4, y_tip + 8), (x + 4, y_tip + 8)], fill="#111111")
+
+
 def draw_reg_map(path: Path) -> None:
-    W, H = 700, 430
+    """
+    Original layout: address bar + base/size + single-line reg.
+    Base callout from above; Size callout from below — paths never weave.
+    """
+    W, H = 800, 340
     img = Image.new("RGB", (W, H), "white")
     draw = ImageDraw.Draw(img)
     title_font = load_font(18)
-    label_font = load_font(12)
+    label_font = load_font(9)
     code_font = load_font(13, mono=True)
-    small_font = load_font(10)
+    small_font = load_font(9)
 
     title = "What reg means in the address map"
     tw, _ = text_size(draw, title, title_font)
-    draw.text(((W - tw) / 2, 14), title, fill="#111", font=title_font)
+    draw.text(((W - tw) / 2, 14), title, fill="#111111", font=title_font)
 
-    bar_x, bar_y, bar_w, bar_h = 62, 62, 34, 250
-    draw.rectangle([bar_x, bar_y, bar_x + bar_w, bar_y + bar_h], outline="#333", width=1)
-    draw.text((bar_x + bar_w + 10, bar_y - 2), "CPU address space", fill="#444", font=small_font)
-    draw.text((bar_x - 6, bar_y - 12), "0x00000000", fill="#666", font=small_font, anchor="rt")
-    draw.text((bar_x - 6, bar_y + bar_h + 2), "0xFFFFFFFF", fill="#666", font=small_font, anchor="rt")
+    val1 = "0xE0000000"
+    val2 = "0x1000"
+    base_label = f"Base {val1}"
+    size_label = f"Size {val2}"
 
-    region_top = bar_y + 68
-    region_h = 52
+    bar_x, bar_y, bar_w, bar_h = 70, 72, 30, 185
+    draw.rectangle([bar_x, bar_y, bar_x + bar_w, bar_y + bar_h], outline="#333333", width=1)
+
+    # Range labels above/below, left-aligned to the bar (full margin on the left)
+    top_addr = "0x00000000"
+    bot_addr = "0xFFFFFFFF"
+    draw.text((bar_x, bar_y - 16), top_addr, fill="#555555", font=small_font)
+    draw.text((bar_x, bar_y + bar_h + 4), bot_addr, fill="#555555", font=small_font)
+    draw.text((bar_x + bar_w + 10, bar_y - 2), "CPU address space", fill="#555555", font=label_font)
+
+    region_top = bar_y + 58
+    region_h = 72
     region_bot = region_top + region_h
-    draw.rectangle([bar_x, region_top, bar_x + bar_w, region_bot], fill="#d8d8d8", outline="#666", width=1)
+    draw.rectangle(
+        [bar_x, region_top, bar_x + bar_w, region_bot],
+        fill="#d8d8d8",
+        outline="#666666",
+        width=1,
+    )
 
-    base_label = "BASE 0xE0000000"
-    size_label = "SIZE 0x1000"
-    draw.text((bar_x + bar_w + 16, region_top - 6), base_label, fill="#111", font=label_font)
-    draw.text((bar_x + bar_w + 16, region_bot - 4), "0xE0001000", fill="#666", font=small_font)
+    bracket_x = bar_x + bar_w + 5
+    draw.line([bracket_x, region_top, bracket_x + 5, region_top], fill="#333333", width=1)
+    draw.line([bracket_x, region_bot, bracket_x + 5, region_bot], fill="#333333", width=1)
+    draw.line([bracket_x + 5, region_top, bracket_x + 5, region_bot], fill="#333333", width=1)
 
-    bx = bar_x + bar_w + 8
-    draw.line([bx, region_top, bx + 7, region_top], fill="#333", width=1)
-    draw.line([bx, region_bot, bx + 7, region_bot], fill="#333", width=1)
-    draw.line([bx + 7, region_top, bx + 7, region_bot], fill="#333", width=1)
-    size_y = region_top + region_h // 2 - 6
-    draw.text((bar_x + bar_w + 20, size_y), size_label, fill="#111", font=label_font)
+    label_x = bracket_x + 10
+    # Base aligned with the top of the gray block; Size mid-bracket
+    base_label_y = region_top - 6
+    size_label_y = region_top + region_h // 2 - 5
+    draw.text((label_x, base_label_y), base_label, fill="#111111", font=label_font)
+    draw.text((label_x, size_label_y), size_label, fill="#111111", font=label_font)
+    draw.text((label_x, region_bot + 2), "0xE0001000", fill="#777777", font=small_font)
 
-    code = "reg = < 0xE0000000  0x1000 >;"
-    cx, cy, cw, ch = 285, 150, 360, 52
-    draw.rectangle([cx, cy, cx + cw, cy + ch], fill="#fafafa", outline="#333", width=1)
-    draw.text((cx + 16, cy + 16), code, fill="#111", font=code_font)
+    prefix = "reg = < "
+    gap = "  "
+    suffix = " >;"
+    code = prefix + val1 + gap + val2 + suffix
+    cx, cy, cw, ch = 340, 145, 420, 48
+    draw.rectangle([cx, cy, cx + cw, cy + ch], fill="#fafafa", outline="#333333", width=1)
+    tx, ty = cx + 14, cy + 15
+    draw.text((tx, ty), code, fill="#111111", font=code_font)
 
-    val1_x = cx + 16 + text_size(draw, "reg = < ", code_font)[0]
-    val2_x = cx + 16 + text_size(draw, "reg = < 0xE0000000  ", code_font)[0]
-    val_y = cy + 18
+    val1_x = tx + text_size(draw, prefix, code_font)[0]
+    val2_x = val1_x + text_size(draw, val1 + gap, code_font)[0]
+    val1_w = text_size(draw, val1, code_font)[0]
+    val2_w = text_size(draw, val2, code_font)[0]
+    val1_cx = val1_x + val1_w // 2
+    val2_cx = val2_x + val2_w // 2
 
-    base_lx = bar_x + bar_w + 16 + text_size(draw, base_label, label_font)[0]
-    base_ly = region_top + 2
-    draw_arrow(draw, [(base_lx + 4, base_ly), (val1_x, base_ly), (val1_x, val_y + 12)])
+    base_src_y = base_label_y + text_size(draw, base_label, label_font)[1] // 2
+    size_src_y = size_label_y + text_size(draw, size_label, label_font)[1] // 2
+    base_end_x = label_x + text_size(draw, base_label, label_font)[0] + 4
+    size_end_x = label_x + text_size(draw, size_label, label_font)[0] + 4
 
-    size_lx = bar_x + bar_w + 20 + text_size(draw, size_label, label_font)[0]
-    size_ly = size_y + 8
-    route_y = region_bot + 28
-    draw_arrow(draw, [(size_lx + 4, size_ly), (val2_x, size_ly), (val2_x, route_y), (val2_x, val_y + 12)])
+    # base: stay above the code box, drop down onto first value
+    base_lane_y = cy - 14
+    tip_down = cy - 2
+    draw.line([base_end_x, base_src_y, val1_cx, base_src_y], fill="#111111", width=1)
+    draw.line([val1_cx, base_src_y, val1_cx, base_lane_y], fill="#111111", width=1)
+    draw_arrow_v(draw, val1_cx, base_lane_y, tip_down)
+
+    # size: stay below the code box, point up at second value
+    tip_up = cy + ch + 2
+    size_lane_y = tip_up + 24
+    stub_x = label_x + text_size(draw, size_label, label_font)[0] + 12
+    draw.line([size_end_x, size_src_y, stub_x, size_src_y], fill="#111111", width=1)
+    draw.line([stub_x, size_src_y, stub_x, size_lane_y], fill="#111111", width=1)
+    draw.line([stub_x, size_lane_y, val2_cx, size_lane_y], fill="#111111", width=1)
+    draw_arrow_up(draw, val2_cx, size_lane_y, tip_up)
 
     img.save(path)
 
