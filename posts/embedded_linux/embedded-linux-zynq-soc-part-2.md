@@ -46,7 +46,7 @@ You can use the same kernel image with different boards that share the same SoC,
 
 A device tree is a hierarchy of nodes. The file always starts with a header, then a root node /, and then nested nodes under that root.
 
-Here is a skeleton that shows the overall shape — node names and hierarchy, with a few root properties shown:
+Here is a skeleton that shows the overall shape such as node names and hierarchy, with a few root properties shown:
 
 ```dts
 /dts-v1/;
@@ -214,8 +214,6 @@ axi {
 # **6\. MMIO**
 
 These peripherals use MMIO, which stands for memory-mapped I/O. Peripheral registers are mapped into the CPU address space. The driver talks to a peripheral by reading and writing these registers, not by driving individual I/O pins. That is why, in the device tree, we define each peripheral's register space with reg, not its physical pins.
-
-reg = <base size> — the register window.
 
 Example: reg = <0xe0000000 0x1000> → base 0xe0000000, length 0x1000 bytes.
 
