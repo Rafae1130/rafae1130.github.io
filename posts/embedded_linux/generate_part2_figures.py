@@ -298,13 +298,12 @@ def draw_node_box(
 
 
 def draw_phandle(path: Path) -> None:
-    W, H = 860, 360
+    W, H = 900, 320
     img = Image.new("RGB", (W, H), "white")
     draw = ImageDraw.Draw(img)
     title_font = load_font(18)
     node_title = load_font(12)
     code_font = load_font(11, mono=True)
-    note_font = load_font(11)
 
     title = "Phandle links nodes"
     tw, _ = text_size(draw, title, title_font)
@@ -326,30 +325,72 @@ def draw_phandle(path: Path) -> None:
         "};",
     ]
 
-    left = draw_node_box(draw, 36, 58, "UART node", serial_lines, code_font, node_title, min_w=330)
-    right = draw_node_box(draw, 470, 58, "Clock controller node", clk_lines, code_font, node_title, min_w=320)
+    pad_x, pad_y, line_h = 14, 12, 20
+    left_x, box_y = 36, 58
+    right_x = 490
 
-    # Arrow from clocks property in UART node to clkc label on clock-controller node
-    clocks_y = 58 + 12 + 16 + 6 + 3 * 16 + 8
-    target_x = right[0]
-    target_y = 58 + 12 + 16 + 6 + 8
-    draw_arrow(
-        draw,
-        [
-            (left[2] - 12, clocks_y + 6),
-            (target_x - 24, clocks_y + 6),
-            (target_x - 24, target_y + 6),
-            (target_x - 4, target_y + 6),
-        ],
-        width=2,
-    )
+    def box_height(lines: list[str]) -> int:
+        return pad_y + line_h + 8 + len(lines) * line_h + pad_y
 
-    draw.text(
-        ((W - text_size(draw, "&clkc points at the labeled clock-controller node", note_font)[0]) / 2, 300),
-        "&clkc points at the labeled clock-controller node",
-        fill="#444",
-        font=note_font,
+    def box_width(title: str, lines: list[str], min_w: int) -> int:
+        inner = max(min_w, max(text_size(draw, ln, code_font)[0] for ln in lines) + 8)
+        inner = max(inner, text_size(draw, title, node_title)[0] + 8)
+        return inner + 2 * pad_x
+
+    left_w = box_width("UART node", serial_lines, 340)
+    right_w = box_width("Clock controller node", clk_lines, 320)
+    left_h = box_height(serial_lines)
+    right_h = box_height(clk_lines)
+
+    draw.rectangle([left_x, box_y, left_x + left_w, box_y + left_h], fill="#f7f7f7", outline="#333", width=1)
+    draw.rectangle([right_x, box_y, right_x + right_w, box_y + right_h], fill="#f7f7f7", outline="#333", width=1)
+    draw.text((left_x + pad_x, box_y + pad_y), "UART node", fill="#111", font=node_title)
+    draw.text((right_x + pad_x, box_y + pad_y), "Clock controller node", fill="#111", font=node_title)
+
+    code_top = box_y + pad_y + line_h + 6
+    for i, ln in enumerate(serial_lines):
+        draw.text((left_x + pad_x, code_top + i * line_h), ln, fill="#222", font=code_font)
+    for i, ln in enumerate(clk_lines):
+        draw.text((right_x + pad_x, code_top + i * line_h), ln, fill="#222", font=code_font)
+
+    clocks_i = 3
+    clocks_line = serial_lines[clocks_i]
+    clocks_y = code_top + clocks_i * line_h
+    phandle = "&clkc"
+    phandle_x = left_x + pad_x + text_size(draw, clocks_line.split(phandle)[0], code_font)[0]
+    phandle_w = text_size(draw, phandle, code_font)[0]
+    glyph_h = text_size(draw, phandle, code_font)[1]
+
+    draw.rectangle(
+        [phandle_x - 2, clocks_y - 1, phandle_x + phandle_w + 2, clocks_y + glyph_h + 2],
+        fill="#fff3cd",
+        outline="#c9a227",
+        width=1,
     )
+    draw.text((phandle_x, clocks_y), phandle, fill="#111", font=code_font)
+
+    label = "clkc:"
+    label_x = right_x + pad_x
+    label_y = code_top
+    label_w = text_size(draw, label, code_font)[0]
+    label_mid_y = label_y + glyph_h // 2
+    draw.rectangle(
+        [label_x - 2, label_y - 1, label_x + label_w + 2, label_y + glyph_h + 2],
+        fill="#eef6ff",
+        outline="#4a8fd4",
+        width=1,
+    )
+    draw.text((label_x, label_y), label, fill="#111", font=code_font)
+
+    # From &clkc: up into the inter-line gap, across, then into clkc:
+    start_x = phandle_x + phandle_w // 2
+    lift_y = clocks_y - 8
+    mid_x = (left_x + left_w + right_x) // 2
+    end_x = label_x - 6
+    draw.line([start_x, clocks_y, start_x, lift_y], fill="#111111", width=2)
+    draw.line([start_x, lift_y, mid_x, lift_y], fill="#111111", width=2)
+    draw.line([mid_x, lift_y, mid_x, label_mid_y], fill="#111111", width=2)
+    draw_arrow_h(draw, mid_x, label_mid_y, end_x)
 
     img.save(path)
 
