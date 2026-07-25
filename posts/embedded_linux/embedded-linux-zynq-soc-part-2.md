@@ -2,7 +2,7 @@
 
 
 
-# **1\. From Kernel Build to Board Description**
+# **1\. Kernal's board awareness**
 
 Part 1 introduced the device tree as the board-specific description the kernel needs. This part opens an actual tree and shows how it maps to the hardware.
 
@@ -36,7 +36,7 @@ If every SoC interface is treated as present even when it is not wired on the bo
 
 The other option is that each kernel is configured specifically for each different board. That's how it was done before (board files / board-specific kernel setup). It worked, but every small board change meant editing and compiling the kernel again from scratch.
 
-# **3\. Device Tree as the Solution**
+# **3\. Device Tree**
 
 The solution is to separate the board description from the kernel itself using a device tree. A device tree is board-specific. This is how we tell a kernel built for the SoC family what is actually available on this board.
 
