@@ -85,13 +85,10 @@ How to read this structure:
 
 **/** is the root node. It represents the whole board or platform and sits at the top of the hierarchy. Every other node is under it, directly or nested deeper.
 
-Model and compatible:
-
-The model and compatible properties in the root node identify the board and SoC family, allowing the bootloader, firmware, and kernel to recognize the platform.
-
+**Model and compatible:** The model and compatible properties in the root node identify the board and SoC family, allowing the bootloader, firmware, and kernel to recognize the platform. 
 The compatible property also appears in child nodes, where it identifies the specific hardware IP or peripheral. During boot, the Linux kernel compares this string against the list of devices supported by each driver and binds the matching driver to the device.
 
-Address cells and size cells:
+**Address cells and size cells:**
 
 ```dts
 / {
@@ -142,31 +139,19 @@ memory@0 {
 
 where the address and size are each represented using two 32-bit cells.
 
-**chosen:**
+**chosen:** chosen holds boot arguments which are provided to the kernel during boot time.
 
-chosen holds boot choices such as the console UART or init arguments.
+**aliases:** aliases holds short names that point at longer node paths. This is just for readibitly and does not correspond to any hardware.
 
-**aliases:**
+**cpus:** describes the CPU cores (`cpu@0`, `cpu@1`, …) This tells the kernel how many cores are available in the processor.
 
-aliases holds short names that point at longer node paths.
+**memory:** describes system RAM available to the kernel.
 
-cpus describes the CPU cores. Child nodes such as cpu@0 and cpu@1 are the individual cores. This tells the kernel how many cores are available in the processor.
+**reserved-memory:** This lists memory regions that must not be used by kernel as normal RAM. This is for cases in which fixed large memory buffers are required such as in DMA buffers, framebuffers etc.
 
-**memory:**
+**axi:** axi groups peripherals reached through the AXI bus. PS(processor-system) Peripherals such as UART and I2C, and custom PL(programmable logic) IP nodes, are children of this node. This can be named amba as well in some cases. In some device trees, `amba` and `amba_pl` is used to differentiate the peripherals connected to PS and PL respectively. This is just for device tree reprersenttion. this does not represent seperate axi buses for processor and FPGA
 
-memory@0 describes system RAM the kernel may use.
-
-**reserved-memory:**
-
-reserved-memory lists regions that must not be treated as normal RAM.
-
-**axi:**
-
-axi groups peripherals reached through the AXI bus. PS blocks such as UART and I2C, and custom PL IP nodes, are children of this node.
-
-**fpga-region:**
-
-fpga-region marks the FPGA region where bitstream-loaded logic can appear. On many Zynq boards this node is an empty placeholder until FPGA manager or overlay support is used.
+**fpga-region:** On many Zynq boards this node is an empty placeholder until FPGA manager is used which is for runtime conguration such as programming new bitstream at runtime..
 
 ![][image2]
 
