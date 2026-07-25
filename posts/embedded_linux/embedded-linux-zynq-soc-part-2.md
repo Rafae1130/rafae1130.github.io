@@ -253,7 +253,7 @@ These paths use different clocks:
 - **uart_clk** (functional clock) runs the internal logic, such as the baud-rate generator, that talks to the outside world.
 This idea is true for almost all external interfaces.
 
-# How `clock-names` Connects Driver and Device Tree
+## How `clock-names` Connects Driver and Device Tree
 A peripheral driver defines the clock names it expects (for example, `"uart_clk"` and `"pclk"`).
 The Device Tree node for that same peripheral must list matching names in `clock-names`, in the **same order** as `clocks`. Those names map to the actual hardware clocks from the clock controller.
 In the UART node above:
