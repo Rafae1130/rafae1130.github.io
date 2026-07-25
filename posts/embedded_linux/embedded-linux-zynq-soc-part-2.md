@@ -26,7 +26,7 @@ The SoC still has the same interfaces available. Board A connects UART0 and Ethe
 
 Board B connects UART1 and SPI flash instead, and leaves UART0 / Ethernet unwired.
 
-The SoC is the same. The board wiring is not.
+The SoC is the same. But not all available interfaces are connected on the board.
 
 ![][image1]
 
