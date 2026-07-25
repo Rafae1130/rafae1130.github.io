@@ -297,19 +297,17 @@ In summary, the device tree tells the kernel a peripheral's driver name (compati
 # **8\. How the Kernel Uses the Device Tree**
 
 At boot:
-
-U-Boot loads kernel + DTB.
-
-Kernel walks from /, matches compatible, runs probe.
-
-Probe reads reg, interrupts, clocks, …
-
-Knowing these the driver has all the required information to run that peripheral.
+- U-Boot loads the kernel and the DTB into memory.
+- The kernel starts at `/` and walks the Device Tree.
+- For each node, it looks at `compatible` and finds a matching driver.
+- That driver’s `probe` function runs.
+- `probe` reads properties such as `reg`, `interrupts`, and `clocks`.
+- With that information, the driver can set up and run the peripheral.
 
 
 # **9\. What's Next**
 
-Next: custom PL IP nodes and connecting them to drivers.
+In the next blog, we'll create a Vivado design with an AXI based IP and then see how to add it in device tree.
 
 
 [image1]: images/image1_p2.png
