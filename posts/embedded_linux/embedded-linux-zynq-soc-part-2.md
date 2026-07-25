@@ -246,7 +246,9 @@ What each one means:
 
 `clocks`: two values per clock entry: a phandle (see below) to a clock controller, and the clock ID within that controller.
 
-`Phandle`: a reference to another node. In source form it starts with &, for example &clkc points at the clock-controller node labeled clkc.
+`Phandle`: a pointer to another Device Tree node. It starts with `&`, like `&clkc`. Which means its referencing to another node named clkc.
+
+Used when one node needs to point to another. For example `clocks = <&clkc 23>` means the UART uses clock `23` from the `clkc` node.
 
 ![][image4]
 
@@ -254,13 +256,31 @@ What each one means:
 
 `Clock-names`: these are the names that are defined in the kernel driver. They map one to one to the clocks, meaning uart_clk maps to <&clkc 23> and pclk maps to <&clkc 40>.
 
-Why are there multiple clocks for a peripheral?
+Why are there multiple clocks in this node?
 
-Peripherals like UARTs split CPU communication from physical hardware operations. The bus clock (pclk) powers the register interface so the CPU can read and write data, while the functional clock (uart_clk) powers internal logic like baud rate generators to drive physical signals over wires.
+Peripherals like UART keep CPU communication separate from the physical I/O of the peripheral.
 
-How does the kernel know which clock serves which purpose?
+For example, UART involves two separate communications:
+1. **CPU ↔ UART registers**: the processor reads and writes the peripheral’s register space.
+2. **UART ↔ external world**: the peripheral drives and receives signals on the wires.
+These paths use different clocks:
+- **pclk** (bus clock) runs the register interface for CPU access.
+- **uart_clk** (functional clock) runs the internal logic, such as the baud-rate generator, that talks to the outside world.
+This idea is true for almost all external interfaces.
 
-Through clock-names. The driver code requests clocks by specific string names (like "uart_clk" and "pclk") defined by the driver author. The kernel matches those names against the clock-names list in the Device Tree, which maps them to the actual hardware clock IDs of a specific clock controller.
+# How `clock-names` Connects Driver and Device Tree
+A peripheral driver defines the clock names it expects (for example, `"uart_clk"` and `"pclk"`).
+The Device Tree node for that same peripheral must list matching names in `clock-names`, in the **same order** as `clocks`. Those names map to the actual hardware clocks from the clock controller.
+In the UART node above:
+
+- first entry: `"uart_clk"` → `<&clkc 23>`
+- second entry: `"pclk"` → `<&clkc 40>`
+
+When the kernel probes the driver, it reads the Device Tree node and matches by name:
+- the driver asks for `"pclk"` → the kernel finds `"pclk"` in `clock-names` and connects clock `40`
+- the driver asks for `"uart_clk"` → the kernel finds `"uart_clk"` and connects clock `23`
+If the names do not match, the driver cannot get the correct clocks.
+
 
 Second UART unused on this board:
 
