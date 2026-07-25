@@ -20,7 +20,7 @@ After these steps are completed and the kernel is ready, it still does not know 
 
 You might think: the peripheral blocks on the chip are fixed, so why can't that information just be embedded into the kernel itself? The reason is that the same SoC can be used on different boards, and those boards may use some of the available interfaces and leave others unused.
 
-Example — same Zynq SoC, two boards:
+Example: same Zynq SoC, two different boards:
 
 The SoC still has the same interfaces available. Board A connects UART0 and Ethernet (and may leave UART1 / SPI unused).
 
@@ -30,7 +30,7 @@ The SoC is the same. The board wiring is not.
 
 ![][image1]
 
-**Figure 1: Same SoC interfaces on both boards — solid = wired on this board, dashed = available but not connected.**
+**Figure 1: Same SoC interfaces on both boards; solid = wired on this board, dashed = available but not connected.**
 
 If every SoC interface is treated as present even when it is not wired on the board, drivers may probe hardware that is not there. That can mean failed probes, wasted resources, runtime failures, or in worse cases hangs and faults when a driver touches an address that is not valid for that board.
 
@@ -155,7 +155,7 @@ where the address and size are each represented using two 32-bit cells.
 
 ![][image2]
 
-**Figure 2: Overall device tree structure — hierarchy and matching DTS skeleton.**
+**Figure 2: Overall device tree hierarchy and matching DT skeleton.**
 
 # **5\. Parent and Child Relationships**
 
@@ -205,7 +205,7 @@ Example: reg = <0xe0000000 0x1000> → base 0xe0000000, length 0x1000 bytes.
 ```
 ![][image3]
 
-**Figure 3: reg selects a slice of the CPU address map — base 0xE0000000, size 0x1000 bytes.**
+**Figure 3: reg selects a slice of the CPU address map; base 0xE0000000, size 0x1000 bytes.**
 
 # **7\. Example Peripheral node**
 
@@ -237,7 +237,7 @@ Used when one node needs to point to another. For example `clocks = <&clkc 23>` 
 
 ![][image4]
 
-**Figure 4: Phandle — &clkc in the UART node points to the clkc: clock-controller node.**
+**Figure 4: Phandle: &clkc in the UART node points to the clkc: clock-controller node.**
 
 `Clock-names`: these are the names that are defined in the kernel driver. They map one to one to the clocks, meaning uart_clk maps to <&clkc 23> and pclk maps to <&clkc 40>.
 
