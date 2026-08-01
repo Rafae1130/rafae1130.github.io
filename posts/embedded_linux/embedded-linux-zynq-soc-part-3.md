@@ -264,7 +264,7 @@ These are the AXI GPIO registers we care about (offsets from the IP base address
 
 ![][image4]
 
-**Figure 3: AXI GPIO register map (data + interrupt registers).**
+**Figure 3: AXI GPIO register map.**
 
 Notes that matter for the app:
 
