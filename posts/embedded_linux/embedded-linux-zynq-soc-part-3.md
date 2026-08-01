@@ -46,7 +46,9 @@ What each block is doing (one line each):
 * **Constant** — ties the unused `IRQ_F2P` bits to 0.  
 * **Processing System Reset** — reset for the AXI / PL logic.
 
-The focus of this blog is UIO, device tree overlay, and interrupt handling, so we will not go into much detail about the FPGA design itself. Simply what it does is:
+The focus of this blog is UIO, device tree overlay, and interrupt handling, so we will not go into much detail about the FPGA design itself. You do not need this exact block design — any AXI GPIO wired to a Zynq `IRQ_F2P` line works the same way. If you use a different PL interrupt pin, the device-tree interrupt number changes with it. For example, `IRQ_F2P[0]` becomes SPI `29` in the overlay, while `IRQ_F2P[1]` becomes SPI `30` (hardware IRQ `62`, then `62 − 32`).
+
+Simply what this design does is:
 
 * PS talks to AXI GPIO over AXI (read button state, enable interrupt registers).  
 * Button change → `ip2intc_irpt` → Concat → `IRQ_F2P[0]` → [GIC](https://developer.arm.com/documentation/ihi0048/latest/) → Linux.
@@ -171,14 +173,22 @@ Line by line:
 
 * **`/dts-v1/;`** — marks this as device tree source.  
 * **`/plugin/;`** — marks this file as an **overlay** (not a complete tree).  
-* **`&amba { ... }`** — which parent node in the base device tree this overlay node belongs under. On many Zynq trees, the symbol `amba` points at `/axi`.  
+* **`&amba { ... }`** — which parent node in the base device tree this overlay node belongs under. On many Zynq / PetaLinux trees the label `amba` points at `/axi`. Check your base DTS (or `/proc/device-tree`) for the real label; some trees use `&axi` instead. Same idea for `&intc`: it must be the label of your GIC node in the base tree.  
 * **`#address-cells` / `#size-cells`** — see the compile tip above.  
-* **`axi_gpio_uio@41200000`** — new device node; the `@41200000` matches the MMIO base.  
+* **`axi_gpio_uio@41200000`** — new device node. The name before `@` can be anything sensible; the `@41200000` should match the MMIO base so the unit address stays consistent with `reg`.  
 * **`compatible = "generic-uio"`** — which driver should bind. Here we want UIO (`uio_pdrv_genirq` with `of_id=generic-uio`).  
 * **`status = "okay"`** — this device is enabled.  
-* **`reg = <0x41200000 0x10000>`** — MMIO window: base `0x41200000`, size `64K` (same as Vivado Address Editor for AXI GPIO). This is what userspace will `mmap` through UIO.  
-* **`interrupt-parent = <&intc>`** — interrupt controller is the Zynq GIC / `intc` node (already present in the base tree).  
+* **`reg = <0x41200000 0x10000>`** — MMIO window: base and size from Vivado’s Address Editor. This is what userspace will `mmap` through UIO.  
+* **`interrupt-parent = <&intc>`** — interrupt controller is the Zynq GIC node already present in the base tree.  
 * **`interrupts = <0 29 4>`** — explained in detail below.
+
+The base address and range come from Vivado Address Editor (Window → Address Editor), not from guessing:
+
+![][image11]
+
+**Figure 2: Address Editor — AXI GPIO mapped at `0x41200000`, range 64K (`0x10000`).**
+
+Here `Master Base Address` is `0x41200000` and `Range` is `64K`, which is `0x10000` bytes. That is why `reg` uses those two values even though the GPIO only has a handful of useful registers — the bus mapping is allocated in a 64K window. If your design shows a different base, put that base in both `@...` and `reg`.
 
 Why `reg` if we only care about the interrupt?
 
@@ -208,7 +218,7 @@ From the [Zynq-7000 TRM](https://docs.amd.com/r/en-US/ug585-zynq-7000-SoC-TRM) (
 
 ![][image3]
 
-**Figure 2: PL interrupt signals into the PS / GIC (Zynq-7000).**
+**Figure 3: PL interrupt signals into the PS / GIC (Zynq-7000).**
 
 For our design we use `IRQ_F2P[0]` (also written `IRQF2P[0]`):
 
@@ -231,6 +241,8 @@ IRQ_F2P[0]  →  hardware ID 61
 61 − 32    →  29
 interrupts = <0 29 4>;
 ```
+
+If the GPIO interrupt were wired to `IRQ_F2P[1]` instead, the hardware ID would be `62` and the overlay would use `interrupts = <0 30 4>;` (`62 − 32 = 30`). The rest of the node stays the same.
 
 ### Where does the −32 come from?
 
@@ -269,7 +281,7 @@ These are the AXI GPIO registers we care about (offsets from the IP base address
 
 ![][image4]
 
-**Figure 3: AXI GPIO register map.**
+**Figure 4: AXI GPIO register map.**
 
 Notes that matter for the app:
 
@@ -287,7 +299,7 @@ Notes that matter for the app:
 #define GPIO_IPIER (0x128 / 4)
 ```
 
-These are byte offsets from the AXI GPIO base, divided by 4 so we can index a `uint32_t *`.  
+The datasheet lists offsets in **bytes** (`0x11C`, `0x120`, …). We map the registers as a `uint32_t *`, so each index steps by 4 bytes. Dividing by 4 converts a byte offset into an array index: `gpioRegs[0x11C / 4]` is the same as “base + 0x11C”.  
 `MAP_SIZE` matches the overlay `reg` size (`0x10000`).
 
 ### Open UIO and map registers
@@ -315,9 +327,12 @@ gpioRegs[GPIO_IPISR] = 1;          /* clear any pending */
 write(uioFd, &irqEnable, sizeof(irqEnable));  /* allow UIO to deliver IRQs */
 ```
 
-* Without IPIER / GIER, AXI GPIO never asserts `ip2intc_irpt`.  
-* Clearing IPISR drops any stale pending status before we start waiting.  
-* `write()` tells UIO it may deliver the next interrupt to userspace.
+AXI GPIO interrupt enables are two levels:
+
+* **IP IER (`0x128`)** — per-channel enable inside the GPIO IP. Writing `1` enables channel 1 (the button channel in this design). If this bit is 0, a button edge does not set the IP interrupt output.  
+* **GIER (`0x11C`)** — global interrupt enable for the whole IP. Bit 31 is the enable bit, so the value is `0x80000000`. If GIER is 0, no interrupt leaves the GPIO even when IPIER is set.
+
+Without both, AXI GPIO never asserts `ip2intc_irpt`. Clearing IPISR drops any stale pending status before we start waiting. `write()` tells UIO it may deliver the next interrupt to userspace.
 
 ### Main loop — wait, handle, re-arm
 
@@ -476,3 +491,4 @@ Next we can look at doing the same path with a small in-kernel IRQ handler inste
 [image8]: images/image8_p3.png
 [image9]: images/image9_p3.png
 [image10]: images/image10_p3.png
+[image11]: images/image11_p3.png
