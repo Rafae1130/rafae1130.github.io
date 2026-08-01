@@ -454,7 +454,7 @@ You should see something like:
 
 ## Run the application
 
-Cross-compile on the host (PetaLinux / OE SDK), copy the binary to the board, then:
+Cross-compile on the host using arm cross compiler(available in Petalinux), copy the binary to the board, then:
 
 ```bash
 sudo ./uio_btn
