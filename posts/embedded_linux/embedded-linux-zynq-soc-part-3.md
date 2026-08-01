@@ -6,15 +6,15 @@
 
 1. [Introduction](#sec-1)
 2. [Block Diagram](#sec-2)
-   - [What is UIO?](#sec-uio)
-3. [Interrupt Flow (Hardware to Userspace)](#sec-3)
-4. [Why a Device Tree Overlay?](#sec-4)
-5. [The Overlay](#sec-5)
+3. [What is UIO?](#sec-3)
+4. [Interrupt Flow (Hardware to Userspace)](#sec-4)
+5. [Why a Device Tree Overlay?](#sec-5)
+6. [The Overlay](#sec-6)
    - [How the interrupt number is calculated](#sec-irq-calc)
-6. [The C Application](#sec-6)
-7. [On the Board](#sec-7)
-8. [Summary](#sec-8)
-9. [What's Next](#sec-9)
+7. [The C Application](#sec-7)
+8. [On the Board](#sec-8)
+9. [Summary](#sec-9)
+10. [What's Next](#sec-10)
 
 # **1\. Introduction** {#sec-1}
 
@@ -51,7 +51,7 @@ The focus of this blog is UIO, device tree overlay, and interrupt handling, so w
 * PS talks to AXI GPIO over AXI (read button state, enable interrupt registers).  
 * Button change → `ip2intc_irpt` → Concat → `IRQ_F2P[0]` → [GIC](https://developer.arm.com/documentation/ihi0048/latest/) → Linux.
 
-## **What is UIO?** {#sec-uio}
+# **3\. What is UIO?** {#sec-3}
 
 **[UIO](https://docs.kernel.org/driver-api/uio-howto.html)** stands for **Userspace I/O**.
 
@@ -93,7 +93,7 @@ UIO is a good choice when:
 
 If the hardware needs tight kernel integration, must be shared between multiple processes, or interacts with kernel subsystems such as networking or storage, then a full kernel driver is the better choice.
 
-# **3\. Interrupt Flow (Hardware to Userspace)** {#sec-3}
+# **4\. Interrupt Flow (Hardware to Userspace)** {#sec-4}
 
 Why not just poll the GPIO data register in a loop?
 
@@ -127,7 +127,7 @@ What each step means:
 3. **UIO driver** — the handler does **not** run your application logic in kernel space. It records that an interrupt happened and disables the IRQ line until userspace re-enables it.  
 4. **Your user-space thread** — if your process was blocked in `read("/dev/uio0")`, that `read` returns. Your thread wakes up, clears the hardware status in mapped registers, then `write()`s back to UIO so the next IRQ can be delivered.
 
-# **4\. Why a Device Tree Overlay?** {#sec-4}
+# **5\. Why a Device Tree Overlay?** {#sec-5}
 
 In [Part 2](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-2.html) the [device tree](https://www.devicetree.org/) was the full board description loaded at boot. An [overlay](https://docs.kernel.org/devicetree/overlay-notes.html) can be used at runtime to tell the kernel about a new node or update an existing node.
 
@@ -137,7 +137,7 @@ Why not edit the full DTS and rebuild the whole image?
 * An **overlay** is a small DT fragment applied on top of the base tree (at runtime or at boot).  
 * Same information as [Part 2](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-2.html) — `reg`, interrupt, `compatible` — just delivered as a patch.
 
-# **5\. The Overlay** {#sec-5}
+# **6\. The Overlay** {#sec-6}
 
 This is the overlay used for the button GPIO + UIO:
 
@@ -159,15 +159,20 @@ This is the overlay used for the button GPIO + UIO:
 };
 ```
 
+<div class="tip-box" markdown="1">
+
+**Compile tip.** `#address-cells` / `#size-cells` must match the parent bus. For Zynq `amba` / `axi` that is usually `<1>` and `<1>`. They are not strictly required for the overlay to work on the board, but if you omit them `dtc` falls back to defaults (`#address-cells = 2`) and you get `reg_format` warnings like these:
+
+![][image2]
+
+</div>
+
 Line by line:
 
 * **`/dts-v1/;`** — marks this as device tree source.  
 * **`/plugin/;`** — marks this file as an **overlay** (not a complete tree).  
 * **`&amba { ... }`** — which parent node in the base device tree this overlay node belongs under. On many Zynq trees, the symbol `amba` points at `/axi`.  
-* **`#address-cells` / `#size-cells`** — must match the parent bus. For Zynq `amba` / `axi` that is usually `<1>` and `<1>`. If you omit them, `dtc` falls back to defaults (`#address-cells = 2`), and you get `reg_format` warnings even though the overlay may still apply correctly on the board. This is not required. But if not added then it can result in warnings like these while compiling:
-
-![][image2]
-
+* **`#address-cells` / `#size-cells`** — see the compile tip above.  
 * **`axi_gpio_uio@41200000`** — new device node; the `@41200000` matches the MMIO base.  
 * **`compatible = "generic-uio"`** — which driver should bind. Here we want UIO (`uio_pdrv_genirq` with `of_id=generic-uio`).  
 * **`status = "okay"`** — this device is enabled.  
@@ -250,7 +255,7 @@ Linux then turns that back into hardware ID 61 when it programs the GIC. That is
 * the **overlay** says `29`  
 * `/proc/interrupts` shows `GIC-0 61`
 
-# **6\. The C Application** {#sec-6}
+# **7\. The C Application** {#sec-7}
 
 Goal of the app:
 
@@ -348,7 +353,9 @@ while (1) {
 * `write` again — UIO disables the IRQ when it fires; re-enable for the next press.  
 * `if (buttonValue)` — press and release both interrupt. Idle is `0`, so print only on press.
 
-# **7\. On the Board** {#sec-7}
+# **8\. On the Board** {#sec-8}
+
+Do these in order: load UIO with `of_id`, then program the bitstream, then apply the overlay, then run the app.
 
 ## Compile the device tree overlay
 
@@ -439,7 +446,7 @@ Press a button. You should get one line per press, for example:
 
 ![][image10]
 
-# **8\. Summary** {#sec-8}
+# **9\. Summary** {#sec-9}
 
 * Vivado: buttons → AXI GPIO → `IRQ_F2P[0]`.  
 * Overlay: tells Linux the MMIO (`reg`), the IRQ, and `compatible = "generic-uio"`.  
@@ -450,7 +457,7 @@ Press a button. You should get one line per press, for example:
 
 In [Part 2](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-2.html) the device tree described what exists. Here we showed how to **add** a PL peripheral at runtime and drive its interrupt from userspace.
 
-# **9\. What's Next** {#sec-9}
+# **10\. What's Next** {#sec-10}
 
 Next we can look at doing the same path with a small in-kernel IRQ handler instead of [UIO](https://docs.kernel.org/driver-api/uio-howto.html), and compare when each approach makes sense.
 
