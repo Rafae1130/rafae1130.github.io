@@ -161,20 +161,12 @@ This is the overlay used for the button GPIO + UIO:
 };
 ```
 
-<div class="tip-box" markdown="1">
-
-**Compile tip.** `#address-cells` / `#size-cells` must match the parent bus. For Zynq `amba` / `axi` that is usually `<1>` and `<1>`. They are not strictly required for the overlay to work on the board, but if you omit them `dtc` falls back to defaults (`#address-cells = 2`) and you get `reg_format` warnings like these:
-
-![][image2]
-
-</div>
-
 Line by line:
 
 * **`/dts-v1/;`** — marks this as device tree source.  
 * **`/plugin/;`** — marks this file as an **overlay** (not a complete tree).  
 * **`&amba { ... }`** — which parent node in the base device tree this overlay node belongs under. On many Zynq / PetaLinux trees the label `amba` points at `/axi`. Check your base DTS (or `/proc/device-tree`) for the real label; some trees use `&axi` instead. Same idea for `&intc`: it must be the label of your GIC node in the base tree.  
-* **`#address-cells` / `#size-cells`** — see the compile tip above.  
+* **`#address-cells` / `#size-cells`** — must match the parent bus (usually `<1>` / `<1>` on Zynq `amba` / `axi`).  
 * **`axi_gpio_uio@41200000`** — new device node. The name before `@` can be anything sensible; the `@41200000` should match the MMIO base so the unit address stays consistent with `reg`.  
 * **`compatible = "generic-uio"`** — which driver should bind. Here we want UIO (`uio_pdrv_genirq` with `of_id=generic-uio`).  
 * **`status = "okay"`** — this device is enabled.  
@@ -377,6 +369,14 @@ Do these in order: load UIO with `of_id`, then program the bitstream, then apply
 ```bash
 dtc -I dts -O dtb -o axi_gpio_uio.dtbo axi_gpio_uio.dts
 ```
+
+<div class="tip-box" markdown="1">
+
+**Compile tip.** `#address-cells` / `#size-cells` must match the parent bus. For Zynq `amba` / `axi` that is usually `<1>` and `<1>`. They are not strictly required for the overlay to work on the board, but if you omit them `dtc` falls back to defaults (`#address-cells = 2`) and you get `reg_format` warnings like these:
+
+![][image2]
+
+</div>
 
 Copy `axi_gpio_uio.dtbo` onto the board.
 
