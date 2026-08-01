@@ -369,6 +369,8 @@ Do these in order: load UIO with `of_id`, then program the bitstream, then apply
 dtc -I dts -O dtb -o axi_gpio_uio.dtbo axi_gpio_uio.dts
 ```
 
+![][image12]
+
 <div class="tip-box" markdown="1">
 
 **Compile tip.** `#address-cells` / `#size-cells` must match the parent bus. For Zynq `amba` / `axi` that is usually `<1>` and `<1>`. They are not strictly required for the overlay to work on the board, but if you omit them `dtc` falls back to defaults (`#address-cells = 2`) and you get `reg_format` warnings like these:
@@ -437,6 +439,8 @@ Load the device tree overlay:
 sudo fpgautil -o axi_gpio_uio.dtbo
 ```
 
+![][image13]
+
 ## Check the interrupt / device
 
 ```bash
@@ -491,3 +495,5 @@ Next we can look at doing the same path with a small in-kernel IRQ handler inste
 [image9]: images/image9_p3.png
 [image10]: images/image10_p3.png
 [image11]: images/image11_p3.png
+[image12]: images/image12_p3.png
+[image13]: images/image13_p3.png
