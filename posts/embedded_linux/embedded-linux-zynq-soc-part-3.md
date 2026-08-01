@@ -1,6 +1,6 @@
 # Embedded Linux (Zynq SoC): Part 3 - Device Tree Overlay and UIO
 
-*This is Part 3 of the Embedded Linux ([Zynq SoC](https://www.amd.com/en/products/adaptive-socs-and-fpgas/soc/zynq-7000.html)) series. Read [Part 1](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-1.html) and [Part 2 — Device Tree](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-2.html) if you haven't already.*
+*This is Part 3 of the Embedded Linux ([Zynq SoC](https://www.amd.com/en/products/adaptive-socs-and-fpgas/soc/zynq-7000.html)) series. Read [Part 1](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-1.html) and [Part 2: Device Tree](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-2.html) if you haven't already.*
 
 ## Table of contents
 
@@ -18,7 +18,7 @@
 
 # **1\. Introduction** {#sec-1}
 
-In [Parts 1](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-1.html) and [2](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-2.html) we have been through enough theory. Now it is time to do something practical. In this blog we will learn about [device tree overlays](https://docs.kernel.org/devicetree/overlay-notes.html) — when and how to use them — what [UIO](https://docs.kernel.org/driver-api/uio-howto.html) is, when and how to use it, and walk through the steps with a final test on a Xilinx [Zybo](https://digilent.com/reference/programmable-logic/zybo/start) board.
+In [Parts 1](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-1.html) and [2](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-2.html) we have been through enough theory. Now it is time to do something practical. In this blog we will learn about [device tree overlays](https://docs.kernel.org/devicetree/overlay-notes.html): when and how to use them, what [UIO](https://docs.kernel.org/driver-api/uio-howto.html) is, when and how to use it, and walk through the steps with a final test on a Xilinx [Zybo](https://digilent.com/reference/programmable-logic/zybo/start) board.
 
 In this example, we'll build a simple GPIO peripheral connected to buttons on the board in the FPGA and access it from a userspace application without writing a kernel driver. The button presses will generate an interrupt which we will detect in the software.
 
@@ -38,15 +38,15 @@ Here is the [Vivado](https://www.amd.com/en/products/software/adaptive-socs-and-
 
 What each block is doing (one line each):
 
-* **ZYNQ7 Processing System** — [Zynq](https://en.wikipedia.org/wiki/Zynq) PS (ARM cores + interrupt controller).  
-* **AXI SmartConnect** — [AXI](https://www.arm.com/architecture/system-architectures/amba/amba-5) interconnect between the PS and the GPIO.  
-* **AXI GPIO** — memory-mapped GPIO for the buttons; also generates an interrupt when an input changes ([PG144](https://docs.amd.com/r/en-US/pg144-axi-gpio)).  
-* **btns_4bits** — the four board buttons.  
-* **Concat** — packs the GPIO interrupt onto bit 0 of `IRQ_F2P`.  
-* **Constant** — ties the unused `IRQ_F2P` bits to 0.  
-* **Processing System Reset** — reset for the AXI / PL logic.
+* **ZYNQ7 Processing System**: [Zynq](https://en.wikipedia.org/wiki/Zynq) PS (ARM cores + interrupt controller).  
+* **AXI SmartConnect**: [AXI](https://www.arm.com/architecture/system-architectures/amba/amba-5) interconnect between the PS and the GPIO.  
+* **AXI GPIO**: memory-mapped GPIO for the buttons; also generates an interrupt when an input changes ([PG144](https://docs.amd.com/r/en-US/pg144-axi-gpio)).  
+* **btns_4bits**: the four board buttons.  
+* **Concat**: packs the GPIO interrupt onto bit 0 of `IRQ_F2P`.  
+* **Constant**: ties the unused `IRQ_F2P` bits to 0.  
+* **Processing System Reset**: reset for the AXI / PL logic.
 
-The focus of this blog is UIO, device tree overlay, and interrupt handling, so we will not go into much detail about the FPGA design itself. You do not need this exact block design — any AXI GPIO wired to a Zynq `IRQ_F2P` line works the same way. If you use a different PL interrupt pin, the device-tree interrupt number changes with it. For example, `IRQ_F2P[0]` becomes SPI `29` in the overlay, while `IRQ_F2P[1]` becomes SPI `30` (hardware IRQ `62`, then `62 − 32`).
+The focus of this blog is UIO, device tree overlay, and interrupt handling, so we will not go into much detail about the FPGA design itself. You do not need this exact block design. Any AXI GPIO wired to a Zynq `IRQ_F2P` line works the same way. If you use a different PL interrupt pin, the device-tree interrupt number changes with it. For example, `IRQ_F2P[0]` becomes SPI `29` in the overlay, while `IRQ_F2P[1]` becomes SPI `30` (hardware IRQ `62`, then `62 − 32`).
 
 Simply what this design does is:
 
@@ -124,20 +124,20 @@ Your user-space thread
 
 What each step means:
 
-1. **FPGA hardware** — button edge hits AXI GPIO; the IP asserts `ip2intc_irpt`, which is wired to `IRQ_F2P[0]` into the Zynq GIC.  
-2. **Linux interrupt handler (kernel)** — the GIC delivers that IRQ to Linux. The kernel runs the registered handler. For UIO that handler belongs to `uio_pdrv_genirq`.  
-3. **UIO driver** — the handler does **not** run your application logic in kernel space. It records that an interrupt happened and disables the IRQ line until userspace re-enables it.  
-4. **Your user-space thread** — if your process was blocked in `read("/dev/uio0")`, that `read` returns. Your thread wakes up, clears the hardware status in mapped registers, then `write()`s back to UIO so the next IRQ can be delivered.
+1. **FPGA hardware**: button edge hits AXI GPIO; the IP asserts `ip2intc_irpt`, which is wired to `IRQ_F2P[0]` into the Zynq GIC.  
+2. **Linux interrupt handler (kernel)**: the GIC delivers that IRQ to Linux. The kernel runs the registered handler. For UIO that handler belongs to `uio_pdrv_genirq`.  
+3. **UIO driver**: the handler does **not** run your application logic in kernel space. It records that an interrupt happened and disables the IRQ line until userspace re-enables it.  
+4. **Your user-space thread**: if your process was blocked in `read("/dev/uio0")`, that `read` returns. Your thread wakes up, clears the hardware status in mapped registers, then `write()`s back to UIO so the next IRQ can be delivered.
 
 # **5\. Why a Device Tree Overlay?** {#sec-5}
 
-In [Part 2](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-2.html) the [device tree](https://www.devicetree.org/) was the full board description loaded at boot. An [overlay](https://docs.kernel.org/devicetree/overlay-notes.html) can be used at runtime to tell the kernel about a new node or update an existing node. That is especially useful when you reprogram the FPGA bitstream at runtime with a different PL design — the base DTB from boot no longer matches the new hardware, so an overlay can describe the new IP without rebuilding the whole image.
+In [Part 2](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-2.html) the [device tree](https://www.devicetree.org/) was the full board description loaded at boot. An [overlay](https://docs.kernel.org/devicetree/overlay-notes.html) can be used at runtime to tell the kernel about a new node or update an existing node. That is especially useful when you reprogram the FPGA bitstream at runtime with a different PL design: the base DTB from boot no longer matches the new hardware, so an overlay can describe the new IP without rebuilding the whole image.
 
 Why not edit the full DTS and rebuild the whole image?
 
 * You can. For something you just added in PL, that is a lot of rebuild for a small change.  
 * An **overlay** is a small DT fragment applied on top of the base tree (at runtime or at boot).  
-* Same information as [Part 2](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-2.html) — `reg`, interrupt, `compatible` — just delivered as a patch.
+* Same information as [Part 2](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-2.html): `reg`, interrupt, `compatible`, just delivered as a patch.
 
 # **6\. The Overlay** {#sec-6}
 
@@ -163,28 +163,28 @@ This is the overlay used for the button GPIO + UIO:
 
 Line by line:
 
-* **`/dts-v1/;`** — marks this as device tree source.  
-* **`/plugin/;`** — marks this file as an **overlay** (not a complete tree).  
-* **`&amba { ... }`** — which parent node in the base device tree this overlay node belongs under. On many Zynq / PetaLinux trees the label `amba` points at `/axi`. Check your base DTS (or `/proc/device-tree`) for the real label; some trees use `&axi` instead. Same idea for `&intc`: it must be the label of your GIC node in the base tree.  
-* **`#address-cells` / `#size-cells`** — must match the parent bus (usually `<1>` / `<1>` on Zynq `amba` / `axi`).  
-* **`axi_gpio_uio@41200000`** — new device node. The name before `@` can be anything sensible; the `@41200000` should match the MMIO base so the unit address stays consistent with `reg`.  
-* **`compatible = "generic-uio"`** — which driver should bind. Here we want UIO (`uio_pdrv_genirq` with `of_id=generic-uio`).  
-* **`status = "okay"`** — this device is enabled.  
-* **`reg = <0x41200000 0x10000>`** — MMIO window: base and size from Vivado’s Address Editor. This is what userspace will `mmap` through UIO.  
-* **`interrupt-parent = <&intc>`** — interrupt controller is the Zynq GIC node already present in the base tree.  
-* **`interrupts = <0 29 4>`** — explained in detail below.
+* **`/dts-v1/;`**: marks this as device tree source.  
+* **`/plugin/;`**: marks this file as an **overlay** (not a complete tree).  
+* **`&amba { ... }`**: which parent node in the base device tree this overlay node belongs under. On many Zynq / PetaLinux trees the label `amba` points at `/axi`. Check your base DTS (or `/proc/device-tree`) for the real label; some trees use `&axi` instead. Same idea for `&intc`: it must be the label of your GIC node in the base tree.  
+* **`#address-cells` / `#size-cells`**: must match the parent bus (usually `<1>` / `<1>` on Zynq `amba` / `axi`).  
+* **`axi_gpio_uio@41200000`**: new device node. The name before `@` can be anything sensible; the `@41200000` should match the MMIO base so the unit address stays consistent with `reg`.  
+* **`compatible = "generic-uio"`**: which driver should bind. Here we want UIO (`uio_pdrv_genirq` with `of_id=generic-uio`).  
+* **`status = "okay"`**: this device is enabled.  
+* **`reg = <0x41200000 0x10000>`**: MMIO window: base and size from Vivado’s Address Editor. This is what userspace will `mmap` through UIO.  
+* **`interrupt-parent = <&intc>`**: interrupt controller is the Zynq GIC node already present in the base tree.  
+* **`interrupts = <0 29 4>`**: explained in detail below.
 
 The base address and range come from Vivado Address Editor (Window → Address Editor), not from guessing:
 
 ![][image11]
 
-**Figure 2: Address Editor — AXI GPIO mapped at `0x41200000`, range 64K (`0x10000`).**
+**Figure 2: Address Editor, AXI GPIO mapped at `0x41200000`, range 64K (`0x10000`).**
 
-Here `Master Base Address` is `0x41200000` and `Range` is `64K`, which is `0x10000` bytes. That is why `reg` uses those two values even though the GPIO only has a handful of useful registers — the bus mapping is allocated in a 64K window. If your design shows a different base, put that base in both `@...` and `reg`.
+Here `Master Base Address` is `0x41200000` and `Range` is `64K`, which is `0x10000` bytes. That is why `reg` uses those two values even though the GPIO only has a handful of useful registers; the bus mapping is allocated in a 64K window. If your design shows a different base, put that base in both `@...` and `reg`.
 
 Why `reg` if we only care about the interrupt?
 
-* UIO uses `reg` to create the MMIO mapping for `/dev/uio0`. Without it there is nothing to `mmap`, so userspace cannot touch the GPIO at all — not even to enable interrupts or read which button was pressed.  
+* UIO uses `reg` to create the MMIO mapping for `/dev/uio0`. Without it there is nothing to `mmap`, so userspace cannot touch the GPIO at all, not even to enable interrupts or read which button was pressed.  
 * That same mapping is also how the app clears `IPISR` after each IRQ so the level interrupt can drop and the next press can fire again.
 
 ## How the interrupt number is calculated (`29` and the −32) {#sec-irq-calc}
@@ -245,7 +245,7 @@ The [ARM GIC](https://developer.arm.com/documentation/ihi0048/latest/) interrupt
 | 16–31 | PPI | Private Peripheral Interrupts (per CPU) |
 | 32+ | SPI | Shared Peripheral Interrupts (shared across CPUs) |
 
-SPI hardware IDs therefore start at **32**. The device tree binding for the GIC does not store the full hardware ID in the SPI cell. It stores the **SPI index** — how far that interrupt is past the start of the SPI range:
+SPI hardware IDs therefore start at **32**. The device tree binding for the GIC does not store the full hardware ID in the SPI cell. It stores the **SPI index**: how far that interrupt is past the start of the SPI range:
 
 ```text
 SPI index = hardware ID − 32
@@ -302,8 +302,8 @@ volatile uint32_t *gpioRegs = mmap(NULL, MAP_SIZE,
     PROT_READ | PROT_WRITE, MAP_SHARED, uioFd, 0);
 ```
 
-* `open` — attach to the UIO device created when the overlay binds.  
-* `mmap` — map the GPIO MMIO window (`0x41200000`, size `0x10000`) into this process.  
+* `open`: attach to the UIO device created when the overlay binds.  
+* `mmap`: map the GPIO MMIO window (`0x41200000`, size `0x10000`) into this process.  
 * After this, `gpioRegs[offset]` is a normal pointer read/write to PL registers.
 
 ### Enable interrupts (GPIO + UIO)
@@ -320,12 +320,12 @@ write(uioFd, &irqEnable, sizeof(irqEnable));  /* allow UIO to deliver IRQs */
 
 AXI GPIO interrupt enables are two levels:
 
-* **IP IER (`0x128`)** — per-channel enable inside the GPIO IP. Writing `1` enables channel 1 (the button channel in this design). If this bit is 0, a button edge does not set the IP interrupt output.  
-* **GIER (`0x11C`)** — global interrupt enable for the whole IP. Bit 31 is the enable bit, so the value is `0x80000000`. If GIER is 0, no interrupt leaves the GPIO even when IPIER is set.
+* **IP IER (`0x128`)**: per-channel enable inside the GPIO IP. Writing `1` enables channel 1 (the button channel in this design). If this bit is 0, a button edge does not set the IP interrupt output.  
+* **GIER (`0x11C`)**: global interrupt enable for the whole IP. Bit 31 is the enable bit, so the value is `0x80000000`. If GIER is 0, no interrupt leaves the GPIO even when IPIER is set.
 
 Without both, AXI GPIO never asserts `ip2intc_irpt`. Clearing IPISR drops any stale pending status before we start waiting. `write()` tells UIO it may deliver the next interrupt to userspace.
 
-### Main loop — wait, handle, re-arm
+### Main loop: wait, handle, re-arm
 
 ```c
 printf("Press a button...\n");
@@ -352,12 +352,12 @@ while (1) {
 }
 ```
 
-* `read` — sleeps until the IRQ fires. Other threads can still run while this one blocks.  
-* mask + `usleep` — buttons bounce; briefly ignore extra edges.  
-* read DATA — which button(s) are active (`1/2/4/8` for buttons 1–4).  
-* clear IPISR — required for a level IRQ; skip this and you get an interrupt storm.  
-* `write` again — UIO disables the IRQ when it fires; re-enable for the next press.  
-* `if (buttonValue)` — press and release both interrupt. Idle is `0`, so print only on press.
+* `read`: sleeps until the IRQ fires. Other threads can still run while this one blocks.  
+* mask + `usleep`: buttons bounce; briefly ignore extra edges.  
+* read DATA: which button(s) are active (`1/2/4/8` for buttons 1–4).  
+* clear IPISR: required for a level IRQ; skip this and you get an interrupt storm.  
+* `write` again: UIO disables the IRQ when it fires; re-enable for the next press.  
+* `if (buttonValue)`: press and release both interrupt. Idle is `0`, so print only on press.
 
 # **8\. On the Board** {#sec-8}
 
@@ -481,7 +481,7 @@ Next we can look at doing the same path with a small in-kernel IRQ handler inste
 
 ---
 
-**Series:** [Part 1](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-1.html) · [Part 2 — Device Tree](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-2.html) · Part 3
+**Series:** [Part 1](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-1.html) · [Part 2: Device Tree](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-2.html) · Part 3
 
 
 [image1]: images/image1_p3.png
