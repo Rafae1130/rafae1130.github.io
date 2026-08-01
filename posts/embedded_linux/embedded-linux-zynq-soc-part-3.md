@@ -131,7 +131,7 @@ What each step means:
 
 # **5\. Why a Device Tree Overlay?** {#sec-5}
 
-In [Part 2](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-2.html) the [device tree](https://www.devicetree.org/) was the full board description loaded at boot. An [overlay](https://docs.kernel.org/devicetree/overlay-notes.html) can be used at runtime to tell the kernel about a new node or update an existing node.
+In [Part 2](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-2.html) the [device tree](https://www.devicetree.org/) was the full board description loaded at boot. An [overlay](https://docs.kernel.org/devicetree/overlay-notes.html) can be used at runtime to tell the kernel about a new node or update an existing node. That is especially useful when you reprogram the FPGA bitstream at runtime with a different PL design — the base DTB from boot no longer matches the new hardware, so an overlay can describe the new IP without rebuilding the whole image.
 
 Why not edit the full DTS and rebuild the whole image?
 
