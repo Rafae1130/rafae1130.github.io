@@ -46,7 +46,7 @@ What each block is doing (one line each):
 * **Constant**: ties the unused `IRQ_F2P` bits to 0.  
 * **Processing System Reset**: reset for the AXI / PL logic.
 
-The focus of this blog is UIO, device tree overlay, and interrupt handling, so we will not go into much detail about the FPGA design itself. You do not need this exact block design. Any AXI GPIO wired to a Zynq `IRQ_F2P` line works the same way. If you use a different PL interrupt pin, the device-tree interrupt number changes with it. For example, `IRQ_F2P[0]` becomes SPI `29` in the overlay, while `IRQ_F2P[1]` becomes SPI `30` (hardware IRQ `62`, then `62 − 32`).
+The focus of this blog is UIO, device tree overlay, and interrupt handling, so we will not go into much detail about the FPGA design itself. You do not need this exact block design. Any AXI GPIO wired to a Zynq `IRQ_F2P` line works the same way. If you use a different PL interrupt pin, the device-tree interrupt number changes with it. For example, `IRQ_F2P[0]` becomes SPI `29` in the overlay, while `IRQ_F2P[1]` becomes SPI `30` (hardware IRQ `62`, then `62 − 32`, more detail on this in [How the interrupt number is calculated](#sec-irq-calc)).
 
 Simply what this design does is:
 
@@ -386,9 +386,9 @@ Copy `axi_gpio_uio.dtbo` onto the board.
 
 ## Convert FPGA `.bit` to `.bit.bin`
 
-Latest version of [PetaLinux](https://docs.amd.com/r/en-US/ug1144-petalinux-tools-reference-guide) requires a `.bit.bin` version of bitstream instead of just `.bit`. This `.bit` can be converted to `.bit.bin` using the `bootgen` tool available in PetaLinux.
+fpgautil in newer versions of [PetaLinux](https://docs.amd.com/r/en-US/ug1144-petalinux-tools-reference-guide) requires a `.bit.bin` version of bitstream instead of just `.bit`. This `.bit` can be converted to `.bit.bin` using the `bootgen` tool available in PetaLinux.
 
-Create a `.bif` file first:
+Create a `.bif` file first, add the following in this and save (replace the .bit name with your own bitstream file name:
 
 ![][image5]
 
