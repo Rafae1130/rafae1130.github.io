@@ -184,9 +184,8 @@ Here `Master Base Address` is `0x41200000` and `Range` is `64K`, which is `0x100
 
 Why `reg` if we only care about the interrupt?
 
-* The interrupt wakes you.  
-* To stop it firing forever you must clear AXI GPIO interrupt status in the registers.  
-* `reg` is how UIO exposes those registers to your app.
+* UIO uses `reg` to create the MMIO mapping for `/dev/uio0`. Without it there is nothing to `mmap`, so userspace cannot touch the GPIO at all — not even to enable interrupts or read which button was pressed.  
+* That same mapping is also how the app clears `IPISR` after each IRQ so the level interrupt can drop and the next press can fire again.
 
 ## How the interrupt number is calculated (`29` and the −32) {#sec-irq-calc}
 
