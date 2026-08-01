@@ -66,24 +66,25 @@ That's exactly what UIO provides.
 
 ### **How UIO splits the work**
 
-UIO divides the work between the kernel and your application.
+UIO divides the work between the kernel and your userspace application. The kernel handles tasks that require privileged access, while the application implements the device-specific logic.
 
 **Kernel (UIO driver)**
 
-* Claims the interrupt.  
-* Creates `/dev/uioX`.  
-* Exposes the peripheral registers so they can be accessed using `mmap()`.
+* Claims and manages the interrupt.  
+* Creates the `/dev/uioX` device.  
+* Maps the peripheral's registers so they can be accessed using `mmap()`.  
+* Wakes the application when an interrupt occurs.
 
 **Userspace application**
 
 * Opens `/dev/uioX`.  
-* Maps the registers with `mmap()`.  
-* Waits for an interrupt using `read()`.  
-* Handles the event.  
-* Clears the interrupt in the hardware.  
-* Calls `write()` to re-enable future interrupts.
+* Maps the peripheral registers with `mmap()`.  
+* Waits for an interrupt by blocking on `read()`.  
+* Processes the interrupt event.  
+* Clears the interrupt in the peripheral.  
+* Calls `write()` to tell the UIO driver to re-enable future interrupts.
 
-This keeps the kernel driver extremely small while allowing almost all of the application logic to remain in userspace.
+This split keeps the kernel driver generic and very small, while allowing the application to contain all of the device-specific functionality. Instead of writing a custom kernel driver for every simple FPGA peripheral, only the minimal interrupt and memory-management code runs in the kernel, with the rest of the logic implemented in userspace.
 
 ### **When should you use UIO?**
 
@@ -111,23 +112,18 @@ FPGA hardware
       |
       | IRQ signal
       v
-Linux interrupt handler (kernel)
-      |
-      | marks UIO interrupt pending
-      v
-UIO driver
+UIO driver (kernel)
       |
       | wakes thread blocked in read()
       v
-Your user-space thread
+Your userspace application
 ```
 
 What each step means:
 
 1. **FPGA hardware**: button edge hits AXI GPIO; the IP asserts `ip2intc_irpt`, which is wired to `IRQ_F2P[0]` into the Zynq GIC.  
-2. **Linux interrupt handler (kernel)**: the GIC delivers that IRQ to Linux. The kernel runs the registered handler. For UIO that handler belongs to `uio_pdrv_genirq`.  
-3. **UIO driver**: the handler does **not** run your application logic in kernel space. It records that an interrupt happened and disables the IRQ line until userspace re-enables it.  
-4. **Your user-space thread**: if your process was blocked in `read("/dev/uio0")`, that `read` returns. Your thread wakes up, clears the hardware status in mapped registers, then `write()`s back to UIO so the next IRQ can be delivered.
+2. **UIO driver (kernel)**: the GIC delivers that IRQ to Linux and the registered UIO handler (`uio_pdrv_genirq`) runs. It does **not** run your application logic in kernel space. It records that an interrupt happened and disables the IRQ line until userspace re-enables it.  
+3. **Your userspace application**: if your process was blocked in `read("/dev/uio0")`, that `read` returns. Your app wakes up, clears the hardware status in mapped registers, then `write()`s back to UIO so the next IRQ can be delivered.
 
 # **5\. Why a Device Tree Overlay?** {#sec-5}
 
