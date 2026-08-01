@@ -77,7 +77,7 @@ UIO divides the work between the kernel and your userspace application. The kern
 
 * Opens `/dev/uioX`.  
 * Maps the peripheral registers with `mmap()`.  
-* Waits for an interrupt by blocking on `read()`.  
+* Waits for an interrupt by sleeping on `read()`. The process is free to work on other threads. 
 * Processes the interrupt event.  
 * Clears the interrupt in the peripheral.  
 * Calls `write()` to tell the UIO driver to re-enable future interrupts.
