@@ -346,18 +346,23 @@ while (1) {
     write(uioFd, &irqEnable, sizeof(irqEnable)); /* re-enable UIO */
 
     if (buttonValue) {
-        printf("Button = %u\n", buttonValue);
-        fflush(stdout);
+        int i;
+        for (i = 0; i < 4; i++) {
+            if (buttonValue & (1u << i)) {
+                printf("Button = %d\n", i + 1); /* bit0 -> 1 ... bit3 -> 4 */
+                fflush(stdout);
+            }
+        }
     }
 }
 ```
 
 * `read`: sleeps until the IRQ fires. Other threads can still run while this one blocks.  
 * mask + `usleep`: buttons bounce; briefly ignore extra edges.  
-* read DATA: which button(s) are active (`1/2/4/8` for buttons 1–4).  
+* read DATA: bitmask of which button(s) are down (`bit0` = button 1, …, `bit3` = button 4).  
 * clear IPISR: required for a level IRQ; skip this and you get an interrupt storm.  
 * `write` again: UIO disables the IRQ when it fires; re-enable for the next press.  
-* `if (buttonValue)`: press and release both interrupt. Idle is `0`, so print only on press.
+* `if (buttonValue)`: press and release both interrupt. Idle is `0`, so print only on press. Each set bit prints as `Button = 1` … `4`.
 
 # **8\. On the Board** {#sec-8}
 
@@ -421,7 +426,7 @@ sudo modprobe uio_pdrv_genirq of_id=generic-uio
 
 This tells the driver to bind to any device tree node whose compatible property is `"generic-uio"`.
 
-Check with `lsmod` (that shows loadable modules currently in the running kernel i.e. drivers that are available in kernel but not automatically loaded at boot and are only loaded when required).
+Check with `lsmod` (lists kernel modules that are currently loaded).
 
 ## Apply the overlay
 
