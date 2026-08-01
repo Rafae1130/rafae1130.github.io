@@ -55,7 +55,7 @@ Simply what this design does is:
 
 # **3\. What is UIO?** {#sec-3}
 
-**[UIO](https://docs.kernel.org/driver-api/uio-howto.html)** stands for **Userspace I/O**. It is a kernel driver which provides functionality like interrupt handling and MMIO access.
+**[UIO](https://docs.kernel.org/driver-api/uio-howto.html)** stands for **Userspace I/O**. It is a kernel framework including a kernel driver (`uio_pdrv_genirq`) which provides functionality like interrupt handling and MMIO access.
 
 Normally, hardware peripherals are controlled by kernel drivers. But for simple FPGA IPs, writing a complete driver is often unnecessary. In many cases, you only need to:
 
@@ -160,8 +160,6 @@ This is the overlay used for the button GPIO + UIO:
     };
 };
 ```
-
-Line by line:
 
 * **`/dts-v1/;`**: marks this as device tree source.  
 * **`/plugin/;`**: marks this file as an **overlay** (not a complete tree).  
