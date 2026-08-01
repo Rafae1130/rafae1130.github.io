@@ -8,7 +8,7 @@
 2. [Block Diagram](#sec-2)
 3. [What is UIO?](#sec-3)
 4. [Interrupt Flow (Hardware to Userspace)](#sec-4)
-5. [Why a Device Tree Overlay?](#sec-5)
+5. [What is a Device Tree Overlay?](#sec-5)
 6. [The Overlay](#sec-6)
    - [How the interrupt number is calculated](#sec-irq-calc)
 7. [The C Application](#sec-7)
@@ -125,15 +125,21 @@ What each step means:
 2. **UIO driver (kernel)**: the GIC delivers that IRQ to Linux and the registered UIO handler (`uio_pdrv_genirq`) runs. It does **not** run your application logic in kernel space. It records that an interrupt happened and disables the IRQ line until userspace re-enables it.  
 3. **Your userspace application**: if your process was blocked in `read("/dev/uio0")`, that `read` returns. Your app wakes up, clears the hardware status in mapped registers, then `write()`s back to UIO so the next IRQ can be delivered.
 
-# **5\. Why a Device Tree Overlay?** {#sec-5}
+# **5\. What is a Device Tree Overlay?** {#sec-5}
 
-In [Part 2](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-2.html) the [device tree](https://www.devicetree.org/) was the full board description loaded at boot. An [overlay](https://docs.kernel.org/devicetree/overlay-notes.html) can be used at runtime to tell the kernel about a new node or update an existing node. That is especially useful when you reprogram the FPGA bitstream at runtime with a different PL design: the base DTB from boot no longer matches the new hardware, so an overlay can describe the new IP without rebuilding the whole image.
+In [Part 2](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-2.html), we learned that the [device tree](https://www.devicetree.org/) is loaded during boot and tells Linux what hardware is present on the board. Once the kernel has booted, that hardware description is fixed.
 
-Why not edit the full DTS and rebuild the whole image?
+With [PetaLinux](https://docs.amd.com/r/en-US/ug1144-petalinux-tools-reference-guide), however, the FPGA can be reprogrammed while Linux is already running using the [FPGA Manager](https://docs.amd.com/r/en-US/ug1144-petalinux-tools-reference-guide/FPGA-Manager-Configuration-and-Usage-for-Zynq-7000-Devices-and-Zynq-UltraScale-MPSoC) and tools such as [`fpgautil`](https://xilinx-wiki.atlassian.net/wiki/spaces/A/pages/18841847). The new [bitstream](https://docs.amd.com/r/en-US/ug470_7Series_Config) may introduce new PL peripherals, such as a custom AXI IP or GPIO, that were not present when Linux booted.
 
-* You can. For something you just added in PL, that is a lot of rebuild for a small change.  
-* An **overlay** is a small DT fragment applied on top of the base tree (at runtime or at boot).  
-* Same information as [Part 2](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-2.html): `reg`, interrupt, `compatible`, just delivered as a patch.
+At this point, Linux has a problem. New hardware now exists on the FPGA, but Linux has no knowledge of it. It does not know the newly added peripheral's address, interrupt, or which driver should manage it.
+
+A [device tree overlay](https://docs.kernel.org/devicetree/overlay-notes.html) solves this problem. It is a small device tree fragment that is applied on top of the existing device tree, adding or updating only the nodes needed for the newly loaded hardware. Instead of replacing the entire device tree, the overlay simply patches the parts that have changed.
+
+### Why not rebuild the entire device tree?
+
+You certainly can. You could update the full device tree, rebuild the image, and reboot the system. However, for a small change in the FPGA design, this is unnecessary work.
+
+A device tree overlay contains exactly the same information as a normal device tree node, such as `compatible`, `reg`, and `interrupts`, but only for the new hardware. This allows Linux to recognize and use the newly programmed FPGA peripherals without rebuilding or rebooting the system.
 
 # **6\. The Overlay** {#sec-6}
 
