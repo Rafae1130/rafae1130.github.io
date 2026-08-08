@@ -62,17 +62,9 @@ A driver runs in kernel space, so it can do things an application cannot:
 * allocate memory the IP can reach, and keep the caches correct
 * decide whether a second process may open the device while the first still has it
 
-```text
-application  (userspace)
-    |
-    |  open / ioctl / read / write / poll  on  /dev/imgproc0
-    v
-our driver  (kernel space)
-    |
-    |  registers, interrupt, DMA
-    v
-PL IP
-```
+![][image2]
+
+**Figure 2: How one call reaches the IP. The application calls ioctl(), our imgproc_ioctl() runs in the kernel, and that writes the register in the IP.**
 
 The downside is that mistakes are worse.
 
@@ -93,9 +85,9 @@ The customer can use this to talk to the hardware according to the required usec
 
 There are two separate questions about any driver. What does it look like to the application, and how did Linux find the hardware?
 
-![][image2]
+![][image3]
 
-**Figure 2: The two views, and where our PL IP lands in each of them.**
+**Figure 3: The two views, and where our PL IP lands in each of them.**
 
 ### Why can PCIe and USB be enumerated?
 
@@ -186,9 +178,9 @@ Both move data, so why do we need two ways?
 
 If we only had `write`, we would have to invent our own rule, such as the first four bytes are the command and the rest is the frame. `ioctl` gives us that already.
 
-![][image3]
+![][image4]
 
-**Figure 3: ioctl carries a command. write and read carry the frame. They go to different parts of the IP.**
+**Figure 4: ioctl carries a command. write and read carry the frame. They go to different parts of the IP.**
 
 ### poll
 
@@ -295,9 +287,9 @@ The two structs are the wiring.
 
 The rest of this section goes through these in the order they run.
 
-![][image4]
+![][image5]
 
-**Figure 4: probe() runs once, when the compatible string matches a device tree node. remove() undoes it when the module is unloaded.**
+**Figure 5: probe() runs once, when the compatible string matches a device tree node. remove() undoes it when the module is unloaded.**
 
 ## 6.2 imgproc_of_match: how Linux finds the driver {#sec-6-2}
 
@@ -307,9 +299,9 @@ Linux compares the two strings. If they are equal, it calls `probe()`.
 
 That is the whole mechanism. No address checking, no reading of the hardware to see what is there. Just a string compare.
 
-![][image5]
+![][image6]
 
-**Figure 5: The compatible string is the only connection between the device tree node and the driver.**
+**Figure 6: The compatible string is the only connection between the device tree node and the driver.**
 
 ### What if it does not match?
 
@@ -367,9 +359,9 @@ writel(1, dev->base + IPISR);   /* IPISR is 0x120 */
 
 Same register, same offset from the datasheet. Only the way we reach it changed.
 
-![][image6]
+![][image7]
 
-**Figure 6: The address in reg becomes a kernel pointer, and the offset lands on the same register the Part 3 application wrote to.**
+**Figure 7: The address in reg becomes a kernel pointer, and the offset lands on the same register the Part 3 application wrote to.**
 
 ## 6.5 imgproc_open and imgproc_release {#sec-6-5}
 
@@ -482,3 +474,5 @@ In the next blog we fill in this skeleton and run it on the board: the device tr
 [image5]: images/image5_p4.png
 
 [image6]: images/image6_p4.png
+
+[image7]: images/image7_p4.png
