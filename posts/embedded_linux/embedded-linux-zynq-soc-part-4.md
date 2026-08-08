@@ -258,8 +258,16 @@ module_platform_driver(imgproc_driver);
 ```
 
 **`of_device_id `** defines the compatible string to be compared with the device tree. 
+![][image6]
+
+**Figure 6: The compatible string is the only connection between the device tree node and the driver.**
+
+
+
 
 **`imgproc_fops`** tells the kernel which function to run for each userspace function call. For example the in the above platform driver, if the userspace application calls `read()` on `/dev/imgproc0`, the platform driver will run `imgproc_read()`. The skeleton above shows only a few of the available operations. Add link to more  operations here......
+
+add image here mapping userspace function calls to these function
 
 **`imgproc_driver`** struct is provided to the kernel. It contains information about struct *`of_device_id `* and the remove and probe function for this driver. Then the kernel can run the probe function if it sees a matching compatible string of *`of_device_id `* in device tree
 
@@ -270,27 +278,10 @@ The rest of this section goes through these in the order they run.
 
 **Figure 5: probe() runs once, when the compatible string matches a device tree node. remove() undoes it when the module is unloaded.**
 
-## 6.2 imgproc_of_match: how Linux finds the driver {#sec-6-2}
 
-The device tree node names the hardware with a `compatible` string. The driver lists the same string in its match table.
+## 6.4 imgproc_probe: getting the IP ready {#sec-6-4}
 
-Linux compares the two strings. If they are equal, it calls `probe()`.
-
-That is the whole mechanism. No address checking, no reading of the hardware to see what is there. Just a string compare.
-
-![][image6]
-
-**Figure 6: The compatible string is the only connection between the device tree node and the driver.**
-
-### What if it does not match?
-
-Nothing happens, and this is the part that costs people an afternoon.
-
-The module loads without an error. `probe` never runs, `/dev` never appears, and nothing is printed. From the kernel's side nothing went wrong. A driver simply did not match a device.
-
-## 6.3 struct imgproc: what the driver remembers {#sec-6-3}
-
-`probe()` allocates one of these for each IP it finds. Every other function works on it.
+`probe()` runs when the match is found, once for each matching node. It allocates one of these for each IP it finds. Every other function works on it.
 
 ```c
 struct imgproc {
@@ -301,59 +292,21 @@ struct imgproc {
     bool               done;   /* set by the interrupt handler */
 };
 ```
+It gets these values from the device tree. It can have different values depending on functionality. for exmaple: add example here....
+Add an example here, how device tree values will be used to assign these..........
 
-`__iomem` is just a marker. It says this pointer is hardware registers and not normal memory.
 
-
-## 6.4 imgproc_probe: getting the IP ready {#sec-6-4}
-
-`probe()` runs when the match is found, once for each matching node. Two copies of the IP in the bitstream means two nodes, so `probe` runs twice.
 
 1. allocate the struct above
-2. map the register window from the `reg` property, and store it in `base`
-3. set up the wait queue that `poll()` will sleep on
 4. get the interrupt number from the `interrupts` property and request it
 5. create `/dev/imgproc0`
 
-Steps 4 and 5 come last on purpose. After the interrupt is requested the handler can run at any moment, and once `/dev` exists an application can open the device. Everything they touch has to be ready before that.
-
-### Example: from reg to a register write
-
-Take the AXI GPIO from [Part 3](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-3.html), so we can compare the two sides directly.
-
-The application cleared its status register like this:
-
-```c
-/* userspace, after mmap */
-gpioRegs[GPIO_IPISR] = 1;
-```
-
-If we had written a driver for it, the same write looks like this:
-
-```c
-/* kernel, after step 2 filled in base */
-writel(1, dev->base + IPISR);   /* IPISR is 0x120 */
-```
-
-Same register, same offset from the datasheet. Only the way we reach it changed.
-
-![][image7]
-
-**Figure 7: The address in reg becomes a kernel pointer, and the offset lands on the same register the Part 3 application wrote to.**
 
 ## 6.5 imgproc_open and imgproc_release {#sec-6-5}
 
-The kernel hands us the `inode` and the `file`, not our struct. `open()` finds the struct from the `/dev` node it was registered with, checks nobody else has the IP, and stores it in `file->private_data` so every later call can find it.
+When the `/dev/imgproc0` opened in userspace application, this `imgproc_open` will be called because this was what `open` was mapped to in **`imgproc_fops`**. It sets the busy in `imgproc` to 1. 
 
-```c
-if (dev->busy)
-    return -EBUSY;
-
-dev->busy = true;
-file->private_data = dev;
-```
-
-`release()` is the other end. It stops the IP and clears `busy`, so the next process can open the device.
+Similarly `release()` is mapped to `imgproc_release`. It stops the IP and clears `busy`, so the next process can open the device.
 
 ## 6.6 imgproc_ioctl {#sec-6-6}
 
@@ -364,35 +317,23 @@ case IMGPROC_SET_FILTER:  writel(arg, dev->base + FILTER);
 case IMGPROC_START:       writel(1,   dev->base + CTRL);
 ```
 
-This is where the register map stays hidden. The application sends `BLUR`, and only the driver knows which register that is.
+This is where the register map stays hidden. The application sends `BLUR`, and only the driver knows which register that is. add clear example here.....what will happen when ioctl value will be used in userspace application. what will happen for different macros in userspace application
 
 ## 6.7 imgproc_write and imgproc_read {#sec-6-7}
 
 `write()` copies the frame from the application into the buffer the IP reads. The kernel cannot use an application pointer directly, so this goes through `copy_from_user`.
 
-`read()` copies the result back the same way, and clears `dev->done`.
+`read()` copies the result back the same way. what does this use??? copy to user???..........
 
 ## 6.8 imgproc_poll and imgproc_isr {#sec-6-8}
 
-A wait queue is just a place to park a process. `poll()` puts the calling process on `dev->wq`, and the scheduler stops giving it CPU.
+`imgproc_poll` is mapped to `poll()` in our skeleton. Similar to `read()` in our UIO blog, `poll()` will puts the userspace application process to sleep, and the scheduler stops scheduling the process.
 
-If `dev->done` is already set, `poll()` returns straight away instead.
-
-The handler is what wakes it up. It is short on purpose:
-
-```c
-writel(1, dev->base + ISR);        /* clear it in the IP */
-dev->done = 1;                     /* remember what happened */
-wake_up_interruptible(&dev->wq);   /* poll() returns now */
-```
-
-The first line matters. If we do not clear the interrupt in the IP, it fires again immediately.
-
-The handler runs in interrupt context, which means it is not inside any process and it cannot sleep. So it wakes the queue and lets the woken process do the real work.
+The `imgproc_isr` handler has no mapping to the userspace application. `imgproc_poll` and `imgproc_isr` works toghether in the kernel. `imgproc_isr` waits for the interrupt and wakes the `imgproc_poll`. which handles the interrupt and then wakes up the userspace application:
 
 ## 6.9 imgproc_remove {#sec-6-9}
 
-`remove()` is `probe` backwards:
+`remove()` is inverse of `probe`:
 
 1. remove `/dev`, so no new process can open the device
 2. make sure the IP is stopped, in case a job was still running
