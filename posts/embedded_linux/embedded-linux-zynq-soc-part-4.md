@@ -45,11 +45,6 @@ However, UIO is not enough in the following cases cases:
 
 </div>
 
-The IP does not change. The interrupt does not change. What changes is who writes the code that talks to it.
-
-![][image1]
-
-**Figure 1: The application reaches the frame through the MMU. The IP has no MMU, so the address the application holds is no use to it.**
 
 # **2\. Userspace and kernel space** {#sec-2}
 
@@ -91,25 +86,16 @@ There are two separate questions about any driver. What does it look like to the
 
 ### Why can PCIe and USB be enumerated?
 
-Because the bus can be asked what is connected. The device answers with its vendor ID, its registers and its interrupts.
+By enumeration it means that the kernel can find out whats connected to its bus when we connect it. We dont have to provide information in the device tree beforehand. It is because the when the linux asks what is connected on the bus, the device answers with its information, i.e. registers, interrupts. the information that we provide in device tree for non-enumerable devices.
 
 [AXI](https://www.arm.com/architecture/system-architectures/amba/amba-5) has no such thing. If we read an address where no IP is mapped, we do not get an answer saying nothing is here. We get a bus error, or the read hangs.
 
-So a PL IP on AXI cannot be discovered this way. The [Device Tree](https://www.devicetree.org/) describes it to Linux instead, and Linux creates a [platform device](https://docs.kernel.org/driver-api/driver-model/platform.html) for each IP it finds there.
+So a PL IP on AXI cannot be discovered this way. The [Device Tree](https://www.devicetree.org/) describes it to Linux instead, and Linux  represent these as a [platform device](https://docs.kernel.org/driver-api/driver-model/platform.html) for each IP it finds there.
 
-This is still true even though the PL and the processor are on the same chip. Linux runs on the PS.
 
-Anything in the PL is reached over AXI, at some address, with an interrupt into the [GIC](https://developer.arm.com/documentation/ihi0048/latest/). For Linux that looks like an external peripheral.
+# **5\. Userspace applicatoin interface** {#sec-5}
 
-Example: a USB webcam is enumerable, and its driver gives userspace a character device to read frames from.
-
-Our PL IP is a non-enumerable platform device, and our driver exposes it through a character device interface. It is still one driver, just described in two ways.
-
-Section 5 is the character device side, what the application sees. Section 6 is the platform side, the kernel code we have to write.
-
-# **5\. File operations: what the application sees** {#sec-5}
-
-The driver creates a file in `/dev`. The application opens that file and uses normal file calls on it.
+The driver creates a file in `/dev`. The application opens that file and uses normal file calls on it such as read write.
 
 These calls are our interface to the driver, and through the driver, to the IP.
 
@@ -117,9 +103,9 @@ The names of these calls are fixed, but what they do is up to us. We will use ou
 
 ### open and release
 
-Why do we need `open` at all? Because the application needs something to hold on to.
+`open` is the first step to talk to the hardware. As we have to open a file before doing any file operations, similarly, since these character devices are represented as a file, we have to open it to begin talking to it.
 
-`open` gives back a file descriptor, and every call after that uses it. That fd is our connection to the driver, and through the driver, to the IP.
+`open` gives back a file descriptor, and every call after that uses it. That file descriptor is our connection to the driver, and through the driver, to the IP.
 
 ```c
 fd = open("/dev/imgproc0", O_RDWR);
@@ -133,22 +119,20 @@ This is the same thing we did in [Part 3](https://rafae1130.github.io/posts/embe
 
 ### ioctl
 
-[`ioctl`](https://docs.kernel.org/driver-api/ioctl.html) is the control channel. It is for anything that is not plain data in or data out.
+After opening the file, we need to control the IP and for that control [`ioctl`](https://docs.kernel.org/driver-api/ioctl.html) used. If you're familiar with AXI lite register programming, this is for that. 
+The exact values required for the IP registers are abstracted for the userspace application. We just use the provided macros and the driver will handle the writing of corresponding values to the appropriate registers.
 
 ```c
 ioctl(fd, IMGPROC_SET_FILTER, BLUR);
 ioctl(fd, IMGPROC_START, 0);
 ```
+For example in snippet above, the application never touches a register. It says `BLUR`, and the driver writes whatever value the filter register needs.
 
-The application never touches a register. It says `BLUR`, and the driver writes whatever value the filter register needs.
+`IMGPROC_SET_FILTER` and `IMGPROC_START` are just numbers we define in a header which we as developer provide, and the customer includes that header and uses the macros without knowing the underlying details.
 
-`IMGPROC_SET_FILTER` and `IMGPROC_START` are just numbers we define in a header, and the customer includes that header.
+### write/read
 
-If the next bitstream moves that register, we fix the driver. The application stays the same.
-
-### write
-
-`write` is data going to the device.
+`write` is data going to the device. If ioctl was AXI-lite, then read write is AXI-full used for large data transfers.
 
 ```c
 write(fd, frame, frame_size);
@@ -156,17 +140,11 @@ write(fd, frame, frame_size);
 
 The driver copies the frame into a buffer the IP can read from.
 
-### read
-
-`read` is data coming back.
-
+`read` is data coming back. The IP writes the data in a buffer that application can read from.
 ```c
 read(fd, out, frame_size);
 ```
 
-The driver copies the processed frame out of its buffer into the application.
-
-Some drivers use `read` only to return a small status value, and move the image some other way. It is our choice.
 
 ### So what is the difference between ioctl and read/write?
 
@@ -197,20 +175,20 @@ This is the same idea as [Part 3](https://rafae1130.github.io/posts/embedded_lin
 
 # **6\. The platform driver** {#sec-6}
 
-Section 5 was the side the application sees. This is the kernel side.
+Section 5 was the userspace application side. This is the kernel side.
 
 ## 6.1 The skeleton {#sec-6-1}
 
-Here is the whole driver with the function bodies left out, so the shape is visible in one place. The includes and `MODULE_LICENSE` lines are left out as well:
+Here is the whole driver with the function bodies left out, so the shape is visible in one place:
 
 ```c
-/* which device tree nodes this driver claims */
+/* defines the compatible string that kernel matches in the device tree */
 static const struct of_device_id imgproc_of_match[] = {
     { .compatible = "myco,imgproc-1.0" },
     { }
 };
 
-/* which of our functions runs for each call on /dev/imgproc0 */
+/* which of our functions runs for each userspace call on /dev/imgproc0 as discussed in previous section*/
 static const struct file_operations imgproc_fops = {
     .open           = imgproc_open,
     .release        = imgproc_release,
@@ -222,7 +200,7 @@ static const struct file_operations imgproc_fops = {
 
 static int imgproc_open(struct inode *inode, struct file *file)
 {
-    /* give out the fd, refuse a second user */
+    /* give out the fd, refuse a second user. */
 }
 
 static int imgproc_release(struct inode *inode, struct file *file)
@@ -325,7 +303,6 @@ struct imgproc {
 
 `__iomem` is just a marker. It says this pointer is hardware registers and not normal memory.
 
-Nothing here can be a global. `probe()` runs once per IP, so two IPs need two of these, or they would both end up talking to the same registers.
 
 ## 6.4 imgproc_probe: getting the IP ready {#sec-6-4}
 
