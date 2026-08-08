@@ -321,10 +321,6 @@ struct imgproc {
 2. get the properties provided in the device tree, like `reg` and `interrupts`, and initialize the relevant local struct fields with them (`base`, `irq`)
 3. create `/dev/imgproc0`
 
-![][image7]
-
-**Figure 7: `reg` in the device tree becomes `dev->base` in probe, then a register write in the handler.**
-
 ## 6.5 imgproc_open and imgproc_release {#sec-6-5}
 
 When `/dev/imgproc0` is opened in the userspace application, `imgproc_open` is called because that is what `open` was mapped to in **`imgproc_fops`**. It sets `busy` in `struct imgproc` to 1.
@@ -425,5 +421,3 @@ In the next blog we fill in this skeleton and run it on the board: the device tr
 [image5]: images/image5_p4.png
 
 [image6]: images/image6_p4.png
-
-[image7]: images/image7_p4.png
