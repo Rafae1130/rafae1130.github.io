@@ -89,7 +89,7 @@ There are two separate questions about any driver. What does it look like to the
 
 ![][image2]
 
-**Figure 2: Kernel driver types on different basis**
+**Figure 2: Kernel driver types on different basis.**
 
 ### Why can PCIe and USB be enumerated?
 
@@ -371,7 +371,7 @@ The application passes a pointer to the data buffer, but that pointer is a virtu
 
 `imgproc_poll` runs and returns straight away. The kernel's poll core is what sleeps/wakes the application, and it is also what calls `imgproc_poll`.
 
-`done` is the flag in `struct imgproc` that `imgproc_isr` sets when the interrupt is triggered by the IP.
+`done` is the flag in `struct imgproc` that `imgproc_isr` sets when the interrupt is triggered by the IP. The done flag is just what suits our driver. Other drivers use a counter or a buffer, depending on what the device needs.
 
 1. the application calls `poll()`
 2. `poll()` goes into the kernel's poll core
@@ -385,7 +385,7 @@ The application passes a pointer to the data buffer, but that pointer is a virtu
 
 ![][image6]
 
-**Figure 6: Interrupt handling flow in the kernel driver.**
+**Figure 6: Interrupt handling flow in our example driver.**
 
 If `done` is already true back at step 4, `imgproc_poll` returns "ready" immediately and the application never sleeps.
 
@@ -403,6 +403,14 @@ In [Part 3](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq
 | clears the interrupt in the IP | the application, through the mapped registers | `imgproc_isr` |
 | re-arms the interrupt | the application, with `write()` to `/dev/uio0` | nothing to re-arm, the driver never masks it |
 | knows the register map | the application | the driver |
+
+`uio_pdrv_genirq` is generic. The overlay gives it the address window through `reg`, but nothing tells it which register in that space is the interrupt status, or what to write to clear it, so it cannot clear the interrupt itself.
+
+All it can do is mask the line and wake the application, which then clears the interrupt through the mapped registers and calls `write()` to re-arm.
+
+While that line is masked, no further interrupt from the IP reaches the kernel. The device stays deaf until the application has been scheduled, has cleared the IP, and has re-armed the line. This is why using UIO for interrupt handling has more latency compared to a kernel driver.
+
+Our `imgproc_isr` in the driver knows the register map because we provide it that information while writing the driver, so it clears the source itself and the line never has to be masked. The next interrupt can arrive while the application is still asleep, and there is nothing to re-arm.
 
 With UIO everything device specific stays in the application, whereas with our own kernel driver it moves into the ISR, and the application only learns that the job is done.
 
