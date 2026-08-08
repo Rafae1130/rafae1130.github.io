@@ -384,15 +384,14 @@ If the old driver is still loaded when the new bitstream is programmed, it holds
 
 * UIO covers registers and interrupts. DMA, cache coherency and more than one process push us into writing a driver.
 * AXI-connected PL IPs cannot be discovered by enumeration, so the Device Tree describes them and Linux creates a platform device for each one.
-* The `compatible` string is the only link between the node and the driver. If it is wrong, nothing is printed.
-* `probe()` runs once per IP: map registers, request the interrupt, create `/dev`. The interrupt and `/dev` come last on purpose.
-* One struct per IP holds `base`, the wait queue and the flags. `open()` puts a pointer to it in `file->private_data` so the other functions can find it.
-* `ioctl` configures and starts, `write` and `read` move the frame, `poll` parks the process on the wait queue.
-* The handler clears the interrupt in the IP, sets `done`, and wakes the queue.
+* The `compatible` string is the only link between the node and the driver. If it is wrong, the driver wont work.
+* `probe()` runs when driver is loaded, it map registers, request the interrupt, create `/dev`. 
+* `ioctl` configures, `write` and `read` move the frame, `poll` sleeps the process waiting for interrupt.
+* The handler clears the interrupt in the IP, and wakes the application.
 
 # **8\. What's Next** {#sec-8}
 
-In the next blog we fill in this skeleton and run it on the board: the device tree node, `probe` and `remove`, the file operations, the interrupt handler, and a small application to test it.
+In the next blog we will create our own driver for a custom acceleration IP and will run it on board.
 
 # **9\. References** {#sec-9}
 
