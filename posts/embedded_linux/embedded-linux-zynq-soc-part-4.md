@@ -74,7 +74,7 @@ But we cannot ship the userspace application, because we do not know what the cu
 So we provide the driver instead. Which is hides the hardware and provides a simple software interface to talk to it. 
 
 The customer can use this to talk to the hardware according to the required usecase which knowing details about the hardware itself.
-
+Imagine our driver for the image processing IP is called imgproc.ko. And after driver is loaded the IP shows up as `/dev/imgproc0`. 
 ```c
 fd = open("/dev/imgproc0", O_RDWR);
 ioctl(fd, IMGPROC_SET_FILTER, BLUR);
@@ -84,6 +84,7 @@ read(fd, out, frame_size);
 close(fd);
 ```
 In the above snippet of userspace application, the user uses our provided macros `IMGPROC_SET_FILTER`, `BLUR` to enable functionality of the IP and use simple commands like `write()` and `read()` to perform data transfers without any any underlying hardware details such as register address, what exact value to write for specific addresses and buffer addresses for data transfers etc. 
+We'll discuss the the above code in more detail below so don't worry if you understand everything fully right now.
 
 # **4\. Two views of Linux device drivers** {#sec-4}
 
