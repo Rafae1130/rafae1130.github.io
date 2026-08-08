@@ -2,7 +2,7 @@
 
 *This is Part 4 of the Embedded Linux ([Zynq SoC](https://www.amd.com/en/products/adaptive-socs-and-fpgas/soc/zynq-7000.html)) series. Read [Part 1](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-1.html), [Part 2: Device Tree](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-2.html) and [Part 3: Device Tree Overlay and UIO](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-3.html) if you haven't already.*
 
-In [Part 3](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-3.html) we used [UIO](https://docs.kernel.org/driver-api/uio-howto.html) and a device tree overlay to reach a custom PL IP from a userspace application. We mapped the registers and detected the interrupts using UIO driver.
+In [Part 3](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-3.html) we used [UIO](https://docs.kernel.org/driver-api/uio-howto.html) and a device tree overlay to reach a custom PL IP from a userspace application. We mapped the registers and detected the interrupts using the UIO driver.
 
 All the code we wrote was in userspace and our application interacted with the UIO driver already provided in the kernel.
 
@@ -36,7 +36,7 @@ UIO is enough when we just want MMIO register access or interrupts detection. In
 However, UIO is not enough in the following cases:
 
 * **DMA.** The IP moves data by itself instead of the CPU copying it, so it needs memory and buffer allocation/management, which UIO doesn't provide, and a userspace application doesn't have access to large contiguous memory.
-* **Cache coherency.** The IP doesn't know whether the data it is reading is from cache or stale data in DRAM. For cache coherency, a kernel driver is required.
+* **Cache coherency.** The CPU might still be holding the data frame in cache while the IP reads DRAM directly and gets stale data. Keeping the two in sync is the kernel's job.
 * **More than one process.** If two applications try to access the same IP through UIO, it cannot provide arbitration. If there are going to be multiple userspace applications running at the same time accessing the same IP, a kernel driver is required.
 
 <div class="tip-box" markdown="1">
@@ -56,9 +56,9 @@ A driver runs in kernel space, so it can do things an application cannot:
 * allocate memory the IP can reach, and keep the caches correct
 * decide whether a second process may open the device while the first still has it
 
-![][image2]
+![][image1]
 
-**Figure 2: How one call reaches the IP. The application calls ioctl(), our imgproc_ioctl() runs in the kernel, and that writes the register in the IP.**
+**Figure 1: How one call reaches the IP. The application calls ioctl(), our imgproc_ioctl() runs in the kernel, and that writes the register in the IP.**
 
 The downside is that mistakes are worse.
 
@@ -83,15 +83,15 @@ read(fd, out, frame_size);
 close(fd);
 ```
 In the above snippet of a userspace application, the user uses our provided macros `IMGPROC_SET_FILTER` and `BLUR` to enable functionality of the IP, and simple commands like `write()` and `read()` to perform data transfers, without any underlying hardware details such as register addresses, what exact value to write for specific addresses, and buffer addresses for data transfers.
-We'll discuss the the above code in more detail below so don't worry if you understand everything fully right now. 
+We'll discuss the above code in more detail below so don't worry if you don't understand everything fully right now.
 
 # **4\. Two views of Linux device drivers** {#sec-4}
 
 There are two separate questions about any driver. What does it look like to the application, and how did Linux find the hardware?
 
-![][image3]
+![][image2]
 
-**Figure 3: The two views, and where our PL IP lands in each of them.**
+**Figure 2: The two views, and where our PL IP lands in each of them.**
 
 ### Why can PCIe and USB be enumerated?
 
@@ -121,8 +121,6 @@ fd = open("/dev/imgproc0", O_RDWR);
 ```
 
 This is the same thing we did in [Part 3](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-3.html) with `/dev/uio0`.
-
-`open` is also where we can refuse a second user. If the IP can only run one job at a time, the second open just fails with an error (`-EBUSY`).
 
 `release` runs when the file is closed, and also if the application exits without closing it. So the driver always gets a chance to clean up.
 
@@ -165,9 +163,9 @@ Both move data, so why do we need two ways?
 
 If we only had `write`, we would have to invent our own rule, such as the first four bytes are the command and the rest is the frame. `ioctl` gives us that already.
 
-![][image4]
+![][image3]
 
-**Figure 4: ioctl carries a command. write and read carry the frame. They go to different parts of the IP.**
+**Figure 3: ioctl configures the registers. write and read carry the data. They go to different parts of the IP.**
 
 ### poll
 
@@ -190,7 +188,7 @@ Section 5 was the userspace application side. This is the kernel side.
 
 ## 6.1 The skeleton {#sec-6-1}
 
-Here is the whole driver with the function bodies left out, so the shape is visible in one place:
+Here is the whole driver with the function bodies left out, so the shape is visible in one place. This shows only the structure. We'll learn how to write it fully and compile it in the next blog.
 
 ```c
 /* defines the compatible string that kernel matches in the device tree */
@@ -266,6 +264,9 @@ static struct platform_driver imgproc_driver = {
 
 /* registers the driver when the module is loaded */
 module_platform_driver(imgproc_driver);
+
+/* declares the module's license to the kernel */
+MODULE_LICENSE("GPL");
 ```
 
 **`imgproc_fops`** tells the kernel which function to run for each userspace call. For example, in the platform driver above, if the userspace application calls `read()` on `/dev/imgproc0`, the driver runs `imgproc_read()`. The skeleton shows only a few of the available operations. The full [`file_operations`](https://docs.kernel.org/filesystems/api-summary.html) struct has more (`llseek`, `mmap`, `fsync`, and others); we only fill in the ones our IP needs.
@@ -281,11 +282,13 @@ module_platform_driver(imgproc_driver);
 
 **`imgproc_driver`** is the struct we give the kernel. It points at `of_device_id` and at `probe` / `remove`. The kernel runs `probe` if it sees a matching compatible string in the device tree.
 
+**`MODULE_LICENSE`** is not optional. If you leave it out, the kernel treats the module as proprietary and blocks it from using large parts of the kernel API, so a driver like ours will usually fail to load.
+
 The rest of this section goes through these in the order they run.
 
-![][image5]
+![][image4]
 
-**Figure 5: The driver and the application each have their own flow. Each userspace call is mapped to an imgproc_* function.**
+**Figure 4: The driver and the application each have their own flow. Each userspace call is mapped to an imgproc_* function.**
 
 `insmod` and `rmmod` are the commands to load and remove a loadable module. `lsmod` only lists what is already loaded.
 
@@ -293,27 +296,32 @@ The rest of this section goes through these in the order they run.
 
 **`of_device_id`** defines the compatible string to compare with the device tree.
 
-![][image6]
+![][image5]
 
-**Figure 6: The compatible string is the only connection between the device tree node and the driver.**
+**Figure 5: The compatible string is the only connection between the device tree node and the driver.**
+
+In [Part 3](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-3.html) we had to tell the UIO driver which string to look for, with `modprobe uio_pdrv_genirq of_id=generic-uio`, because that driver ships without a match table of its own. Our driver does not need that. Its table is compiled into `imgproc.ko`, so the kernel already knows what to match on as soon as the module is loaded.
+
+The rest of the Part 3 flow is unchanged. We'll have to program the bitstream and apply a device tree overlay so Linux knows the IP exists. The only difference is that the overlay node now says `compatible = "myco,imgproc-1.0"` instead of `"generic-uio"`, so the kernel binds our driver to it instead of the UIO one. 
 
 ## 6.3 struct imgproc: what the driver remembers {#sec-6-3}
 
-Each matching IP gets one of these. Every other function works on it:
+This is not fixed and can be different for different drivers depending on the requirement. `probe()` fills it and other functions use it:
 
 ```c
 struct imgproc {
     void __iomem      *base;   /* the mapped registers */
     int                irq;
     wait_queue_head_t  wq;     /* poll() sleeps here */
-    bool               busy;   /* is a job running */
     bool               done;   /* set by the interrupt handler */
 };
 ```
 
-`base` and `irq` come from the device tree in `probe()`. `wq`, `busy`, and `done` are driver state.
+`base` and `irq` come from the device tree in `probe()`. `wq` and `done` are driver state.
 
-`open()` stores a pointer to this struct in `file->private_data`, so `ioctl`, `read`, `write`, and `poll` can find the same IP instance later.
+A wait queue is how the kernel sleeps a process until something happens. A process waiting on this device is placed on `wq`, and the interrupt handler wakes the process waiting there once it has handled the interrupt.
+
+`open()` stores a pointer to this struct in `file->private_data`, so `ioctl`, `read`, `write`, and `poll` can use this struct later.
 
 ## 6.4 imgproc_probe: getting the IP ready {#sec-6-4}
 
@@ -325,9 +333,14 @@ struct imgproc {
 
 ## 6.5 imgproc_open and imgproc_release {#sec-6-5}
 
-When `/dev/imgproc0` is opened in the userspace application, `imgproc_open` is called because that is what `open` was mapped to in **`imgproc_fops`**. It sets `busy` in `struct imgproc` to 1.
+When `/dev/imgproc0` is opened in the userspace application like:
+```c
+int fd = open("/dev/imgproc0", O_RDWR);
+```
 
-Similarly `release()` is mapped to `imgproc_release`. It stops the IP and clears `busy`, so the next process can open the device.
+That call lands in the driver's `imgproc_open` because that is what `open` was mapped to in **`imgproc_fops`**. This is where the driver sets up whatever this session needs before any other call can be made.
+
+Similarly `release()` is mapped to `imgproc_release`. It stops the IP and undoes what `open` set up.
 
 ## 6.6 imgproc_ioctl {#sec-6-6}
 
@@ -362,7 +375,7 @@ This is where the register map stays hidden. The application sends `BLUR`, and t
 
 ## 6.9 imgproc_remove {#sec-6-9}
 
-`remove()` is inverse of `probe`:
+`remove()` is the inverse of `probe`:
 
 1. remove `/dev`, so no new process can open the device
 2. make sure the IP is stopped, in case a job was still running
@@ -387,8 +400,8 @@ If the old driver is still loaded when the new bitstream is programmed, it holds
 * UIO covers registers and interrupts. DMA, cache coherency and more than one process push us into writing a driver.
 * `imgproc.ko` is a loadable module (`insmod` / `rmmod`). A built-in driver is compiled into the kernel and cannot be unloaded.
 * AXI-connected PL IPs cannot be discovered by enumeration, so the Device Tree describes them and Linux creates a platform device for each one.
-* The `compatible` string is the only link between the node and the driver. If it is wrong, the driver wont work.
-* `probe()` runs when driver is loaded, it map registers, request the interrupt, create `/dev`. 
+* The `compatible` string is the only link between the node and the driver. If it is wrong, the driver won't work.
+* `probe()` runs when the `compatible` string in the driver matches a device tree node. It maps the registers, requests the interrupt, and creates `/dev`.
 * `ioctl` configures, `write` and `read` move the frame, `poll` sleeps the process waiting for interrupt.
 * The handler clears the interrupt in the IP, and wakes the application.
 
@@ -421,5 +434,3 @@ In the next blog we will create our own driver for a custom acceleration IP and 
 [image4]: images/image4_p4.png
 
 [image5]: images/image5_p4.png
-
-[image6]: images/image6_p4.png
