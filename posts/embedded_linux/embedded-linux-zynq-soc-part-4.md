@@ -182,6 +182,10 @@ Section 5 was the userspace application side. This is the kernel side.
 
 `imgproc.ko` is a **loadable kernel module**. We insert it after boot and we can take it out again. That is different from a driver **built into** the kernel, which is compiled into the kernel image and is there from boot, with no `.ko` and no `rmmod`.
 
+### platform device vs platform driver
+
+Linux creates a `struct platform_device` for every node it finds in the device tree. The kernel stores the device tree node properties, such as the `reg` window and the interrupt, in this struct at boot. Later, when a driver registers with a matching compatible string, the kernel hands it this struct. Our driver doesn't parse the device tree itself. This struct is owned by the kernel and our driver reads it to access the properties defined in the device tree.
+
 ## 6.1 The skeleton {#sec-6-1}
 
 Here is the whole driver with the function bodies left out, so the shape is visible in one place. This shows only the structure. We'll learn how to write it fully and compile it in the next blog.
