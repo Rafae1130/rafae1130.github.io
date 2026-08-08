@@ -321,6 +321,8 @@ Every metric used in the tables and plots, with a worked example from this study
 
 <!-- post-nav -->
 <div class="post-nav">
-  <a class="nav-home" href="https://rafae1130.github.io/">Home</a>
+  <div class="nav-home-row">
+    <a class="nav-home" href="https://rafae1130.github.io/">Home</a>
+  </div>
 </div>
 <!-- /post-nav -->

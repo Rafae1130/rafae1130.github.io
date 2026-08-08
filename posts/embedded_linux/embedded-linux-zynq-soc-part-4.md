@@ -481,7 +481,11 @@ In the next blog we will create our own driver for a custom acceleration IP and 
 
 <!-- post-nav -->
 <div class="post-nav">
-  <a class="nav-home" href="https://rafae1130.github.io/">Home</a>
-  <a class="nav-prev" href="https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-3.html">&larr; Previous</a>
+  <div class="nav-home-row">
+    <a class="nav-home" href="https://rafae1130.github.io/">Home</a>
+  </div>
+  <div class="nav-steps">
+    <a class="nav-prev" href="https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-3.html">&larr; Previous</a>
+  </div>
 </div>
 <!-- /post-nav -->
