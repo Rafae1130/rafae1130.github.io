@@ -71,7 +71,7 @@ But we cannot ship the userspace application, because we do not know what the cu
 So we provide the driver instead. It hides the hardware and provides a simple software interface to talk to it.
 
 The customer can use this to talk to the hardware according to the required use case without knowing details about the hardware itself.
-Imagine our driver for the image processing IP is called imgproc.ko. And after driver is loaded the IP shows up as `/dev/imgproc0`.
+Imagine our driver for the image processing IP is called `imgproc.ko`. And after driver is loaded the IP shows up as `/dev/imgproc0`.
 ```c
 fd = open("/dev/imgproc0", O_RDWR);
 ioctl(fd, IMGPROC_SET_FILTER, BLUR);
@@ -142,7 +142,7 @@ write(fd, frame, frame_size);
 
 The driver copies the frame into a buffer the IP can read from.
 
-`read` is data coming back. The IP writes the data in a buffer that application can read from.
+`read` is data coming back. The IP writes the data in a buffer that the application can read from.
 ```c
 read(fd, out, frame_size);
 ```
@@ -182,7 +182,7 @@ Section 5 was the userspace application side. This is the kernel side.
 
 `imgproc.ko` is a **loadable kernel module**. We insert it after boot and we can take it out again. That is different from a driver **built into** the kernel, which is compiled into the kernel image and is there from boot, with no `.ko` and no `rmmod`.
 
-### platform device vs platform driver
+## platform device vs platform driver
 
 Linux creates a `struct platform_device` for every node it finds in the device tree. The kernel stores the device tree node properties, such as the `reg` window and the interrupt, in this struct at boot. Later, when a driver registers with a matching compatible string, the kernel hands it this struct. Our driver doesn't parse the device tree itself. This struct is owned by the kernel and our driver reads it to access the properties defined in the device tree.
 
@@ -318,7 +318,7 @@ struct imgproc {
 };
 ```
 
-`base` and `irq` come from the device tree in `probe()`. `wq` and `done` are driver state.
+`base` and `irq` come from the platform device struct in `probe()`. `wq` and `done` are driver state.
 
 A wait queue is how the kernel sleeps a process until something happens. A process waiting on this device is placed on `wq`, and the interrupt handler wakes the process waiting there once it has handled the interrupt.
 
@@ -328,8 +328,8 @@ A wait queue is how the kernel sleeps a process until something happens. A proce
 
 `probe()` runs when the match is found, once for each matching node. It performs the following main functions:
 
-1. read the device tree node
-2. get the properties provided in the device tree, like `reg` and `interrupts`, and initialize the relevant local struct fields with them (`base`, `irq`)
+1. read `reg` and `interrupts` from the platform device struct in the kernel
+2. map the register window into `base`, and store the interrupt number in `irq`
 3. request `irq`, so that `imgproc_isr` runs when the IP raises the interrupt
 4. create `/dev/imgproc0`
 
@@ -375,7 +375,7 @@ The application passes a pointer to the data buffer, but that pointer is a virtu
 
 `imgproc_poll` runs and returns straight away. The kernel's poll core is what sleeps/wakes the application, and it is also what calls `imgproc_poll`.
 
-`done` is the flag in `struct imgproc` that `imgproc_isr` sets when the interrupt is triggered by the IP. The done flag is just what suits our driver. Other drivers use a counter or a buffer, depending on what the device needs.
+`done` is the flag in `struct imgproc` that `imgproc_isr` sets when the interrupt is triggered by the IP. The `done` flag is just what suits our driver. Other drivers use a counter or a buffer, depending on what the device needs.
 
 1. the application calls `poll()`
 2. `poll()` goes into the kernel's poll core
@@ -393,7 +393,7 @@ The application passes a pointer to the data buffer, but that pointer is a virtu
 
 If `done` is already true back at step 4, `imgproc_poll` returns "ready" immediately and the application never sleeps.
 
-`imgproc_isr` has no userspace mapping. It never calls `imgproc_poll` by itself. It only sets `done` and wakes `wq`, which is then detected by the poll core which calls the `imgproc_poll`.
+`imgproc_isr` has no userspace mapping. It never calls `imgproc_poll` by itself. It only sets `done` and wakes `wq`. The poll core detects that wake and calls `imgproc_poll`.
 
 Interrupt management in kernel space still confuses me. So don't worry if you don't understand this in the first read.
 
@@ -406,7 +406,7 @@ In [Part 3](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq
 | the application sleeps in | `read("/dev/uio0")` | `poll()` |
 | clears the interrupt in the IP | the application, through the mapped registers | `imgproc_isr` |
 | re-arms the interrupt | the application, with `write()` to `/dev/uio0` | nothing to re-arm, the driver never masks it |
-| knows the register map | the application | the driver |
+| knows what the registers mean | the application | the driver |
 
 `uio_pdrv_genirq` is generic. The overlay gives it the address window through `reg`, but nothing tells it which register in that space is the interrupt status, or what to write to clear it, so it cannot clear the interrupt itself.
 
