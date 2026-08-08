@@ -115,11 +115,7 @@ The next series will shift focus to **clock domain crossing (CDC)**. Once a desi
 
 <!-- post-nav -->
 <div class="post-nav">
-  <div class="nav-home-row">
-    <a class="nav-home" href="https://rafae1130.github.io/">Home</a>
-  </div>
-  <div class="nav-steps">
-    <a class="nav-prev" href="https://rafae1130.github.io/posts/timing_analysis/understanding-fpga-timing-vivado-part-4.html">&larr; Previous</a>
-  </div>
+  <a class="nav-prev" href="https://rafae1130.github.io/posts/timing_analysis/understanding-fpga-timing-vivado-part-4.html">&larr; Previous</a>
+  <a class="nav-home" href="https://rafae1130.github.io/">Home</a>
 </div>
 <!-- /post-nav -->

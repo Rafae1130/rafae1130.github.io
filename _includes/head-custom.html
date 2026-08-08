@@ -12,17 +12,17 @@
   .tip-box > :last-child { margin-bottom: 0; }
 
   .post-nav {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 10px;
     margin: 3em 0 1em;
     padding-top: 1.25em;
     border-top: 1px solid #e1e4e8;
   }
-  .post-nav .nav-home-row { margin-bottom: 14px; }
-  .post-nav .nav-steps {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
+  .post-nav .nav-prev { grid-column: 1; justify-self: start; }
+  .post-nav .nav-home { grid-column: 2; justify-self: center; }
+  .post-nav .nav-next { grid-column: 3; justify-self: end; }
   .post-nav a {
     display: inline-block;
     padding: 8px 16px;
@@ -39,5 +39,4 @@
     border-color: #2b6cb0;
     color: #fff;
   }
-  .post-nav .nav-next { margin-left: auto; }
 </style>

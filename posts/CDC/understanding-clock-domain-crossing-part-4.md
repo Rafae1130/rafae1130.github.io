@@ -344,11 +344,7 @@ The decision tree from UG949 is short on purpose. Most real bugs in multi-bit CD
 
 <!-- post-nav -->
 <div class="post-nav">
-  <div class="nav-home-row">
-    <a class="nav-home" href="https://rafae1130.github.io/">Home</a>
-  </div>
-  <div class="nav-steps">
-    <a class="nav-prev" href="https://rafae1130.github.io/posts/CDC/understanding-clock-domain-crossing-part-3.html">&larr; Previous</a>
-  </div>
+  <a class="nav-prev" href="https://rafae1130.github.io/posts/CDC/understanding-clock-domain-crossing-part-3.html">&larr; Previous</a>
+  <a class="nav-home" href="https://rafae1130.github.io/">Home</a>
 </div>
 <!-- /post-nav -->

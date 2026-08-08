@@ -194,12 +194,8 @@ This wraps up our discussion on setup time anaylysis in Vivado. Next week, we'll
 
 <!-- post-nav -->
 <div class="post-nav">
-  <div class="nav-home-row">
-    <a class="nav-home" href="https://rafae1130.github.io/">Home</a>
-  </div>
-  <div class="nav-steps">
-    <a class="nav-prev" href="https://rafae1130.github.io/posts/timing_analysis/understanding-fpga-timing-vivado-part-1.html">&larr; Previous</a>
-    <a class="nav-next" href="https://rafae1130.github.io/posts/timing_analysis/understanding-fpga-timing-vivado-part-3.html">Next &rarr;</a>
-  </div>
+  <a class="nav-prev" href="https://rafae1130.github.io/posts/timing_analysis/understanding-fpga-timing-vivado-part-1.html">&larr; Previous</a>
+  <a class="nav-home" href="https://rafae1130.github.io/">Home</a>
+  <a class="nav-next" href="https://rafae1130.github.io/posts/timing_analysis/understanding-fpga-timing-vivado-part-3.html">Next &rarr;</a>
 </div>
 <!-- /post-nav -->

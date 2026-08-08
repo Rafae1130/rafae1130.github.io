@@ -116,11 +116,7 @@ In this article we introduced the major building blocks of an Embedded Linux sys
 
 <!-- post-nav -->
 <div class="post-nav">
-  <div class="nav-home-row">
-    <a class="nav-home" href="https://rafae1130.github.io/">Home</a>
-  </div>
-  <div class="nav-steps">
-    <a class="nav-next" href="https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-2.html">Next &rarr;</a>
-  </div>
+  <a class="nav-home" href="https://rafae1130.github.io/">Home</a>
+  <a class="nav-next" href="https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-2.html">Next &rarr;</a>
 </div>
 <!-- /post-nav -->

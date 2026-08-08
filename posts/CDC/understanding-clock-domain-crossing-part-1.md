@@ -263,11 +263,7 @@ If you are new to FPGA timing analysis and want to understand the timning analys
 
 <!-- post-nav -->
 <div class="post-nav">
-  <div class="nav-home-row">
-    <a class="nav-home" href="https://rafae1130.github.io/">Home</a>
-  </div>
-  <div class="nav-steps">
-    <a class="nav-next" href="https://rafae1130.github.io/posts/CDC/understanding-clock-domain-crossing-part-2.html">Next &rarr;</a>
-  </div>
+  <a class="nav-home" href="https://rafae1130.github.io/">Home</a>
+  <a class="nav-next" href="https://rafae1130.github.io/posts/CDC/understanding-clock-domain-crossing-part-2.html">Next &rarr;</a>
 </div>
 <!-- /post-nav -->
