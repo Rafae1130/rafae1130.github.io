@@ -2,11 +2,11 @@
 
 *This is Part 4 of the Embedded Linux ([Zynq SoC](https://www.amd.com/en/products/adaptive-socs-and-fpgas/soc/zynq-7000.html)) series. Read [Part 1](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-1.html), [Part 2: Device Tree](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-2.html) and [Part 3: Device Tree Overlay and UIO](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-3.html) if you haven't already.*
 
-In [Part 3](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-3.html) we used [UIO](https://docs.kernel.org/driver-api/uio-howto.html) and a device tree overlay to reach a custom PL IP from a userspace application. We mapped the registers with `mmap`, waited for the interrupt with `read()`, and re-armed it with `write()`.
+In [Part 3](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-3.html) we used [UIO](https://docs.kernel.org/driver-api/uio-howto.html) and a device tree overlay to reach a custom PL IP from a userspace application. We mapped the registers and detected the interrupts using UIO driver.
 
-We did not write a single line of kernel code.
+All the code we wrote was in userspace and our application interected with the UIO driver already provided in the kernel.
 
-That is enough when the IP is just registers and one interrupt. In this blog we look at when it is not, and what our own driver is made of.
+UIO is enough when we just want MMIO register access or interrupts detection. In this blog we look at when UIO is not enough, and we build and understand the required basics to start writing our own kernel driver in the next blog.
 
 ## Table of contents
 
@@ -31,19 +31,17 @@ That is enough when the IP is just registers and one interrupt. In this blog we 
 
 # **1\. When UIO is not enough** {#sec-1}
 
-[UIO](https://docs.kernel.org/driver-api/uio-howto.html) gave us two things: access to the registers, and a way to wait for the interrupt. For the buttons in [Part 3](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-3.html) that was all we needed.
+[UIO](https://docs.kernel.org/driver-api/uio-howto.html) gave us two things: access to the registers, and a way to wait for the interrupt. For the example in [Part 3](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-3.html) that was all we needed.
 
-It is not enough in these cases:
+However, UIO is not enough in the following cases cases:
 
-* **DMA.** The IP moves data by itself instead of the CPU copying it, so it needs a physical address. A normal application buffer is not contiguous in physical memory, and the kernel can move it while the IP is reading.
-* **Cache coherency.** The CPU writes a frame, but it is still in cache and not in DRAM yet. The IP reads DRAM and gets old data.
-* **More than one process.** Two applications can `mmap` the same UIO device and program the same registers. Nothing stops the second one.
-
-In these cases we write our own driver.
+* **DMA.** The IP moves data by itself instead of the CPU copying it, so it needs memory and buffers allocation/management, which UIO doesn't provide and userspace application doesnt have access to large contiguos memory.
+* **Cache coherency.** The IP doesnt know the data its reading is from cache or stale data in DRAM. For cache coherancy, kernel driver is required.
+* **More than one process.** If two applications try to access the same IP through UIO, it cannot provide arbitration, if there are going to be multiple userspace application running at same time accessing hte same IP, kernel driver is required.
 
 <div class="tip-box" markdown="1">
 
-**Note.** You can do DMA from userspace, and people do: reserve a region of memory at boot, map it through `/dev/mem`, and give that fixed physical address to the IP. It works, but you need root, the memory is carved out of the system whether you use it or not, and a wrong address writes over anything. The kernel has a proper way to do this, which is the [DMA API](https://docs.kernel.org/core-api/dma-api.html).
+**Note.** You can do DMA from userspace, and people do: reserve a region of memory at boot, map it through `/dev/mem`, and give that fixed physical address to the IP. It works, but you need root access for this, the memory is carved out of the system whether you use it or not, and a wrong address writes over anything. The kernel has a proper way to do this, which is the [DMA API](https://docs.kernel.org/core-api/dma-api.html).
 
 </div>
 
@@ -55,11 +53,11 @@ The IP does not change. The interrupt does not change. What changes is who write
 
 # **2\. Userspace and kernel space** {#sec-2}
 
-Whenever you write an application and run it, it runs in userspace. It gets its own virtual address space, it cannot touch physical memory, and it cannot run privileged instructions, such as the one that turns interrupts off.
+Whenever you write an application and run it, it runs in userspace. It gets its own virtual address space, it cannot touch physical memory directly.
 
 A driver runs in kernel space, so it can do things an application cannot:
 
-* map the IP registers into kernel address space
+* map the IP registers and provide access of those registers to userspace without userspace being aware of physical address.
 * own the interrupt line, run a function when it fires, and wake up the process that was waiting for it
 * allocate memory the IP can reach, and keep the caches correct
 * decide whether a second process may open the device while the first still has it
@@ -82,13 +80,14 @@ A bad pointer in an application is a segfault in that one process. In a driver i
 
 # **3\. Why the vendor writes the driver** {#sec-3}
 
-Say we build an image processing IP and sell it. We have to ship software with it.
+If we build an image processing IP and sell it. We have to ship software that talks to the IP with it (if its an SOC system).
 
-But we cannot ship the application, because we do not know what the customer is building. One streams frames from a camera. Another processes files from a disk.
+But we cannot ship the userspace application, because we do not know what the customer is building. One customer can stream data from camera and another processes camera files from disk. Both require different userspace applications.
 
-So we ship the driver instead. It knows the hardware: which register does what, how to give the IP a buffer, how to wait until it is finished.
+So we provide the driver instead. Which is hides the hardware and provides a simple software interface to talk to it. 
+add an example here......
+The customer can use this to talk to the hardware according to the required usecase which knowing details about the hardware itself.
 
-The customer writes the application. Same driver, different applications.
 
 # **4\. Two views of Linux device drivers** {#sec-4}
 
