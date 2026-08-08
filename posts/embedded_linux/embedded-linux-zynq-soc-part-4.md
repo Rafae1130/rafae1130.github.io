@@ -31,7 +31,7 @@ UIO is enough when we just want MMIO register access or interrupts detection. In
 
 # **1\. When UIO is not enough** {#sec-1}
 
-[UIO](https://docs.kernel.org/driver-api/uio-howto.html) gave us two things: access to the registers, and a way to wait for the interrupt. For the example in [Part 3](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-3.html) that was all we needed.
+[UIO](https://docs.kernel.org/driver-api/uio-howto.html) provided us MMIO access and interrupt detection. For the example design in [Part 3](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-3.html) that was all we needed.
 
 However, UIO is not enough in the following cases:
 
@@ -58,11 +58,9 @@ A driver runs in kernel space, so it can do things an application cannot:
 
 ![][image1]
 
-**Figure 1: How one call reaches the IP. The application calls ioctl(), our imgproc_ioctl() runs in the kernel, and that writes the register in the IP.**
+**Figure 1: Userspace app interaction with driver to reach the PL IP.**
 
-The downside is that mistakes are worse.
-
-A bad pointer in an application is a segfault in that one process. In a driver it can take down the board.
+However, since we're dealing with kernel space memory in the driver, extra care needs to be given as a simple bad pointer can hang the whole kernel.
 
 # **3\. Why the vendor writes the driver** {#sec-3}
 
@@ -91,16 +89,13 @@ There are two separate questions about any driver. What does it look like to the
 
 ![][image2]
 
-**Figure 2: The two views, and where our PL IP lands in each of them.**
+**Figure 2: Kernel driver types on different basis**
 
 ### Why can PCIe and USB be enumerated?
 
 By enumeration it means that the kernel can find out what is connected to its bus when we connect it. We don't have to provide information in the device tree beforehand. That is because when Linux asks what is connected on the bus, the device answers with its information, i.e. registers and interrupts — the same information that we provide in the device tree for non-enumerable devices.
 
-[AXI](https://www.arm.com/architecture/system-architectures/amba/amba-5) has no such thing. If we read an address where no IP is mapped, we do not get an answer saying nothing is here. We get a bus error, or the read hangs.
-
-So a PL IP on AXI cannot be discovered this way. The [Device Tree](https://www.devicetree.org/) describes it to Linux instead, and Linux represents these as a [platform device](https://docs.kernel.org/driver-api/driver-model/platform.html) for each IP it finds there.
-
+[AXI](https://www.arm.com/architecture/system-architectures/amba/amba-5) has no enumeration. Therefore, reading an address where no IP is mapped gives you a bus error or a hang, so we have to tell the kernel about these devices manually using the [Device Tree](https://www.devicetree.org/). Linux represents these as a [platform device](https://docs.kernel.org/driver-api/driver-model/platform.html) for each IP it finds there.
 
 # **5\. Userspace application interface** {#sec-5}
 
@@ -126,7 +121,7 @@ This is the same thing we did in [Part 3](https://rafae1130.github.io/posts/embe
 
 ### ioctl
 
-After opening the file, we need to control the IP, and for that we use [`ioctl`](https://docs.kernel.org/driver-api/ioctl.html). If you're familiar with AXI-Lite register programming, this is for that. 
+After opening the file, we need to control the IP, and for that we use [`ioctl`](https://docs.kernel.org/driver-api/ioctl.html). If you're familiar with AXI-Lite register programming, this is for that.
 The exact values required for the IP registers are abstracted for the userspace application. We just use the provided macros and the driver will handle the writing of corresponding values to the appropriate registers.
 
 ```c
@@ -152,14 +147,13 @@ The driver copies the frame into a buffer the IP can read from.
 read(fd, out, frame_size);
 ```
 
+### ioctl vs read/write
 
-### So what is the difference between ioctl and read/write?
+Both are used for data transfer. But the purpose of their data transfer is different.
 
-Both move data, so why do we need two ways?
+`read` and `write` transfer a block of data. It's just a data transfer. Similar to AXI-full.
 
-`read` and `write` carry a block of bytes and nothing else. There is nowhere to say what those bytes are for.
-
-`ioctl` carries a command number and a small argument. That is how we say set the filter to `BLUR`.
+`ioctl` is used for register configuration. It carries a command number and a small argument. That is how we say set the filter to `BLUR`. This is similar to AXI-lite.
 
 If we only had `write`, we would have to invent our own rule, such as the first four bytes are the command and the rest is the frame. `ioctl` gives us that already.
 
@@ -168,6 +162,8 @@ If we only had `write`, we would have to invent our own rule, such as the first 
 **Figure 3: ioctl configures the registers inside the IP. write and read move the data through a buffer in DRAM, which the IP reaches by DMA.**
 
 ### poll
+
+Do not confuse `poll()` with polling. Polling means checking the hardware over and over in a loop, which is what we don't want and why we are using interrupts. The `poll()` function is used for interrupt handling through the kernel.
 
 `poll` makes the application wait until the driver says something has happened. The interrupt handler is what wakes it up.
 
@@ -289,7 +285,7 @@ The rest of this section goes through these in the order they run.
 
 ![][image4]
 
-**Figure 4: The driver and the application each have their own flow. Each userspace call is mapped to an imgproc_* function.**
+**Figure 4: Userspace app and driver flow.**
 
 `insmod` and `rmmod` are the commands to load and remove a loadable module. `lsmod` only lists what is already loaded.
 
@@ -299,11 +295,11 @@ The rest of this section goes through these in the order they run.
 
 ![][image5]
 
-**Figure 5: The compatible string is the only connection between the device tree node and the driver.**
+**Figure 5: The compatible string match between the device tree node and the driver.**
 
 In [Part 3](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-3.html) we had to tell the UIO driver which string to look for, with `modprobe uio_pdrv_genirq of_id=generic-uio`, because that driver ships without a match table of its own. Our driver does not need that. Its table is compiled into `imgproc.ko`, so the kernel already knows what to match on as soon as the module is loaded.
 
-The rest of the Part 3 flow is unchanged. We'll have to program the bitstream and apply a device tree overlay so Linux knows the IP exists. The only difference is that the overlay node now says `compatible = "myco,imgproc-1.0"` instead of `"generic-uio"`, so the kernel binds our driver to it instead of the UIO one. 
+The rest of the Part 3 flow is unchanged. We'll have to program the bitstream and apply a device tree overlay so Linux knows the IP exists. The only difference is that the overlay node now says `compatible = "myco,imgproc-1.0"` instead of `"generic-uio"`, so the kernel binds our driver to it instead of the UIO one.
 
 ## 6.3 struct imgproc: what the driver remembers {#sec-6-3}
 
@@ -367,7 +363,7 @@ This is where the register map stays hidden. The application sends `BLUR`, and t
 
 `write()` copies the frame from the application into the buffer the IP reads.
 
-The application passes a pointer to the data buffer, but that pointer is a virtual address that only means something inside that one process. So the driver does not use it directly. Instead, `copy_from_user` translates it and copies the data across safely.
+The application passes a pointer to the data buffer, but that pointer is a virtual address that only means something inside that one process. So the driver does not use it directly. Instead, `copy_from_user` translates it and copies the data.
 
 `read()` copies the result back the same way, i.e. `copy_to_user`.
 
@@ -389,11 +385,13 @@ The application passes a pointer to the data buffer, but that pointer is a virtu
 
 ![][image6]
 
-**Figure 6: The same nine steps. Note that `imgproc_poll` runs twice, and that `imgproc_isr` reaches it only through `wq`.**
+**Figure 6: Interrupt handling flow in the kernel driver.**
 
 If `done` is already true back at step 4, `imgproc_poll` returns "ready" immediately and the application never sleeps.
 
-`imgproc_isr` has no userspace mapping. It never calls `imgproc_poll`. It only sets `done` and wakes `wq`, which is the meeting point between the two.
+`imgproc_isr` has no userspace mapping. It never calls `imgproc_poll` by itself. It only sets `done` and wakes `wq`, which is then detected by the poll core which calls the `imgproc_poll`.
+
+Interrupt management in kernel space still confuses me. So don't worry if you don't understand this in the first read.
 
 ### imgproc_isr vs UIO
 
@@ -406,7 +404,7 @@ In [Part 3](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq
 | re-arms the interrupt | the application, with `write()` to `/dev/uio0` | nothing to re-arm, the driver never masks it |
 | knows the register map | the application | the driver |
 
-With UIO everything device specific stays in the application. With our driver it moves into the ISR, and the application only learns that the job is done.
+With UIO everything device specific stays in the application, whereas with our own kernel driver it moves into the ISR, and the application only learns that the job is done.
 
 ## 6.9 imgproc_remove {#sec-6-9}
 
@@ -420,9 +418,7 @@ With UIO everything device specific stays in the application. With our driver it
 
 ### Why does this matter more on an FPGA?
 
-Because we reload bitstreams while Linux keeps running.
-
-If the old driver is still loaded when the new bitstream is programmed, it holds a mapping to registers that just changed. The interrupt line may now belong to a different IP.
+Because we reload bitstreams while Linux keeps running, and if the old driver is still loaded when the new bitstream is programmed, it will hold a mapping to registers that just changed and the interrupt line may now belong to a different IP.
 
 <div class="tip-box" markdown="1">
 
@@ -458,7 +454,6 @@ In the next blog we will create our own driver for a custom acceleration IP and 
 ---
 
 **Series:** [Part 1](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-1.html) · [Part 2: Device Tree](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-2.html) · [Part 3: Device Tree Overlay and UIO](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-3.html) · Part 4
-
 
 [image1]: images/image1_p4.png
 
