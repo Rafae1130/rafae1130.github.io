@@ -72,9 +72,18 @@ If we build an image processing IP and sell it. We have to ship software that ta
 But we cannot ship the userspace application, because we do not know what the customer is building. One customer can stream data from camera and another processes camera files from disk. Both require different userspace applications.
 
 So we provide the driver instead. Which is hides the hardware and provides a simple software interface to talk to it. 
-add an example here......
+
 The customer can use this to talk to the hardware according to the required usecase which knowing details about the hardware itself.
 
+```c
+fd = open("/dev/imgproc0", O_RDWR);
+ioctl(fd, IMGPROC_SET_FILTER, BLUR);
+write(fd, frame, frame_size);
+poll(...);
+read(fd, out, frame_size);
+close(fd);
+```
+In the above snippet of userspace application, the user uses our provided macros `IMGPROC_SET_FILTER`, `BLUR` to enable functionality of the IP and use simple commands like `write()` and `read()` to perform data transfers without any any underlying hardware details such as register address, what exact value to write for specific addresses and buffer addresses for data transfers etc. 
 
 # **4\. Two views of Linux device drivers** {#sec-4}
 
@@ -281,25 +290,12 @@ The rest of this section goes through these in the order they run.
 
 ## 6.4 imgproc_probe: getting the IP ready {#sec-6-4}
 
-`probe()` runs when the match is found, once for each matching node. It allocates one of these for each IP it finds. Every other function works on it.
-
-```c
-struct imgproc {
-    void __iomem      *base;   /* the mapped registers */
-    int                irq;
-    wait_queue_head_t  wq;     /* poll() sleeps here */
-    bool               busy;   /* is a job running */
-    bool               done;   /* set by the interrupt handler */
-};
-```
-It gets these values from the device tree. It can have different values depending on functionality. for exmaple: add example here....
-Add an example here, how device tree values will be used to assign these..........
+`probe()` runs when the match is found, once for each matching node. It performs the following main functions. 
 
 
-
-1. allocate the struct above
-4. get the interrupt number from the `interrupts` property and request it
-5. create `/dev/imgproc0`
+1. reads the device tree node.
+2. get the properties provided in the device tree like reg and interrup and initilizes relevant local structs with them.
+3. create `/dev/imgproc0`
 
 
 ## 6.5 imgproc_open and imgproc_release {#sec-6-5}
@@ -310,20 +306,26 @@ Similarly `release()` is mapped to `imgproc_release`. It stops the IP and clears
 
 ## 6.6 imgproc_ioctl {#sec-6-6}
 
-Turns a command number into register writes.
+Allows a readable interface to write MMIO registers from userspace.
 
+In usersapce application
 ```c
-case IMGPROC_SET_FILTER:  writel(arg, dev->base + FILTER);
-case IMGPROC_START:       writel(1,   dev->base + CTRL);
+ioctl(fd, IMGPROC_SET_FILTER, BLUR);
+ioctl(fd, IMGPROC_START, 0);
 ```
+In imgproc_ioctl inside the device driver:
 
-This is where the register map stays hidden. The application sends `BLUR`, and only the driver knows which register that is. add clear example here.....what will happen when ioctl value will be used in userspace application. what will happen for different macros in userspace application
+IMGPROC_SET_FILTER + BLUR → writel(1, dev->base + FILTER)
+IMGPROC_SET_FILTER + SHARP → writel(2, dev->base + FILTER)
+IMGPROC_START → writel(1, dev->base + CTRL)
+
+This is where the register map stays hidden. The application sends `BLUR`, and the driver knows which value to write at which register to provide this functionality.
 
 ## 6.7 imgproc_write and imgproc_read {#sec-6-7}
 
 `write()` copies the frame from the application into the buffer the IP reads. The kernel cannot use an application pointer directly, so this goes through `copy_from_user`.
 
-`read()` copies the result back the same way. what does this use??? copy to user???..........
+`read()` copies the result back the same way i.e. `copy_to_user`
 
 ## 6.8 imgproc_poll and imgproc_isr {#sec-6-8}
 
