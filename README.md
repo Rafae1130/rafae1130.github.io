@@ -24,6 +24,7 @@ This site contains my notes and blogs on varioius FPGA tips, techniques and desi
 - [Embedded Linux (Zynq SoC): Part 1](posts/embedded_linux/embedded-linux-zynq-soc-part-1.md)
 - [Embedded Linux (Zynq SoC): Part 2 - Device Tree](posts/embedded_linux/embedded-linux-zynq-soc-part-2.md)
 - [Embedded Linux (Zynq SoC): Part 3 - Device Tree Overlay and UIO](posts/embedded_linux/embedded-linux-zynq-soc-part-3.md)
+- [Embedded Linux (Zynq SoC): Part 4 - Linux Device Drivers](posts/embedded_linux/embedded-linux-zynq-soc-part-4.md)
 
 ## On Request
 - [FPGA Quantization Error Reduction](posts/on-request/fpga-dsp-quantization-error-reduction.md)
