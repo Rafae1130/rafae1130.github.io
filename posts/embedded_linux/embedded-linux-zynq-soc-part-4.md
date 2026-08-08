@@ -165,7 +165,7 @@ If we only had `write`, we would have to invent our own rule, such as the first 
 
 ![][image3]
 
-**Figure 3: ioctl configures the registers. write and read carry the data. They go to different parts of the IP.**
+**Figure 3: ioctl configures the registers inside the IP. write and read move the data through a buffer in DRAM, which the IP reaches by DMA.**
 
 ### poll
 
@@ -209,7 +209,7 @@ static const struct file_operations imgproc_fops = {
 
 static int imgproc_open(struct inode *inode, struct file *file)
 {
-    /* give out the fd, refuse a second user. */
+    /* makes the communication with device available and give out the fd */
 }
 
 static int imgproc_release(struct inode *inode, struct file *file)
@@ -234,7 +234,8 @@ static ssize_t imgproc_read(struct file *file, char *buf, size_t len, loff_t *of
 
 static unsigned int imgproc_poll(struct file *file, poll_table *wait)
 {
-    /* sleep until the interrupt handler says the job is done */
+    /* report if the job is done; if not, the calling
+       userspace application sleeps on wq */
 }
 
 static irqreturn_t imgproc_isr(int irq, void *dev_id)
@@ -312,7 +313,7 @@ This is not fixed and can be different for different drivers depending on the re
 struct imgproc {
     void __iomem      *base;   /* the mapped registers */
     int                irq;
-    wait_queue_head_t  wq;     /* poll() sleeps here */
+    wait_queue_head_t  wq;     /* waiting processes sleep here */
     bool               done;   /* set by the interrupt handler */
 };
 ```
@@ -329,7 +330,8 @@ A wait queue is how the kernel sleeps a process until something happens. A proce
 
 1. read the device tree node
 2. get the properties provided in the device tree, like `reg` and `interrupts`, and initialize the relevant local struct fields with them (`base`, `irq`)
-3. create `/dev/imgproc0`
+3. request `irq`, so that `imgproc_isr` runs when the IP raises the interrupt
+4. create `/dev/imgproc0`
 
 ## 6.5 imgproc_open and imgproc_release {#sec-6-5}
 
@@ -363,15 +365,48 @@ This is where the register map stays hidden. The application sends `BLUR`, and t
 
 ## 6.7 imgproc_write and imgproc_read {#sec-6-7}
 
-`write()` copies the frame from the application into the buffer the IP reads. The kernel cannot use an application pointer directly, so this goes through `copy_from_user`.
+`write()` copies the frame from the application into the buffer the IP reads.
+
+The application passes a pointer to the data buffer, but that pointer is a virtual address that only means something inside that one process. So the driver does not use it directly. Instead, `copy_from_user` translates it and copies the data across safely.
 
 `read()` copies the result back the same way, i.e. `copy_to_user`.
 
 ## 6.8 imgproc_poll and imgproc_isr {#sec-6-8}
 
-`imgproc_poll` is mapped to `poll()` in our skeleton. Similar to `read()` in our UIO blog, `poll()` puts the userspace process to sleep, and the scheduler stops scheduling that process.
+`imgproc_poll` runs and returns straight away. The kernel's poll core is what sleeps/wakes the application, and it is also what calls `imgproc_poll`.
 
-`imgproc_isr` has no userspace mapping. `imgproc_poll` and `imgproc_isr` work together in the kernel: `poll()` sleeps on the wait queue, the ISR runs when the PL interrupt fires, clears the interrupt in the IP, sets `done`, and wakes the wait queue. That is what wakes the userspace application.
+`done` is the flag in `struct imgproc` that `imgproc_isr` sets when the interrupt is triggered by the IP.
+
+1. the application calls `poll()`
+2. `poll()` goes into the kernel's poll core
+3. the poll core calls `imgproc_poll`
+4. `imgproc_poll` gives the poll core `wq` as the queue to wake the application on, then checks `done`
+5. `done` is false, so `imgproc_poll` returns "not ready"
+6. the poll core sleeps the application on `wq`
+7. the PL interrupt fires and `imgproc_isr` runs: it clears the interrupt in the IP, sets `done`, and wakes `wq`
+8. the wake lifts the poll core, which calls `imgproc_poll` again
+9. `done` is true this time, so `imgproc_poll` returns "ready" and the application's `poll()` returns
+
+![][image6]
+
+**Figure 6: The same nine steps. Note that `imgproc_poll` runs twice, and that `imgproc_isr` reaches it only through `wq`.**
+
+If `done` is already true back at step 4, `imgproc_poll` returns "ready" immediately and the application never sleeps.
+
+`imgproc_isr` has no userspace mapping. It never calls `imgproc_poll`. It only sets `done` and wakes `wq`, which is the meeting point between the two.
+
+### imgproc_isr vs UIO
+
+In [Part 3](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-3.html) the same PL interrupt reached the application, but the work was split differently.
+
+| | UIO (Part 3) | our driver |
+| --- | --- | --- |
+| the application sleeps in | `read("/dev/uio0")` | `poll()` |
+| clears the interrupt in the IP | the application, through the mapped registers | `imgproc_isr` |
+| re-arms the interrupt | the application, with `write()` to `/dev/uio0` | nothing to re-arm, the driver never masks it |
+| knows the register map | the application | the driver |
+
+With UIO everything device specific stays in the application. With our driver it moves into the ISR, and the application only learns that the job is done.
 
 ## 6.9 imgproc_remove {#sec-6-9}
 
@@ -434,3 +469,5 @@ In the next blog we will create our own driver for a custom acceleration IP and 
 [image4]: images/image4_p4.png
 
 [image5]: images/image5_p4.png
+
+[image6]: images/image6_p4.png
