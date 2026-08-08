@@ -313,11 +313,10 @@ In usersapce application
 ioctl(fd, IMGPROC_SET_FILTER, BLUR);
 ioctl(fd, IMGPROC_START, 0);
 ```
-In imgproc_ioctl inside the device driver:
-
-IMGPROC_SET_FILTER + BLUR → writel(1, dev->base + FILTER)
-IMGPROC_SET_FILTER + SHARP → writel(2, dev->base + FILTER)
-IMGPROC_START → writel(1, dev->base + CTRL)
+In `imgproc_ioctl` inside the device driver:
+* `IMGPROC_SET_FILTER` + `BLUR` → `writel(1, dev->base + FILTER)`  
+* `IMGPROC_SET_FILTER` + `SHARP` → `writel(2, dev->base + FILTER)`  
+* `IMGPROC_START` → `writel(1, dev->base + CTRL)`
 
 This is where the register map stays hidden. The application sends `BLUR`, and the driver knows which value to write at which register to provide this functionality.
 
