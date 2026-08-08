@@ -260,3 +260,10 @@ If you are new to FPGA timing analysis and want to understand the timning analys
 [image5]: images/image5-p1.png
 
 [image6]: images/image6-p1.png
+
+<!-- post-nav -->
+<div class="post-nav">
+  <a class="nav-home" href="https://rafae1130.github.io/">Home</a>
+  <a class="nav-next" href="https://rafae1130.github.io/posts/CDC/understanding-clock-domain-crossing-part-2.html">Next &rarr;</a>
+</div>
+<!-- /post-nav -->

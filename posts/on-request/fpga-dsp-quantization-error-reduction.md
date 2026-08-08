@@ -318,3 +318,9 @@ Every metric used in the tables and plots, with a worked example from this study
 **Two's-complement wrap.** +max + 1 = -max. Overflow flips sign. Saturation exists to prevent it.
 
 **BFP.** Block Floating Point: N samples share one exponent, mantissas normalized to block peak. Used inside the AMD FFT LogiCORE.
+
+<!-- post-nav -->
+<div class="post-nav">
+  <a class="nav-home" href="https://rafae1130.github.io/">Home</a>
+</div>
+<!-- /post-nav -->

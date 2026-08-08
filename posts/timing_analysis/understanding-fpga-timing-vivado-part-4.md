@@ -188,3 +188,11 @@ In this post we covered the reg-to-pin direction — data flowing *out* of the F
 [image9]: images/image9_p4.png
 
 [image10]: images/image10_p4.png
+
+<!-- post-nav -->
+<div class="post-nav">
+  <a class="nav-home" href="https://rafae1130.github.io/">Home</a>
+  <a class="nav-prev" href="https://rafae1130.github.io/posts/timing_analysis/understanding-fpga-timing-vivado-part-3.html">&larr; Previous</a>
+  <a class="nav-next" href="https://rafae1130.github.io/posts/timing_analysis/understanding-fpga-timing-vivado-part-5.html">Next &rarr;</a>
+</div>
+<!-- /post-nav -->

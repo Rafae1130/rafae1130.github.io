@@ -133,3 +133,10 @@ This covers the basics of reading and understanding setup timing reports in Viva
 [image5]: images/image5_p1.png
 
 [image6]: images/image6_p1.png
+
+<!-- post-nav -->
+<div class="post-nav">
+  <a class="nav-home" href="https://rafae1130.github.io/">Home</a>
+  <a class="nav-next" href="https://rafae1130.github.io/posts/timing_analysis/understanding-fpga-timing-vivado-part-2.html">Next &rarr;</a>
+</div>
+<!-- /post-nav -->

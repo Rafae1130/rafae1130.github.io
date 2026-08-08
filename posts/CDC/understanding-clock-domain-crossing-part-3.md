@@ -278,3 +278,11 @@ If portability matters, the manual 2-FF synchronizer with `ASYNC_REG` works acro
 [image6]: images/image4-p3.png
 
 [image7]: images/image5-p3.png
+
+<!-- post-nav -->
+<div class="post-nav">
+  <a class="nav-home" href="https://rafae1130.github.io/">Home</a>
+  <a class="nav-prev" href="https://rafae1130.github.io/posts/CDC/understanding-clock-domain-crossing-part-2.html">&larr; Previous</a>
+  <a class="nav-next" href="https://rafae1130.github.io/posts/CDC/understanding-clock-domain-crossing-part-4.html">Next &rarr;</a>
+</div>
+<!-- /post-nav -->

@@ -341,3 +341,10 @@ The decision tree from UG949 is short on purpose. Most real bugs in multi-bit CD
 [image5]: images/image5-p4.png
 
 [image6]: images/image6-p4.png
+
+<!-- post-nav -->
+<div class="post-nav">
+  <a class="nav-home" href="https://rafae1130.github.io/">Home</a>
+  <a class="nav-prev" href="https://rafae1130.github.io/posts/CDC/understanding-clock-domain-crossing-part-3.html">&larr; Previous</a>
+</div>
+<!-- /post-nav -->

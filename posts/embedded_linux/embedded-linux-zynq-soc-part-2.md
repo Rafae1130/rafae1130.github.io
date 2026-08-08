@@ -302,3 +302,11 @@ In the next blog, we'll create a Vivado design with an AXI based IP and then see
 [image3]: images/image3_p2.png
 
 [image4]: images/image4_p2.png
+
+<!-- post-nav -->
+<div class="post-nav">
+  <a class="nav-home" href="https://rafae1130.github.io/">Home</a>
+  <a class="nav-prev" href="https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-1.html">&larr; Previous</a>
+  <a class="nav-next" href="https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-3.html">Next &rarr;</a>
+</div>
+<!-- /post-nav -->

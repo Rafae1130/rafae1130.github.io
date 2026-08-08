@@ -113,3 +113,10 @@ In this article we introduced the major building blocks of an Embedded Linux sys
 [image5]: images/image5_p1.png
 
 [image6]: images/image6_p1.png
+
+<!-- post-nav -->
+<div class="post-nav">
+  <a class="nav-home" href="https://rafae1130.github.io/">Home</a>
+  <a class="nav-next" href="https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-2.html">Next &rarr;</a>
+</div>
+<!-- /post-nav -->
