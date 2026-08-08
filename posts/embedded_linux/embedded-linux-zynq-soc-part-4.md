@@ -257,11 +257,12 @@ static struct platform_driver imgproc_driver = {
 module_platform_driver(imgproc_driver);
 ```
 
-The two structs are the wiring.
+**`of_device_id `** defines the compatible string to be compared with the device tree. 
 
-**`imgproc_fops`** tells the kernel which function to run for each call. The application calls `read()` on `/dev/imgproc0`, and our `imgproc_read()` runs.
+**`imgproc_fops`** tells the kernel which function to run for each userspace function call. For example the in the above platform driver, if the userspace application calls `read()` on `/dev/imgproc0`, the platform driver will run `imgproc_read()`. The skeleton above shows only a few of the available operations. Add link to more  operations here......
 
-**`imgproc_driver`** does the same job on the other side. It connects the match table to `probe` and `remove`.
+**`imgproc_driver`** struct is provided to the kernel. It contains information about struct *`of_device_id `* and the remove and probe function for this driver. Then the kernel can run the probe function if it sees a matching compatible string of *`of_device_id `* in device tree
+
 
 The rest of this section goes through these in the order they run.
 
