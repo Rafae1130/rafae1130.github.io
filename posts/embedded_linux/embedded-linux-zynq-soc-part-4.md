@@ -186,6 +186,8 @@ This is the same idea as [Part 3](https://rafae1130.github.io/posts/embedded_lin
 
 Section 5 was the userspace application side. This is the kernel side.
 
+`imgproc.ko` is a **loadable kernel module**. We insert it after boot and we can take it out again. That is different from a driver **built into** the kernel, which is compiled into the kernel image and is there from boot, with no `.ko` and no `rmmod`.
+
 ## 6.1 The skeleton {#sec-6-1}
 
 Here is the whole driver with the function bodies left out, so the shape is visible in one place:
@@ -285,7 +287,7 @@ The rest of this section goes through these in the order they run.
 
 **Figure 5: The driver and the application each have their own flow. Each userspace call is mapped to an imgproc_* function.**
 
-`insmod` and `rmmod` are the commands to load and remove the driver.
+`insmod` and `rmmod` are the commands to load and remove a loadable module. `lsmod` only lists what is already loaded.
 
 ## 6.2 imgproc_of_match: how Linux finds the driver {#sec-6-2}
 
@@ -383,6 +385,7 @@ If the old driver is still loaded when the new bitstream is programmed, it holds
 # **7\. Summary** {#sec-7}
 
 * UIO covers registers and interrupts. DMA, cache coherency and more than one process push us into writing a driver.
+* `imgproc.ko` is a loadable module (`insmod` / `rmmod`). A built-in driver is compiled into the kernel and cannot be unloaded.
 * AXI-connected PL IPs cannot be discovered by enumeration, so the Device Tree describes them and Linux creates a platform device for each one.
 * The `compatible` string is the only link between the node and the driver. If it is wrong, the driver wont work.
 * `probe()` runs when driver is loaded, it map registers, request the interrupt, create `/dev`. 
