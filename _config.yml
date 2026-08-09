@@ -1,3 +1,54 @@
 title: FPGA Design Notes
 description: Notes and blogs on FPGA design, timing analysis, and digital architectures
 theme: jekyll-theme-cayman
+
+url: https://rafae1130.github.io
+lang: en_GB
+author: Abdur Rafae Haqqani
+
+plugins:
+  - jekyll-seo-tag
+  - jekyll-sitemap
+  - jekyll-feed
+
+# jekyll-seo-tag reads page.image, never site.image, so the social card
+# and the per-series descriptions are injected as page defaults.
+defaults:
+  - scope:
+      path: ""
+    values:
+      image: /assets/social-card.png
+
+  - scope:
+      path: "posts/timing_analysis"
+    values:
+      description: >-
+        Understanding FPGA timing analysis in Vivado: setup and hold checks,
+        slack, clock skew, pessimism removal, and reg-to-pin paths.
+
+  - scope:
+      path: "posts/CDC"
+    values:
+      description: >-
+        Clock domain crossing in FPGA design: reading report_cdc, single-bit
+        synchronizers, and safe multi-bit CDC structures.
+
+  - scope:
+      path: "posts/embedded_linux"
+    values:
+      description: >-
+        Embedded Linux on the Zynq SoC: device tree, overlays, UIO, and
+        writing Linux device drivers for custom PL IP.
+
+  - scope:
+      path: "posts/on-request"
+    values:
+      description: >-
+        Reducing quantization error in FPGA DSP: rounding, dither, noise
+        shaping, saturation, and block floating point.
+
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - vendor
+  - posts/embedded_linux/generate_part2_figures.py

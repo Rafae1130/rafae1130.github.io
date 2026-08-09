@@ -170,6 +170,7 @@ In practice: you trade a small, constant rise in background noise for the disapp
 
 On the hardware side, an LFSR (Linear Feedback Shift Register) can be used to create the random noise which is just a shift register with an XOR feedback tap. It costs a few flip-flops and one XOR gate, runs at full clock speed, and produces a long pseudo-random bit stream. That is exactly what we need: cheap, fast, signal-independent random bits. The dither path is then trivial. Take the bottom 12 bits of the LFSR output as a signed random number, add it to the wide input word before slicing off the bottom, and let the truncation see signal + noise instead of signal alone. The same idea creates the texture you saw in the grayscale gradient figure: random bits added below the rounding boundary turn a hard staircase into a textured transition.
 
+{% raw %}
 ```verilog
 // 32-bit maximal-length LFSR, taps at bits 32, 22, 2, 1.
 // Feed 12 of its bits (as signed) into the quantizer input.
@@ -192,6 +193,7 @@ wire signed [11:0] dither = lfsr_q[11:0];     // RPDF on +/- 2048
 wire signed [24:0] dithered = {in[23], in} + {{13{dither[11]}}, dither};
 wire signed [11:0] out = dithered[23:12];
 ```
+{% endraw %}
 
 ![](images/figure9_fft_lowamp_zoom.png)
 **Figure 9:** Truncation vs dither, low-amplitude FFT.
