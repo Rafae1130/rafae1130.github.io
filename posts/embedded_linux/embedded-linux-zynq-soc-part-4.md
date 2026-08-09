@@ -1,4 +1,4 @@
-# Embedded Linux (Zynq SoC): Part 4 - Linux Device Drivers
+# Writing a Linux Platform Driver for a Zynq PL IP
 
 *This is Part 4 of the Embedded Linux ([Zynq SoC](https://www.amd.com/en/products/adaptive-socs-and-fpgas/soc/zynq-7000.html)) series. Read [Part 1](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-1.html), [Part 2: Device Tree](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-2.html) and [Part 3: Device Tree Overlay and UIO](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-3.html) if you haven't already.*
 
