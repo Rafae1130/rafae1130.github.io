@@ -11,6 +11,12 @@ plugins:
   - jekyll-sitemap
   - jekyll-feed
 
+# Paste the content value from the "HTML tag" verification method.
+# github.io cannot use DNS verification, so this is the route to use.
+# webmaster_verifications:
+#   google: PASTE_GOOGLE_CODE_HERE
+#   bing: PASTE_BING_CODE_HERE
+
 # jekyll-seo-tag reads page.image, never site.image, so the social card
 # and the per-series descriptions are injected as page defaults.
 defaults:
