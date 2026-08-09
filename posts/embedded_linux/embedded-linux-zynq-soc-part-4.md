@@ -12,7 +12,7 @@ UIO is enough when we just want MMIO register access or interrupts detection. In
 
 1. [When UIO is not enough](#sec-1)
 2. [Userspace and kernel space](#sec-2)
-3. [Why the vendor writes the driver](#sec-3)
+3. [When do we need to provide the driver (with the IP)](#sec-3)
 4. [Two views of Linux device drivers](#sec-4)
 5. [Userspace application interface](#sec-5)
 6. [The platform driver](#sec-6)
@@ -62,7 +62,7 @@ A driver runs in kernel space, so it can do things an application cannot:
 
 However, since we're dealing with kernel space memory in the driver, extra care needs to be given as a simple bad pointer can hang the whole kernel.
 
-# **3\. Hardware software stack** {#sec-3}
+# **3\. When do we need to provide the driver (with the IP)** {#sec-3}
 
 If we build an image processing IP and sell it, we have to ship software that talks to the IP with it (if it is an SoC system).
 
