@@ -159,7 +159,7 @@ If we only had `write`, we would have to invent our own rule, such as the first 
 
 ![][image3]
 
-**Figure 3: ioctl configures the registers inside the IP. write and read move the data through a buffer in DRAM, which the IP reaches by DMA.**
+**Figure 3: ioctl configures the registers inside the IP. write and read copy the frame between userspace and kernel memory, both in DRAM, and the IP reaches the kernel side by DMA.**
 
 ### poll
 
