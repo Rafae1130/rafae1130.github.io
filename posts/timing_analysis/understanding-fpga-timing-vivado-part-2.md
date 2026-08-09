@@ -1,4 +1,4 @@
-# Timing Analysis in Vivado: Part 2
+# Clock Skew, Uncertainty and Pessimism Removal
 In [Part 1](https://rafae1130.github.io/posts/timing_analysis/understanding-fpga-timing-vivado-part-1.html), we covered the basics of setup timing analysis for reg-to-reg paths in Vivado — how to read timing reports, what arrival time and required time mean, and how slack is calculated. We left a few terms unexplained: Clock Pessimism Removal (CPR) and clock uncertainty. In this post, we'll unpack both of those, along with clock skew, and see how they fit into the timing equations we built up last time.
 
 # **1\. Clock Pessimism Removal (CPR)**

@@ -1,4 +1,4 @@
-# Understanding FPGA Timing Analysis in Vivado: Part 1
+# FPGA Timing Analysis in Vivado: Setup Slack
 
 # **1\. Introduction**
 

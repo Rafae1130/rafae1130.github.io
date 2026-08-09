@@ -1,4 +1,4 @@
-# Embedded Linux (Zynq SoC): Part 1
+# Embedded Linux on Zynq: Boot Flow and Components
 
 
 

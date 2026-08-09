@@ -1,4 +1,4 @@
-# FPGA Quantization Error Reduction
+# FPGA Quantization: Rounding, Dither and Saturation
 
 # **1. Introduction**
 
