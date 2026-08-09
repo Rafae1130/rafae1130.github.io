@@ -62,7 +62,7 @@ A driver runs in kernel space, so it can do things an application cannot:
 
 However, since we're dealing with kernel space memory in the driver, extra care needs to be given as a simple bad pointer can hang the whole kernel.
 
-# **3\. When do we need to writes the driver** {#sec-3}
+# **3\. Hardware software stack** {#sec-3}
 
 If we build an image processing IP and sell it, we have to ship software that talks to the IP with it (if it is an SoC system).
 
