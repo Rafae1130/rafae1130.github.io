@@ -544,7 +544,7 @@ You should see something like:
 You can build the app with a PetaLinux C application recipe instead of calling the cross-compiler by hand. From your PetaLinux project:
 
 ```bash
-petalinux-create apps --name uio_btn --enable
+petalinux-create apps --name uio-btn --enable
 ```
 
 This creates the recipe under `project-spec/meta-user/recipes-apps/uio_btn/`. Replace the generated source (`files/uio_btn.c`) with your `uio_btn.c`, then:
