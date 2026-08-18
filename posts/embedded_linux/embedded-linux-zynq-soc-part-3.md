@@ -547,12 +547,11 @@ You can build the app with a PetaLinux C application recipe instead of calling t
 petalinux-create apps --name uio_btn --enable
 ```
 
-Replace the generated source with `uio_btn.c`, then:
+This creates the recipe under `project-spec/meta-user/recipes-apps/uio_btn/`. Replace the generated source (`files/uio_btn.c`) with your `uio_btn.c`, then:
 
 ```bash
 petalinux-build -c uio_btn
 ```
-
 The binary is under the PetaLinux build tree. Find it with:
 
 ```bash
