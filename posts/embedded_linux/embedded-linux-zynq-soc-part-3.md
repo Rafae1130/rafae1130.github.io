@@ -541,7 +541,27 @@ You should see something like:
 
 ## Run the application
 
-Cross-compile on the host using arm cross compiler(available in Petalinux), copy the binary to the board, then:
+You can build the app with a PetaLinux C application recipe instead of calling the cross-compiler by hand. From your PetaLinux project:
+
+```bash
+petalinux-create apps --template c --name uio_btn --enable
+```
+
+Replace the generated source with `uio_btn.c`, then:
+
+```bash
+petalinux-build -c uio_btn
+```
+
+The binary is under the PetaLinux build tree. Find it with:
+
+```bash
+find <plnx-proj-root>/build -name uio_btn -type f
+```
+
+With `--enable`, a full image build also installs it into the rootfs (usually as `/usr/bin/uio_btn` on the board).
+
+You can also cross-compile on the host with the ARM cross compiler from PetaLinux, copy the binary to the board, then:
 
 ```bash
 sudo ./uio_btn
