@@ -547,23 +547,23 @@ You can build the app with a PetaLinux C application recipe instead of calling t
 petalinux-create apps --name uio-btn --enable
 ```
 
-This creates the recipe under `project-spec/meta-user/recipes-apps/uio_btn/`. Replace the generated source (`files/uio_btn.c`) with your `uio_btn.c`, then:
+This creates the recipe under `project-spec/meta-user/recipes-apps/uio-btn/`. Replace the generated source (`files/uio_btn.c`) with your `uio_btn.c`, then:
 
 ```bash
-petalinux-build -c uio_btn
+petalinux-build -c uio-btn
 ```
 The binary is under the PetaLinux build tree. Find it with:
 
 ```bash
-find <plnx-proj-root>/build -name uio_btn -type f
+find <plnx-proj-root>/build -name uio-btn -type f
 ```
 
-With `--enable`, a full image build also installs it into the rootfs (usually as `/usr/bin/uio_btn` on the board).
+With `--enable`, a full image build also installs it into the rootfs (usually as `/usr/bin/uio-btn` on the board).
 
 You can also cross-compile on the host with the ARM cross compiler from PetaLinux, copy the binary to the board, then:
 
 ```bash
-sudo ./uio_btn
+sudo ./uio-btn
 ```
 
 Press a button. You should get one line per press, for example:
