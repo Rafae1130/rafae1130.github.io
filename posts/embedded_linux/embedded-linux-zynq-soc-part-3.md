@@ -362,6 +362,90 @@ while (1) {
 * `write` again: UIO disables the IRQ when it fires; re-enable for the next press.  
 * `if (buttonValue)`: press and release both interrupt. Idle is `0`, so print only on press. Each set bit prints as `Button = 1` … `4`.
 
+### Complete program (`uio_btn.c`)
+
+```c
+#include <stdio.h>
+#include <stdint.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+
+#define MAP_SIZE        0x10000
+
+/* AXI GPIO register offsets */
+#define GPIO_DATA       (0x000 / 4)
+#define GPIO_GIER       (0x11C / 4)
+#define GPIO_IPISR      (0x120 / 4)
+#define GPIO_IPIER      (0x128 / 4)
+
+int main(void)
+{
+    int uioFd;
+    volatile uint32_t *gpioRegs;
+    uint32_t irqEnable = 1;
+    uint32_t buttonValue;
+
+    /* Open the UIO device */
+    uioFd = open("/dev/uio0", O_RDWR);
+
+    /* Map GPIO registers into user space */
+    gpioRegs = mmap(NULL, MAP_SIZE,
+                    PROT_READ | PROT_WRITE,
+                    MAP_SHARED,
+                    uioFd,
+                    0);
+
+    /* Enable GPIO interrupts */
+    gpioRegs[GPIO_IPIER] = 1;          /* Enable channel 1 interrupt */
+    gpioRegs[GPIO_GIER]  = 0x80000000; /* Global interrupt enable */
+    gpioRegs[GPIO_IPISR] = 1;          /* Clear pending interrupt */
+
+    /* Tell UIO to enable interrupts */
+    write(uioFd, &irqEnable, sizeof(irqEnable));
+
+    printf("Press a button...\n");
+    fflush(stdout);
+
+    while (1)
+    {
+        /* Wait for an interrupt */
+        read(uioFd, &irqEnable, sizeof(irqEnable));
+
+        /* Disable interrupt while processing */
+        gpioRegs[GPIO_IPIER] = 0;
+
+        /* Simple debounce delay */
+        usleep(20000);
+
+        /* Read button state */
+        buttonValue = gpioRegs[GPIO_DATA] & 0xF;
+
+        /* Clear interrupt */
+        gpioRegs[GPIO_IPISR] = 1;
+
+        /* Re-enable GPIO interrupt */
+        gpioRegs[GPIO_IPIER] = 1;
+
+        /* Re-enable UIO interrupt */
+        irqEnable = 1;
+        write(uioFd, &irqEnable, sizeof(irqEnable));
+
+        if (buttonValue) {
+            int i;
+            for (i = 0; i < 4; i++) {
+                if (buttonValue & (1u << i)) {
+                    printf("Button = %d\n", i + 1); /* bit0 -> 1 ... bit3 -> 4 */
+                    fflush(stdout);
+                }
+            }
+        }
+    }
+
+    return 0;
+}
+```
+
 # **8\. On the Board** {#sec-8}
 
 Do these in order: load UIO with `of_id`, then program the bitstream, then apply the overlay, then run the app.
