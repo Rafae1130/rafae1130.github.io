@@ -3,8 +3,16 @@ description: Notes and blogs on FPGA design, timing analysis, and digital archit
 theme: jekyll-theme-cayman
 
 url: https://rafae1130.github.io
+# Must be set, not just omitted: jekyll-github-metadata fills in a baseurl
+# of its own when this is nil, and guesses "/pages/<owner>" when it cannot
+# reach the API. That would prefix every link on the site.
+baseurl: ""
 lang: en_GB
 author: Abdur Rafae Haqqani
+
+# jekyll-github-metadata otherwise guesses this from the git remote, and
+# fails the build outright under JEKYLL_ENV=production when it cannot.
+repository: Rafae1130/rafae1130.github.io
 
 plugins:
   - jekyll-seo-tag
