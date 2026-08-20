@@ -486,10 +486,8 @@
   .main-content table::-webkit-scrollbar-track { background: transparent; }
 
   /* Anchor jumps — into a mark_lines block, say — glide rather than cut.
-     Wheel scrolling is left to the browser. Native scrolling runs on the
-     compositor thread; a rAF loop driving window.scrollTo runs on the main
-     thread, behind MathJax and behind every backdrop-filter repaint, and
-     could not be made to keep up on this page. */
+     The wheel handler at the end of this file passes behavior:'instant',
+     so it never compounds with this. */
   @media (prefers-reduced-motion: no-preference) {
     html { scroll-behavior: smooth; }
   }
@@ -507,4 +505,133 @@
     .main-content pre { font-size: 0.8rem; }
   }
 </style>
+
+<script>
+{% raw %}
+/* Inertial wheel scroll.
+
+   Three things sank the earlier attempts at this, and all three are fixed
+   here rather than retuned:
+
+   1. The easing was a fixed fraction per frame, so it converged faster on a
+      144Hz panel than a 60Hz one and lurched whenever a frame ran late. It
+      is now applied against real elapsed time.
+   2. It closed the last few pixels asymptotically, which reads as lag at
+      the end of every scroll. It now snaps once the gap is under 1.5px.
+   3. It competed for the main thread with a full-width backdrop-filter that
+      re-blurred a whole viewport every frame. Those are gone from the
+      stylesheet entirely, which is the change that makes this viable at
+      all.
+
+   Readers who have asked for reduced motion keep native scrolling. */
+(function () {
+  'use strict';
+
+  var doc   = document.documentElement;
+  var FRAME = 1000 / 60;
+
+  /* Quoted per 60Hz frame. Lower means a longer glide, so both values move
+     together to change how much smoothing there is; the ratio between them
+     is what makes a nudge and a flick feel different. Too wide a spread and
+     short scrolls snap hard enough to read as the steppiness this is meant
+     to remove, which is why they are not simply halved. */
+  var EASE_NEAR   = 0.125;
+  var EASE_FAR    = 0.062;
+  var SNAP        = 1.5;   /* px left before we just land */
+  var MAX_PENDING = 2;     /* viewports of banked travel */
+
+  var target = 0, cur = 0, running = false, last = 0;
+  var dpr = window.devicePixelRatio || 1;
+
+  function maxScroll() {
+    return Math.max(0, doc.scrollHeight - window.innerHeight);
+  }
+
+  /* A wide listing scrolls itself sideways, but deltaY over one still
+     belongs to the page. Only a box that can genuinely move vertically gets
+     the event back; the hop limit keeps this off the critical path. */
+  function scrollsVertically(node) {
+    var hops = 0;
+    while (node && node !== document.body && node.nodeType === 1 && hops++ < 12) {
+      var s = window.getComputedStyle(node);
+      if ((s.overflowY === 'auto' || s.overflowY === 'scroll') &&
+          node.scrollHeight > node.clientHeight + 1) { return true; }
+      node = node.parentNode;
+    }
+    return false;
+  }
+
+  function place(y) {
+    /* Land on a device pixel. Fractional offsets round unevenly frame to
+       frame, and at low speed that unevenness is exactly what reads as
+       stutter. 'instant' so this never compounds with scroll-behavior. */
+    window.scrollTo({ top: Math.round(y * dpr) / dpr, left: window.scrollX, behavior: 'instant' });
+  }
+
+  function tick(now) {
+    var dt = last ? Math.min(now - last, 64) : FRAME;
+    last = now;
+
+    var gap  = target - cur;
+    var dist = Math.abs(gap);
+
+    if (dist < SNAP) {
+      cur = target; running = false; last = 0;
+      place(cur);
+      return;
+    }
+
+    var k    = Math.min(1, dist / Math.max(1, window.innerHeight));
+    var ease = EASE_NEAR + (EASE_FAR - EASE_NEAR) * k;
+    cur += gap * Math.min(1, 1 - Math.pow(1 - ease, dt / FRAME));
+
+    place(cur);
+    requestAnimationFrame(tick);
+  }
+
+  function onWheel(e) {
+    if (e.ctrlKey || e.altKey || e.shiftKey || e.defaultPrevented) { return; }
+    if (scrollsVertically(e.target)) { return; }
+
+    var end = maxScroll();
+    if (end <= 0) { return; }
+
+    var d = e.deltaY;
+    if (e.deltaMode === 1) { d *= 18; }
+    else if (e.deltaMode === 2) { d *= window.innerHeight; }
+    if (!d) { return; }
+
+    e.preventDefault();
+    var cap = MAX_PENDING * window.innerHeight;
+    target = Math.max(cur - cap, Math.min(cur + cap, target + d));
+    target = Math.max(0, Math.min(end, target));
+    if (!running) { running = true; last = 0; requestAnimationFrame(tick); }
+  }
+
+  function resync() {
+    if (!running) { target = cur = window.scrollY; }
+  }
+
+  function start() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { return; }
+    target = cur = window.scrollY;
+
+    /* Keyboard, scrollbar drag, find-in-page and anchor jumps all land here;
+       resyncing stops the next wheel event yanking back to a stale target. */
+    window.addEventListener('scroll', resync, { passive: true });
+    window.addEventListener('resize', function () {
+      dpr = window.devicePixelRatio || 1;
+      resync();
+    }, { passive: true });
+    window.addEventListener('wheel', onWheel, { passive: false });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start);
+  } else {
+    start();
+  }
+})();
+{% endraw %}
+</script>
 
