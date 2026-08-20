@@ -32,9 +32,6 @@ jobs:
       - run: bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}"
         env:
           JEKYLL_ENV: production
-          # jekyll-github-metadata needs this for site.github.build_revision,
-          # which Cayman uses as the stylesheet cache-buster.
-          JEKYLL_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/upload-pages-artifact@v3
 

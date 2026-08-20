@@ -3,15 +3,13 @@ description: Notes and blogs on FPGA design, timing analysis, and digital archit
 theme: jekyll-theme-cayman
 
 url: https://rafae1130.github.io
-# Must be set, not just omitted: jekyll-github-metadata fills in a baseurl
-# of its own when this is nil, and guesses "/pages/<owner>" when it cannot
-# reach the API. That would prefix every link on the site.
+# Empty rather than absent: a user page is served from the domain root, and
+# stating it stops anything downstream from supplying a baseurl of its own.
 baseurl: ""
 lang: en_GB
 author: Abdur Rafae Haqqani
 
-# jekyll-github-metadata otherwise guesses this from the git remote, and
-# fails the build outright under JEKYLL_ENV=production when it cannot.
+# Used by _layouts/default.html for the header button and footer line.
 repository: Rafae1130/rafae1130.github.io
 
 plugins:
@@ -25,7 +23,6 @@ plugins:
   - jekyll-relative-links
   - jekyll-titles-from-headings
   - jekyll-default-layout
-  - jekyll-github-metadata
 
 # Jekyll 4 emits a Sass source map by default; the site has no use for it.
 sass:

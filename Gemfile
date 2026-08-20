@@ -18,10 +18,6 @@ group :jekyll_plugins do
   gem "jekyll-relative-links"
   gem "jekyll-titles-from-headings"
   gem "jekyll-default-layout"
-  # Cayman appends site.github.build_revision to the stylesheet URL as a
-  # cache-buster. Without this the query string is empty and readers keep
-  # the old CSS after a change.
-  gem "jekyll-github-metadata"
 end
 
 # Ruby 3 dropped webrick from stdlib, and `jekyll serve` needs it.
