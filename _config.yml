@@ -10,6 +10,18 @@ plugins:
   - jekyll-seo-tag
   - jekyll-sitemap
   - jekyll-feed
+  # These five came free with the github-pages gem. The site relies on
+  # them: no file here has front matter, and README.md is the homepage.
+  - jekyll-optional-front-matter
+  - jekyll-readme-index
+  - jekyll-relative-links
+  - jekyll-titles-from-headings
+  - jekyll-default-layout
+  - jekyll-github-metadata
+
+# Jekyll 4 emits a Sass source map by default; the site has no use for it.
+sass:
+  sourcemap: never
 
 # github.io cannot use DNS verification, so ownership is proved with the
 # meta tag these emit. Add `bing:` here too if not importing from Google.

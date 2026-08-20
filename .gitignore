@@ -3,5 +3,5 @@ _site/
 .jekyll-cache/
 .jekyll-metadata
 
-# Resolved locally; GitHub Pages uses its own dependency set
-Gemfile.lock
+# Gemfile.lock is committed: the GitHub Actions build resolves against it,
+# so the deployed site uses the same gem versions as a local build.
