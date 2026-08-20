@@ -2,11 +2,441 @@
   src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
 </script>
 <style>
+  /* ------------------------------------------------------------------
+     Dark glass over jekyll-theme-cayman.
+
+     The page carries a fixed dark field lit by three coloured glows. Every
+     panel above it — the article surface, code wells, callouts, buttons —
+     is translucent, so the glow comes through tinted rather than being
+     covered up.
+
+     There is no backdrop-filter anywhere. It was removed on purpose: the
+     backdrop here is a smooth gradient with no detail in it, so blurring
+     produced almost the same pixels it started with, while forcing the
+     compositor to re-filter large regions on every scroll frame. The look
+     survives on translucency alone, which costs nothing to scroll.
+
+     Loaded after the theme stylesheet, so these rules win. The syntax
+     overrides near the bottom are not optional: Cayman ships GitHub's
+     light Rouge palette, which is near-black on a dark well.
+     ------------------------------------------------------------------ */
+
+  :root {
+    color-scheme: dark;
+
+    --ink:        #e7eef8;
+    --ink-soft:   #9db0c8;
+    --ink-faint:  #718499;
+
+    --accent:     #5eead4;
+    --accent-hi:  #a7f3e4;
+
+    --line:       rgba(255, 255, 255, 0.10);
+    --line-hi:    rgba(255, 255, 255, 0.17);
+
+    --glass:      rgba(255, 255, 255, 0.05);
+    --glass-hi:   rgba(255, 255, 255, 0.08);
+    --well:       rgba(8, 14, 26, 0.88);
+
+    --radius:     14px;
+  }
+
+  /* Four glows, tighter than the usual corner wash and pulled in over the
+     reading column rather than parked at the edges. That is deliberate:
+     the article surface is a full-bleed pane of glass, so the only thing
+     its backdrop-filter has to work on is how much the light behind it
+     changes from place to place. Glows in the corners leave the middle —
+     all of the text — sitting on flat colour.
+
+     It sits on a fixed pseudo-element rather than on the body with
+     background-attachment:fixed. The two look identical, but the attachment
+     property makes the browser repaint the whole background against a new
+     scroll offset every frame, and doing that underneath a full-width
+     backdrop-filter is the classic way to lose frames while scrolling. A
+     fixed layer is composited once and simply stays where it is. */
+  body {
+    background-color: #070c15;
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+  /* will-change forces this onto its own compositor layer. Without it the
+     browser is free to keep the gradients in the same layer as the
+     scrolling content, and then it has to re-rasterise four full-viewport
+     radial gradients every frame to keep them looking stationary — the
+     same cost background-attachment:fixed had. Promoted, it is painted
+     once and simply held in place. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    will-change: transform;
+    background-color: #070c15;
+    background-image:
+      radial-gradient(680px 460px at 26% 12%, rgba(45, 212, 191, 0.09), transparent 64%),
+      radial-gradient(620px 520px at 76% 30%, rgba(99, 102, 241, 0.09), transparent 66%),
+      radial-gradient(760px 520px at 42% 78%, rgba(56, 189, 248, 0.055), transparent 64%),
+      radial-gradient(900px 600px at 88% 92%, rgba(168, 85, 247, 0.04), transparent 66%),
+      linear-gradient(180deg, #070c15 0%, #090f1b 100%);
+    background-repeat: no-repeat;
+  }
+
+  ::selection {
+    background: rgba(94, 234, 212, 0.26);
+    color: #ffffff;
+  }
+
+  /* ---- header ---------------------------------------------------- */
+
+  .page-header {
+    background-color: #12333c;
+    /* One gradient doing the work, rather than three stops a couple of
+       values apart under two glows too faint to see — that combination
+       read as flat colour. It sweeps teal to blue to indigo across the
+       band, then closes on #131329 so the bottom edge meets the page
+       behind the article instead of ending on a seam. */
+    background-image:
+      linear-gradient(150deg,
+        #12333c 0%,
+        #122842 35%,
+        #1b1d42 68%,
+        #131329 100%);
+    background-repeat: no-repeat;
+    border-bottom: 1px solid var(--line-hi);
+    padding: 5rem 1.5rem 4.5rem;
+    text-align: center;
+  }
+
+  .project-name {
+    margin: 0 0 0.45rem;
+    color: #f4f9ff;
+    font-size: 2.1rem;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    text-shadow: 0 2px 22px rgba(0, 0, 0, 0.6);
+  }
+  .project-tagline {
+    margin: 0 auto;
+    max-width: 46rem;
+    color: var(--ink-soft);
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    opacity: 1;
+    text-shadow: 0 1px 14px rgba(0, 0, 0, 0.5);
+  }
+
+  /* ---- the article surface ---------------------------------------- */
+
+  /* Full-bleed, with the text centred by padding rather than a max-width,
+     so the reading column has no side edges to sit against. 56rem, down
+     from 60: at this size 60rem ran to about a hundred characters a line,
+     which is past where the eye reliably finds the next one. Listings
+     break back out to the old width below.
+
+     The first gradient is a sheen along the top edge — the one place a
+     pane of glass catches the light hardest.
+
+     No backdrop-filter. This element is full-bleed and as tall as the
+     document, and its backdrop is a fixed gradient, so the filtered region
+     changed on every scroll frame and the compositor re-blurred a whole
+     viewport each time. It was the single most expensive thing on the page.
+     It was also buying nothing: a blur only has an effect where there is
+     detail to soften, and behind this surface there is nothing but a smooth
+     three-glow wash. The translucency is what carries the tint through, and
+     that is free. */
+  .main-content {
+    max-width: none;
+    width: 100%;
+    margin: 0;
+    padding-block: 3.5rem 3rem;
+    /* Centres a 56rem column once there is room for one, and falls back to
+       a gutter that grows with the viewport rather than a flat 1.25rem.
+       The flat value left every window between roughly 740 and 900px with
+       20px of margin, so the text ran almost edge to edge. */
+    padding-inline: max(clamp(1.25rem, 5vw, 3rem), calc(50% - 28rem));
+    min-height: 55vh;
+    background:
+      radial-gradient(120% 62% at 50% 0%, rgba(255, 255, 255, 0.075), transparent 64%),
+      linear-gradient(180deg,
+        rgba(255, 255, 255, 0.05),
+        rgba(255, 255, 255, 0.025));
+    border: 0;
+    border-top: 1px solid var(--line-hi);
+    border-radius: 0;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.07),
+      0 -24px 60px rgba(0, 0, 0, 0.5);
+    color: var(--ink);
+    font-size: 1.0625rem;
+    line-height: 1.75;
+  }
+
+  .main-content h1,
+  .main-content h2,
+  .main-content h3,
+  .main-content h4 {
+    color: #f2f8ff;
+    letter-spacing: -0.01em;
+    margin-top: 2.2em;
+    margin-bottom: 0.7em;
+    line-height: 1.3;
+  }
+  .main-content > :first-child { margin-top: 0; }
+
+  /* The section rule is an accent that decays across the measure rather
+     than a full-width hairline. */
+  .main-content h2 {
+    position: relative;
+    font-size: 1.5rem;
+    padding-bottom: 0.4em;
+    border-bottom: 0;
+  }
+  .main-content h2::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg,
+                  var(--accent),
+                  rgba(94, 234, 212, 0.16) 34%,
+                  rgba(255, 255, 255, 0.05) 70%,
+                  transparent 100%);
+  }
+  .main-content h3 {
+    color: var(--accent-hi);
+    font-size: 1.2rem;
+  }
+
+  .main-content a {
+    color: var(--accent);
+    text-underline-offset: 0.18em;
+  }
+  .main-content a:hover { color: var(--accent-hi); }
+
+  /* ---- code ------------------------------------------------------- */
+
+  /* Nearly opaque, so a listing is read against a steady dark ground rather
+     than against whatever glow happens to be behind it. No backdrop-filter
+     here any more: at this alpha it bought nothing visible, and a tutorial
+     that reprints a full C file at every step put a dozen full-width blur
+     layers on the page for the compositor to redraw as you scrolled. */
+  /* pre.highlight is named explicitly so the well outranks any `.x .highlight`
+     rule that would otherwise match the pre on class count alone. */
+  .main-content pre,
+  .main-content pre.highlight {
+    background: var(--well);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+    color: #d5e1ef;
+    font-size: 0.85rem;
+    line-height: 1.55;          /* explicit: .hll blocks align to it */
+    overflow-x: auto;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.05),
+      0 8px 24px rgba(0, 0, 0, 0.35);
+  }
+  /* Listings sit wider than the prose. A full C file reprinted at each step
+     of a driver tutorial needs the room, and the offset gives code its own
+     register on the page instead of tracking the paragraphs exactly. Only
+     once the viewport can spare it; Rouge wraps a block three different
+     ways depending on whether it came from a fence, a highlight tag or raw
+     html, so all three outer shapes are named. */
+  @media screen and (min-width: 64rem) {
+    .main-content > pre,
+    .main-content > .highlight,
+    .main-content > .highlighter-rouge {
+      margin-left: -2rem;
+      margin-right: -2rem;
+    }
+  }
+
+  .main-content pre > code {
+    background: none;
+    border: 0;
+    padding: 0;
+    color: inherit;
+    font-size: inherit;
+  }
+  /* Light, and no border. A paragraph naming half a dozen signals and
+     register values gets that many inline spans, and at block-level weight
+     they stop reading as words and start reading as a row of dark tiles
+     with prose in the gaps. This has to be quiet enough to sit inside a
+     sentence. */
+  .main-content code {
+    background: rgba(255, 255, 255, 0.075);
+    border: 0;
+    border-radius: 4px;
+    padding: 0.1em 0.34em;
+    color: #d3e7e2;
+    font-size: 0.88em;
+  }
+
+  /* Lines named by mark_lines in a {% raw %}{% highlight %}{% endraw %} block, used to
+     show what changed since the previous version of a listing. Amber, so a
+     changed line never reads as the teal accent used everywhere else. */
+  .hll {
+    display: block;
+    background: rgba(250, 204, 21, 0.14);
+    box-shadow: inset 3px 0 0 #eab308;
+    scroll-margin-top: 1.5rem;
+  }
+
+  .main-content .lineno {
+    color: var(--ink-faint);
+    -webkit-user-select: none;
+            user-select: none;
+  }
+
+  /* ---- syntax: GitHub dark over Cayman's light Rouge palette ------- */
+
+  /* The wrapper elements only, never the pre. Rouge paints .highlight with
+     #f8f8f8, which has to go on a dark page — but in a fenced block the pre
+     itself also carries class="highlight", and `.main-content .highlight`
+     scores (0,2,0) against `.main-content pre` at (0,1,1). Two classes beat
+     one class and an element, so a blanket rule here silently stripped the
+     well off every fenced listing while bare <pre> blocks kept theirs. That
+     is why some snippets were dark and some were not. */
+  .main-content div.highlight,
+  .main-content figure.highlight,
+  .main-content .highlighter-rouge { background: transparent; }
+
+  .main-content .highlight .c,
+  .main-content .highlight .c1,
+  .main-content .highlight .cm,
+  .main-content .highlight .cd,
+  .main-content .highlight .cs { color: #7d8ea6; font-style: italic; font-weight: 400; }
+
+  .main-content .highlight .cp { color: #ff9492; font-weight: 400; }
+
+  .main-content .highlight .k,
+  .main-content .highlight .kc,
+  .main-content .highlight .kd,
+  .main-content .highlight .kn,
+  .main-content .highlight .kp,
+  .main-content .highlight .kr,
+  .main-content .highlight .kv,
+  .main-content .highlight .o,
+  .main-content .highlight .ow { color: #ff7b72; font-weight: 400; }
+
+  .main-content .highlight .kt,
+  .main-content .highlight .nc,
+  .main-content .highlight .nn,
+  .main-content .highlight .ne { color: #ffa657; font-weight: 400; }
+
+  .main-content .highlight .s,
+  .main-content .highlight .s1,
+  .main-content .highlight .s2,
+  .main-content .highlight .sb,
+  .main-content .highlight .sc,
+  .main-content .highlight .sd,
+  .main-content .highlight .se,
+  .main-content .highlight .sh,
+  .main-content .highlight .si,
+  .main-content .highlight .sx,
+  .main-content .highlight .sr,
+  .main-content .highlight .ss { color: #a5d6ff; font-weight: 400; }
+
+  .main-content .highlight .m,
+  .main-content .highlight .mb,
+  .main-content .highlight .mf,
+  .main-content .highlight .mh,
+  .main-content .highlight .mi,
+  .main-content .highlight .mo,
+  .main-content .highlight .mx,
+  .main-content .highlight .il,
+  .main-content .highlight .nb,
+  .main-content .highlight .bp,
+  .main-content .highlight .no,
+  .main-content .highlight .na,
+  .main-content .highlight .nv,
+  .main-content .highlight .vc,
+  .main-content .highlight .vg,
+  .main-content .highlight .vi { color: #79c0ff; font-weight: 400; }
+
+  .main-content .highlight .nf,
+  .main-content .highlight .nl,
+  .main-content .highlight .nd { color: #d2a8ff; font-weight: 400; }
+
+  .main-content .highlight .nt { color: #7ee787; font-weight: 400; }
+
+  .main-content .highlight .err { color: #ffa198; background: transparent; }
+  .main-content .highlight .gd  { color: #ffdcd7; background: rgba(248, 81, 73, 0.16); }
+  .main-content .highlight .gi  { color: #aff5b4; background: rgba(63, 185, 80, 0.16); }
+  .main-content .highlight .gh,
+  .main-content .highlight .gu  { color: #79c0ff; }
+  .main-content .highlight .gp  { color: #7d8ea6; }
+  .main-content .highlight .go  { color: var(--ink-soft); }
+  .main-content .highlight .gr,
+  .main-content .highlight .gt  { color: #ffa198; }
+
+  /* ---- tables, images, quotes ------------------------------------- */
+
+  .main-content table {
+    border-collapse: collapse;
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    overflow-x: auto;
+    font-size: 0.95rem;
+  }
+  .main-content table th {
+    background: var(--glass-hi);
+    color: var(--accent-hi);
+    font-weight: 600;
+  }
+  .main-content table th,
+  .main-content table td {
+    border: 1px solid var(--line);
+    padding: 0.5rem 0.85rem;
+  }
+  .main-content table tr { background: transparent; }
+  .main-content table tr:nth-child(2n) { background: rgba(255, 255, 255, 0.025); }
+
+  .main-content img {
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    box-shadow: 0 8px 26px rgba(0, 0, 0, 0.45);
+  }
+
+  .main-content blockquote {
+    color: var(--ink-soft);
+    border-left: 4px solid rgba(94, 234, 212, 0.4);
+    padding-left: 1rem;
+  }
+
+  .main-content hr {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--line-hi) 22%, var(--line-hi) 78%, transparent);
+    border: 0;
+  }
+
+  /* ---- footer ----------------------------------------------------- */
+
+  .site-footer {
+    margin-top: 3rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--line);
+    color: var(--ink-faint);
+    font-size: 0.85rem;
+  }
+  .site-footer a { color: var(--accent); }
+  .site-footer a:hover { color: var(--accent-hi); }
+
+  /* ---- existing components ---------------------------------------- */
+
   .tip-box {
-    background: #eef6ff;
-    border-left: 4px solid #2b6cb0;
+    background: var(--glass);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--accent);
+    border-radius: 0 10px 10px 0;
     padding: 12px 16px;
     margin: 1.25em 0;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
   }
   .tip-box > :first-child { margin-top: 0; }
   .tip-box > :last-child { margin-bottom: 0; }
@@ -18,7 +448,7 @@
     gap: 10px;
     margin: 3em 0 1em;
     padding-top: 1.25em;
-    border-top: 1px solid #e1e4e8;
+    border-top: 1px solid var(--line);
   }
   .post-nav .nav-prev { grid-column: 1; justify-self: start; }
   .post-nav .nav-home { grid-column: 2; justify-self: center; }
@@ -26,26 +456,55 @@
   .post-nav a {
     display: inline-block;
     padding: 8px 16px;
-    border: 1px solid #d1d5da;
-    border-radius: 6px;
-    background: #f6f8fa;
-    color: #2b6cb0;
+    background: var(--glass);
+    border: 1px solid var(--line-hi);
+    border-radius: 8px;
+    color: var(--accent);
     text-decoration: none;
     font-size: 0.95em;
     line-height: 1.2;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
   }
   .post-nav a:hover {
-    background: #2b6cb0;
-    border-color: #2b6cb0;
-    color: #fff;
+    background: rgba(94, 234, 212, 0.16);
+    border-color: rgba(94, 234, 212, 0.45);
+    color: var(--accent-hi);
   }
 
-  /* Lines named by mark_lines in a {% raw %}{% highlight %}{% endraw %} block, used to
-     show what changed since the previous version of a listing. */
-  .hll {
-    display: block;
-    background: rgba(255, 221, 87, 0.30);
-    box-shadow: inset 3px 0 0 #e3b341;
-    scroll-margin-top: 70px;
+  /* ---- scrollbars -------------------------------------------------- */
+
+  * { scrollbar-color: rgba(255, 255, 255, 0.22) transparent; }
+  .main-content pre::-webkit-scrollbar,
+  .main-content table::-webkit-scrollbar { height: 10px; }
+  .main-content pre::-webkit-scrollbar-thumb,
+  .main-content table::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 6px;
+  }
+  .main-content pre::-webkit-scrollbar-track,
+  .main-content table::-webkit-scrollbar-track { background: transparent; }
+
+  /* Anchor jumps — into a mark_lines block, say — glide rather than cut.
+     Wheel scrolling is left to the browser. Native scrolling runs on the
+     compositor thread; a rAF loop driving window.scrollTo runs on the main
+     thread, behind MathJax and behind every backdrop-filter repaint, and
+     could not be made to keep up on this page. */
+  @media (prefers-reduced-motion: no-preference) {
+    html { scroll-behavior: smooth; }
+  }
+
+  /* ---- narrow screens --------------------------------------------- */
+
+  @media screen and (max-width: 46rem) {
+    .page-header { padding: 2.75rem 1.25rem 2.5rem; }
+    .project-name { font-size: 1.6rem; }
+    .project-tagline { font-size: 0.95rem; }
+    .main-content {
+      padding-block: 2rem 2.5rem;   /* gutter comes from the rule above */
+      font-size: 1rem;
+    }
+    .main-content pre { font-size: 0.8rem; }
   }
 </style>
+
