@@ -39,6 +39,12 @@
     --well:       rgba(8, 14, 26, 0.88);
 
     --radius:     14px;
+
+    /* Cayman's stack starts at Consolas, which is fine on Windows but has a
+       small x-height and no coverage elsewhere. These lead with the system
+       UI monospace, which is what the OS already uses for code. */
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, "Cascadia Mono",
+            "JetBrains Mono", Consolas, "Liberation Mono", Menlo, monospace;
   }
 
   /* Four glows, tighter than the usual corner wash and pulled in over the
@@ -173,11 +179,15 @@
     line-height: 1.75;
   }
 
+  /* Cayman sets font-weight:normal on every heading in .main-content, which
+     leaves an h3 as a slightly larger line of text and nothing more. It has
+     to be restored here or the hierarchy rests entirely on size. */
   .main-content h1,
   .main-content h2,
   .main-content h3,
   .main-content h4 {
     color: #f2f8ff;
+    font-weight: 600;
     letter-spacing: -0.01em;
     margin-top: 2.2em;
     margin-bottom: 0.7em;
@@ -185,37 +195,40 @@
   }
   .main-content > :first-child { margin-top: 0; }
 
-  /* The section rule is an accent that decays across the measure rather
-     than a full-width hairline. */
+  /* A plain hairline, full width and one colour. */
   .main-content h2 {
-    position: relative;
     font-size: 1.5rem;
     padding-bottom: 0.4em;
-    border-bottom: 0;
+    border-bottom: 1px solid var(--line-hi);
   }
-  .main-content h2::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    bottom: 0;
-    width: 100%;
-    height: 1px;
-    background: linear-gradient(90deg,
-                  var(--accent),
-                  rgba(94, 234, 212, 0.16) 34%,
-                  rgba(255, 255, 255, 0.05) 70%,
-                  transparent 100%);
-  }
+  /* Not teal. Links and inline code are both teal already, so a teal
+     heading was the third thing wearing that colour and read as a link.
+     Headings are distinguished by weight and size; teal means "this is a
+     link or a piece of code". */
   .main-content h3 {
-    color: var(--accent-hi);
-    font-size: 1.2rem;
+    font-size: 1.25rem;
   }
 
+  /* Underlined, because Cayman turns that off and colour alone was doing
+     all the work. Teal against near-white body text is a hue difference of
+     roughly 1.5:1 in lightness, which is not a reliable signal — it depends
+     on the display and on the reader. An underline is a shape, so it does
+     not.
+
+     With this, every distinction on the page is carried by something other
+     than colour: links are underlined, inline code sits on a chip in a mono
+     face, headings are heavier and larger. Colour is now decoration on top
+     of those, rather than the thing holding them apart. */
   .main-content a {
     color: var(--accent);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
     text-underline-offset: 0.18em;
   }
-  .main-content a:hover { color: var(--accent-hi); }
+  .main-content a:hover {
+    color: var(--accent-hi);
+    text-decoration-thickness: 2px;
+  }
 
   /* ---- code ------------------------------------------------------- */
 
@@ -233,7 +246,8 @@
     border-radius: 12px;
     padding: 1rem 1.2rem;
     color: #d5e1ef;
-    font-size: 0.85rem;
+    font-family: var(--mono);
+    font-size: 0.9rem;
     line-height: 1.55;          /* explicit: .hll blocks align to it */
     overflow-x: auto;
     box-shadow:
@@ -247,33 +261,50 @@
      ways depending on whether it came from a fence, a highlight tag or raw
      html, so all three outer shapes are named. */
   @media screen and (min-width: 64rem) {
+    /* div/figure qualified, like every other .highlighter-rouge selector
+       here: Kramdown puts that class on inline <code> as well, and an
+       unqualified match would pull a code span sideways out of its line. */
     .main-content > pre,
-    .main-content > .highlight,
-    .main-content > .highlighter-rouge {
+    .main-content > div.highlight,
+    .main-content > figure.highlight,
+    .main-content > div.highlighter-rouge,
+    .main-content > figure.highlighter-rouge {
       margin-left: -2rem;
       margin-right: -2rem;
     }
   }
 
+  /* font-weight is reset here deliberately. Inline code is semibold, and
+     without this line that weight inherits straight into every listing on
+     the site, bolding whole files. */
   .main-content pre > code {
     background: none;
     border: 0;
     padding: 0;
     color: inherit;
+    font-family: inherit;
     font-size: inherit;
+    font-weight: inherit;
   }
-  /* Light, and no border. A paragraph naming half a dozen signals and
-     register values gets that many inline spans, and at block-level weight
-     they stop reading as words and start reading as a row of dark tiles
-     with prose in the gaps. This has to be quiet enough to sit inside a
-     sentence. */
+  /* A soft light chip with teal text. Both signals are mild on their own
+     and the pair is what reads: the chip separates the span from the line
+     by lightness, the tint says it is code rather than emphasis.
+
+     Note the chip is only visible at all because the .highlighter-rouge
+     rule further down is qualified with div/figure. Kramdown puts that
+     class on inline <code> too, and unqualified it outranks this rule and
+     silently removes the background.
+
+     The pre > code reset below keeps all of this out of listings. */
   .main-content code {
-    background: rgba(255, 255, 255, 0.075);
+    background: rgba(255, 255, 255, 0.10);
     border: 0;
     border-radius: 4px;
-    padding: 0.1em 0.34em;
-    color: #d3e7e2;
-    font-size: 0.88em;
+    padding: 0.12em 0.4em;
+    color: #7fd0bd;
+    font-family: var(--mono);
+    font-size: 0.9em;
+    font-weight: 600;
   }
 
   /* Lines named by mark_lines in a {% raw %}{% highlight %}{% endraw %} block, used to
@@ -300,18 +331,26 @@
      scores (0,2,0) against `.main-content pre` at (0,1,1). Two classes beat
      one class and an element, so a blanket rule here silently stripped the
      well off every fenced listing while bare <pre> blocks kept theirs. That
-     is why some snippets were dark and some were not. */
+     is why some snippets were dark and some were not.
+
+     Every one of these is qualified with div/figure for the same reason.
+     Kramdown emits an inline backtick span as
+     <code class="language-plaintext highlighter-rouge">, so an unqualified
+     `.main-content .highlighter-rouge` also matched inline code — and at
+     (0,2,0) it outranked `.main-content code` and stripped the background
+     off every chip in the prose while leaving the text colour alone. */
   .main-content div.highlight,
   .main-content figure.highlight,
-  .main-content .highlighter-rouge { background: transparent; }
+  .main-content div.highlighter-rouge,
+  .main-content figure.highlighter-rouge { background: transparent; }
 
   .main-content .highlight .c,
   .main-content .highlight .c1,
   .main-content .highlight .cm,
   .main-content .highlight .cd,
-  .main-content .highlight .cs { color: #7d8ea6; font-style: italic; font-weight: 400; }
+  .main-content .highlight .cs { color: #76869c; font-style: italic; font-weight: 400; }
 
-  .main-content .highlight .cp { color: #ff9492; font-weight: 400; }
+  .main-content .highlight .cp { color: #dd9a94; font-weight: 400; }
 
   .main-content .highlight .k,
   .main-content .highlight .kc,
@@ -321,12 +360,12 @@
   .main-content .highlight .kr,
   .main-content .highlight .kv,
   .main-content .highlight .o,
-  .main-content .highlight .ow { color: #ff7b72; font-weight: 400; }
+  .main-content .highlight .ow { color: #dd8880; font-weight: 400; }
 
   .main-content .highlight .kt,
   .main-content .highlight .nc,
   .main-content .highlight .nn,
-  .main-content .highlight .ne { color: #ffa657; font-weight: 400; }
+  .main-content .highlight .ne { color: #d5a273; font-weight: 400; }
 
   .main-content .highlight .s,
   .main-content .highlight .s1,
@@ -339,7 +378,7 @@
   .main-content .highlight .si,
   .main-content .highlight .sx,
   .main-content .highlight .sr,
-  .main-content .highlight .ss { color: #a5d6ff; font-weight: 400; }
+  .main-content .highlight .ss { color: #9ec7e2; font-weight: 400; }
 
   .main-content .highlight .m,
   .main-content .highlight .mb,
@@ -356,23 +395,23 @@
   .main-content .highlight .nv,
   .main-content .highlight .vc,
   .main-content .highlight .vg,
-  .main-content .highlight .vi { color: #79c0ff; font-weight: 400; }
+  .main-content .highlight .vi { color: #8ab4d8; font-weight: 400; }
 
   .main-content .highlight .nf,
   .main-content .highlight .nl,
-  .main-content .highlight .nd { color: #d2a8ff; font-weight: 400; }
+  .main-content .highlight .nd { color: #bfa5db; font-weight: 400; }
 
-  .main-content .highlight .nt { color: #7ee787; font-weight: 400; }
+  .main-content .highlight .nt { color: #90c69a; font-weight: 400; }
 
-  .main-content .highlight .err { color: #ffa198; background: transparent; }
-  .main-content .highlight .gd  { color: #ffdcd7; background: rgba(248, 81, 73, 0.16); }
-  .main-content .highlight .gi  { color: #aff5b4; background: rgba(63, 185, 80, 0.16); }
+  .main-content .highlight .err { color: #dd968f; background: transparent; }
+  .main-content .highlight .gd  { color: #e6c9c4; background: rgba(248, 81, 73, 0.16); }
+  .main-content .highlight .gi  { color: #b6dcbb; background: rgba(63, 185, 80, 0.16); }
   .main-content .highlight .gh,
-  .main-content .highlight .gu  { color: #79c0ff; }
-  .main-content .highlight .gp  { color: #7d8ea6; }
+  .main-content .highlight .gu  { color: #8ab4d8; }
+  .main-content .highlight .gp  { color: #76869c; }
   .main-content .highlight .go  { color: var(--ink-soft); }
   .main-content .highlight .gr,
-  .main-content .highlight .gt  { color: #ffa198; }
+  .main-content .highlight .gt  { color: #dd968f; }
 
   /* ---- tables, images, quotes ------------------------------------- */
 
@@ -397,10 +436,29 @@
   .main-content table tr { background: transparent; }
   .main-content table tr:nth-child(2n) { background: rgba(255, 255, 255, 0.025); }
 
+  /* Vivado and PetaLinux captures are light-UI images. At full brightness a
+     white tool window on a dark page reads as a lit panel rather than as
+     part of the article, and the eye goes to it before the sentence that
+     introduces it. Knocking it back a little settles it into the page;
+     hover or keyboard focus restores it in full for anyone actually
+     studying the screenshot, so nothing is permanently dimmed. Dark images
+     barely change, since there is little brightness there to remove. */
   .main-content img {
     border-radius: 10px;
     border: 1px solid var(--line);
     box-shadow: 0 8px 26px rgba(0, 0, 0, 0.45);
+    filter: brightness(0.86) saturate(0.96);
+    transition: filter 0.18s ease;
+  }
+  .main-content img:hover,
+  .main-content a:focus-visible img {
+    filter: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .main-content img { transition: none; }
+  }
+  @media print {
+    .main-content img { filter: none; }
   }
 
   .main-content blockquote {
@@ -410,9 +468,10 @@
   }
 
   .main-content hr {
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--line-hi) 22%, var(--line-hi) 78%, transparent);
+    height: 0;
+    background: none;
     border: 0;
+    border-top: 1px solid var(--line-hi);
   }
 
   /* ---- footer ----------------------------------------------------- */
