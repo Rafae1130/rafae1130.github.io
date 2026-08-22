@@ -758,7 +758,9 @@
     z-index: 3;
     display: flex;
     gap: 6px;
-    opacity: 0;
+    /* faint but present, rather than hidden until hover: a control nobody
+       knows is there is the same as no control */
+    opacity: 0.4;
     transition: opacity 0.15s ease;
   }
   .main-content div.highlighter-rouge:hover .code-tools,
@@ -822,6 +824,7 @@
     setTimeout(function () { btn.textContent = was; btn.classList.remove('done'); }, 1400);
   }
 
+  function dress() {
   var blocks = document.querySelectorAll('.main-content div.highlighter-rouge, .main-content div.highlight');
   blocks.forEach(function (box, i) {
     /* a rouge wrapper contains a highlight div; only dress the outermost */
@@ -873,6 +876,16 @@
     tools.appendChild(dl);
     box.appendChild(tools);
   });
+  }
+
+  /* This file is included from <head>, so the listings do not exist yet when
+     it runs. Without waiting, querySelectorAll matches nothing and no button
+     is ever added. */
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', dress);
+  } else {
+    dress();
+  }
 })();
 {% endraw %}
 </script>
