@@ -1792,8 +1792,6 @@ We just add the interrupt number and parent property. These are calculated same 
 
 Output:
 
-From the terminal output nothing seems different much. 
-
 ![Figure](images/s5-insmod_p5.png)
 
 ![Figure](images/s5-term-interrupts_p5.png)
@@ -1802,16 +1800,7 @@ Here you can see that when i check the interrupts occurred for systolic driver a
 
 ## Summary {#summary}
 
-* A platform driver is bound to a device tree node by its `compatible` string. Nothing else connects the two.
-* `probe()` runs when that match happens. It maps the register space, sets up whatever the driver needs, and creates the node under `/dev/`.
-* Anything allocated with a `devm_` helper in probe is released by the kernel automatically, which is why `remove()` has so little in it.
-* A misc device is the short way to get a `/dev/` node: the framework shares major number 10 and hands out a minor.
-* `file_operations` is the mapping between the calls userspace makes and the functions in the driver.
-* `ioctl` configures the IP, `write` and `read` move the matrices. Register access is `readl` and `writel`, never a raw pointer.
-* The IP reads and writes memory itself, so it needs physical addresses. `dma_alloc_coherent` returns both a virtual address for the driver and a bus address for the IP.
-* DMA needs large contiguous memory, so the region is reserved in the device tree at boot. `kzalloc` cannot provide it.
-* Polling the done bit holds the CPU for the whole matrix multiply. An interrupt with a wait queue lets the process sleep instead, and the ISR wakes it.
-* Build it one step at a time and test on the board at each step. Each step here was a working driver.
+The driver binds to the device tree node through the compatible string, nothing else. probe() runs on that match: it maps the registers, attaches the reserved memory, and creates /dev/systolic0. devm_ helpers (ioremap, irq, the systolic_dev allocation) are freed by the kernel on remove. A misc device is the short way to get a /dev/ node (major 10, dynamic minor). file_operations is how open / ioctl / write / read from userspace land in the driver. ioctl starts the IP and sets n, write and read move the matrices. The IP DMAs itself, so it needs physical addresses: dma_alloc_coherent gives a virtual pointer for the driver and a physical address for the registers. Those buffers have to be large and contiguous, which is why the region is reserved in the device tree at boot; kzalloc cannot do that. Polling the done bit holds the CPU for the whole multiply. An interrupt and a wait queue let the process sleep, and the ISR wakes it. 
 
 ## Glossary: the headers we included {#glossary}
 
