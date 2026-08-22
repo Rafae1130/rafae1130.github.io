@@ -572,6 +572,12 @@
   .post-nav .nav-next { grid-column: 3; justify-self: end; }
   .post-nav a {
     display: inline-block;
+    /* every button the same width, so Home does not read as a smaller
+       target than Previous. border-box makes min-width the whole button
+       rather than just the text, and 9em clears the longest label. */
+    box-sizing: border-box;
+    min-width: 9em;
+    text-align: center;
     padding: 8px 16px;
     background: var(--glass);
     border: 1px solid var(--line-hi);
@@ -621,6 +627,9 @@
       font-size: 1rem;
     }
     .main-content pre { font-size: 0.8rem; }
+    /* three equal 9em buttons plus gaps overflow a phone, so let them
+       size to their text again down here */
+    .post-nav a { min-width: 0; }
   }
 </style>
 
