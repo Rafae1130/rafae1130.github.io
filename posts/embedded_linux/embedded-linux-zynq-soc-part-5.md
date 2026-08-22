@@ -1810,31 +1810,31 @@ Every header added across the five steps, and the one thing each was needed for.
 
 | Header | What we used it for |
 | --- | --- |
-| `<linux/module.h>` | module macros: `MODULE_LICENSE`, `MODULE_AUTHOR`, and what makes the file a loadable module. |
-| `<linux/init.h>` | `module_init` and `module_exit`, which tell the kernel which functions to call on insmod and rmmod. |
-| `<linux/kernel.h>` | assorted kernel helpers and the printing macros. |
-| `<linux/of.h>` | device tree access, including `of_device_id` and the `compatible` matching. |
-| `<linux/miscdevice.h>` | `struct miscdevice`, `misc_register` and `misc_deregister`, which give us the `/dev/` node. |
-| `<linux/platform_device.h>` | `struct platform_driver`, `probe` and `remove`, and `platform_get_irq`. |
-| `<linux/fs.h>` | `struct file_operations`, the table mapping userspace calls onto driver functions. |
-| `<linux/io.h>` | `readl` and `writel`, and `devm_platform_ioremap_resource` for mapping the registers. |
-| `<linux/iopoll.h>` | `readl_poll_timeout`, the polling loop used before we moved to interrupts. |
-| `<linux/uaccess.h>` | `get_user`, `put_user`, `copy_from_user` and `copy_to_user` for crossing the userspace boundary. |
-| `<linux/of_reserved_mem.h>` | `of_reserved_mem_device_init`, which attaches the reserved region from the device tree to the device. |
-| `<linux/dma-mapping.h>` | `dma_alloc_coherent` and `dma_free_coherent`, which allocate memory the IP can reach. |
-| `<linux/mutex.h>` | the mutex that stops two processes starting a transfer at the same time. |
-| `<linux/interrupt.h>` | `devm_request_irq`, `irqreturn_t` and the ISR plumbing. |
+| `<linux/module.h>`{: #gl-linux-module } | module macros: `MODULE_LICENSE`, `MODULE_AUTHOR`, and what makes the file a loadable module. |
+| `<linux/init.h>`{: #gl-linux-init } | `module_init` and `module_exit`, which tell the kernel which functions to call on insmod and rmmod. |
+| `<linux/kernel.h>`{: #gl-linux-kernel } | assorted kernel helpers and the printing macros. |
+| `<linux/of.h>`{: #gl-linux-of } | device tree access, including `of_device_id` and the `compatible` matching. |
+| `<linux/miscdevice.h>`{: #gl-linux-miscdevice } | `struct miscdevice`, `misc_register` and `misc_deregister`, which give us the `/dev/` node. |
+| `<linux/platform_device.h>`{: #gl-linux-platform_device } | `struct platform_driver`, `probe` and `remove`, and `platform_get_irq`. |
+| `<linux/fs.h>`{: #gl-linux-fs } | `struct file_operations`, the table mapping userspace calls onto driver functions. |
+| `<linux/io.h>`{: #gl-linux-io } | `readl` and `writel`, and `devm_platform_ioremap_resource` for mapping the registers. |
+| `<linux/iopoll.h>`{: #gl-linux-iopoll } | `readl_poll_timeout`, the polling loop used before we moved to interrupts. |
+| `<linux/uaccess.h>`{: #gl-linux-uaccess } | `get_user`, `put_user`, `copy_from_user` and `copy_to_user` for crossing the userspace boundary. |
+| `<linux/of_reserved_mem.h>`{: #gl-linux-of_reserved_mem } | `of_reserved_mem_device_init`, which attaches the reserved region from the device tree to the device. |
+| `<linux/dma-mapping.h>`{: #gl-linux-dma-mapping } | `dma_alloc_coherent` and `dma_free_coherent`, which allocate memory the IP can reach. |
+| `<linux/mutex.h>`{: #gl-linux-mutex } | the mutex that stops two processes starting a transfer at the same time. |
+| `<linux/interrupt.h>`{: #gl-linux-interrupt } | `devm_request_irq`, `irqreturn_t` and the ISR plumbing. |
 
 **Userspace application**
 
 | Header | What we used it for |
 | --- | --- |
-| `<stdio.h>` | userspace: `printf` for the test output. |
-| `<stdlib.h>` | userspace: `malloc`, `free` and `atoi` for the matrix buffers and the size argument. |
-| `<stdint.h>` | userspace: the fixed width types the IP's data is expressed in. |
-| `<fcntl.h>` | userspace: `open` and its flags. |
-| `<unistd.h>` | userspace: `read`, `write` and `close`. |
-| `<sys/ioctl.h>` | userspace: the `ioctl` call itself. |
+| `<stdio.h>`{: #gl-stdio } | userspace: `printf` for the test output. |
+| `<stdlib.h>`{: #gl-stdlib } | userspace: `malloc`, `free` and `atoi` for the matrix buffers and the size argument. |
+| `<stdint.h>`{: #gl-stdint } | userspace: the fixed width types the IP's data is expressed in. |
+| `<fcntl.h>`{: #gl-fcntl } | userspace: `open` and its flags. |
+| `<unistd.h>`{: #gl-unistd } | userspace: `read`, `write` and `close`. |
+| `<sys/ioctl.h>`{: #gl-sys-ioctl } | userspace: the `ioctl` call itself. |
 
 ## References {#references}
 
@@ -1870,11 +1870,18 @@ Every header added across the five steps, and the one thing each was needed for.
 
   var XREF = {"s1":{"systolic_init":"step-1-module-init-and-exit","systolic_exit":"step-1-module-init-and-exit"},"s2":{"systolic_dev":"of_device_id","systolic_probe":"systolic_probe-s2","systolic_remove":"systolic_remove-s2"},"s3":{"SYSTOLIC_SET_N":"register-offsets","REG_N":"register-offsets","systolic_open":"systolic_open_release","systolic_release":"systolic_open_release","systolic_ioctl":"ioctl-commands"},"s3app":{"SYSTOLIC_SET_N":"register-offsets"},"s4":{"SYSTOLIC_SET_N":"systolic_set_ptr","systolic_dev":"device-tree-update","systolic_set_ptr":"systolic_set_ptr","systolic_free_buffers":"systolic_free_buffers","systolic_alloc_buffers":"systolic_alloc_buffers","systolic_write":"systolic_write-s4","systolic_read":"systolic_read-s4","systolic_ioctl":"systolic_ioctl-s4","systolic_probe":"systolic_probe-s4","systolic_remove":"systolic_remove-s4"},"s4app":{"SYSTOLIC_SET_N":"systolic_set_ptr"},"s5":{"systolic_dev":"systolic_de","systolic_isr":"systolic_isrr","systolic_write":"systolic_write-s5","systolic_read":"systolic_read-s5","systolic_ioctl":"starting-the-ip-without-polling","systolic_probe":"systolic_probe-s5"}};
 
-  document.querySelectorAll("div.listing .nf, div.listing .nc, div.listing .n, div.listing .nv").forEach(function (t) {
+  var HDRS = {"<fcntl.h>":"gl-fcntl","<linux/dma-mapping.h>":"gl-linux-dma-mapping","<linux/fs.h>":"gl-linux-fs","<linux/init.h>":"gl-linux-init","<linux/interrupt.h>":"gl-linux-interrupt","<linux/io.h>":"gl-linux-io","<linux/iopoll.h>":"gl-linux-iopoll","<linux/kernel.h>":"gl-linux-kernel","<linux/miscdevice.h>":"gl-linux-miscdevice","<linux/module.h>":"gl-linux-module","<linux/mutex.h>":"gl-linux-mutex","<linux/of.h>":"gl-linux-of","<linux/of_reserved_mem.h>":"gl-linux-of_reserved_mem","<linux/platform_device.h>":"gl-linux-platform_device","<linux/uaccess.h>":"gl-linux-uaccess","<stdint.h>":"gl-stdint","<stdio.h>":"gl-stdio","<stdlib.h>":"gl-stdlib","<sys/ioctl.h>":"gl-sys-ioctl","<unistd.h>":"gl-unistd"};
+
+  document.querySelectorAll("div.listing .nf, div.listing .nc, div.listing .n, div.listing .nv, div.listing .cpf").forEach(function (t) {
 
     var _b = t.closest && t.closest("div.listing");
     var _k = _b ? _b.id.replace(/^ls-/, "") : null;
-    if (_k && XREF[_k] && XREF[_k][t.textContent]) { t.classList.add("xref"); t.title = "explanation"; }
+    var _t = (t.textContent || "").trim();
+    if (t.classList.contains("cpf") && HDRS[_t]) {
+      t.classList.add("xref", "hdr"); t.title = "glossary";
+    } else if (_k && XREF[_k] && XREF[_k][t.textContent]) {
+      t.classList.add("xref"); t.title = "explanation";
+    }
 
   });
 
@@ -1884,9 +1891,14 @@ Every header added across the five steps, and the one thing each was needed for.
 
     if (!t.classList || !t.classList.contains("xref")) { return; }
 
-    var bx = t.closest("div.listing");
-    var ky = bx ? bx.id.replace(/^ls-/, "") : null;
-    var id = ky && XREF[ky] ? XREF[ky][t.textContent] : null;
+    var id;
+    if (t.classList.contains("hdr")) {
+      id = HDRS[(t.textContent || "").trim()];
+    } else {
+      var bx = t.closest("div.listing");
+      var ky = bx ? bx.id.replace(/^ls-/, "") : null;
+      id = ky && XREF[ky] ? XREF[ky][t.textContent] : null;
+    }
 
     var h  = id && document.getElementById(id);
 
@@ -1898,9 +1910,10 @@ Every header added across the five steps, and the one thing each was needed for.
 
     window.scrollTo({ top: y - 90, behavior: "smooth" });
 
-    h.classList.remove("hd-hit"); void h.offsetWidth; h.classList.add("hd-hit");
+    var f = (h.closest && h.closest("tr")) || h;
+    f.classList.remove("hd-hit"); void f.offsetWidth; f.classList.add("hd-hit");
 
-    setTimeout(function () { h.classList.remove("hd-hit"); }, 4400);
+    setTimeout(function () { f.classList.remove("hd-hit"); }, 4400);
 
   });
 
