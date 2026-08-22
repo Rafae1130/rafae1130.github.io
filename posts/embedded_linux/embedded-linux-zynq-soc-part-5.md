@@ -971,7 +971,7 @@ static int systolic_probe(struct platform_device *pdev)
 
     platform_set_drvdata(pdev, priv);
 
-    dev_info(&pdev->dev, "ready at 0x%08x, buffers allocated on SET_N\n", priv->base);
+    dev_info(&pdev->dev, "ready at %p, buffers allocated on SET_N\n", priv->base);
     return 0;
 
 err_rmem:
@@ -1613,7 +1613,7 @@ static int systolic_probe(struct platform_device *pdev)
 
     platform_set_drvdata(pdev, priv);
 
-    dev_info(&pdev->dev, "ready at 0x%08x, buffers allocated on SET_N\n", priv->base);
+    dev_info(&pdev->dev, "ready at %p, buffers allocated on SET_N\n", priv->base);
     return 0;
 
 err_rmem:
