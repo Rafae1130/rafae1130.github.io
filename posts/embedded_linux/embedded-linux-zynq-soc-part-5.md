@@ -1029,7 +1029,7 @@ First the function takes the mutex lock so no other process can initiate a trans
 
 Since there is only one write path but two different possible destinations (i.e matrix A and B), we need a way to tell the driver which matrix data is currently being written, either A or B. we use ppos for that. ppos is used to tell the current location in file. This really doesn't have any real meaning here and we're just using it as a distinguisher, we alternate it between [`ppos=0`](#s4-L143) for first matrix and then [`ppos=size`](#s4-L157) for the second matrix. And using these we set the destination for the incoming data. we use the [`copy_from_user`](#s4-L152) function to copy the data from userspace memory to kernel space memory.
 
-
+Note that copy_from_user copies the whole matrix from userspace into the DMA buffer, so the CPU walks over all the data once before the IP even starts. For a big matrix that copy will cost alot of cycles which is not good. There are better ways to do this but for now to keep it simple we'll just use this.
 
 ### systolic_read {#systolic_read-s4}
 
@@ -1083,8 +1083,7 @@ We need to add the following node:
 
 </div>
 
-[`reg = <0x1c000000 0x4000000>;`](#s4dt-L9) Defines the starting address of our reserved memory and its size. r
-anges Tells there 1:1 mapping and no offsets.
+[`reg = <0x1c000000 0x4000000>;`](#s4dt-L9) Defines the starting address of our reserved memory and its size. `ranges;` with nothing after it means a 1:1 mapping, so an address inside a child node is the same address the CPU uses. If it were `ranges = <0x0 0x1c000000 0x4000000>;` instead, a child sitting at `0x0` would really be at `0x1c000000`, and every address in that node would be offset by the same amount.
 
 [`reusable;`](#s4dt-L8) Means the kernel can use it for other operations as long as we're not using it, whenever our DMA needs this region, kernel will clear it up and provide this to the DMA.
 [`compatible = "shared-dma-pool";`](#s4dt-L7) is used so that the kernel knows its for dma and we can access it through the dma apis in the driver.
@@ -1205,8 +1204,12 @@ int main(int argc, char **argv)
 
 </div>
 
-We use write function to provide the data for matrix A and B to the driver. This will call the systolic_write function in driver..
+We use write function to provide the data for matrix A and B to the driver. This will call the systolic_write function in driver.
 Then we start the IP and poll to check IP completion. Once done we read the result buffer back in userspace and compare with expected output( which i matrix A in our case)
+
+But how can malloc provide contiguous memory when kzalloc couldn't, and we had to reserve a region in the device tree for the driver's buffers?
+
+malloc does not give us physically contiguous memory, and it doesn't need to. What it gives is virtually contiguous memory, so `a[0]` to `a[n*n-1]` are next to each other as far as the application is concerned, while the pages behind them can be scattered anywhere in RAM. That is fine here because the IP never sees these pointers. write() hands the buffer to the driver, the driver copies it into the `dma_alloc_coherent` buffer, and that one is physically contiguous because it comes out of the region we reserved in the device tree. If we tried to give the IP a malloc'd pointer directly it would read the wrong memory as soon as the buffer crossed a page boundary.
 
 Now we test on board:
 
