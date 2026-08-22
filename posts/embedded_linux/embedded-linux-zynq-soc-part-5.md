@@ -54,13 +54,14 @@
 ## Introduction {#introduction}
 
 In this blog we'll write our own kernel driver for a custom IP. The IP is a systolic array for matrix multiplication, the same structure used in AI silicon like Google's TPUs. This one is written in HLS and is not optimized, because the subject here is the kernel driver rather than the HLS, which will come in a later series.
+
 I won't drop a whole driver on you and then explain it all in one go. We'll start with the bare minimum and add one piece of functionality at a time, testing on the board at each step.
-The main functionality required by this driver is to initiate data transfer through inbuilt dma in the ip. Perform matmul, return the results and generates an interrupt. 
+
 The driver has to do four main things:
 
 - Tell the IP where matrix A, B and C live in memory, and how big they are, so it can fetch and write them over its own DMA
-- Get the matrix data from userspace and Start the multiply
-- Generate an interrupt when the IP has finished, without wasting cpu cycles
+- Get the matrix data from userspace and start the multiply
+- Wait for the IP to finish without burning CPU cycles, using the interrupt it raises when it is done
 - Hand the result back to the userspace application
 
 We'll get there in five steps, each one building on the last and tested on the board before moving on:
@@ -71,12 +72,12 @@ We'll get there in five steps, each one building on the last and tested on the b
 4. [DMA buffers and read/write](#step-4-dma-buffers-and-the-data-path) - move the matrices in and out, and start the multiply
 5. [Interrupts](#step-5-interrupts) - stop polling and let the process sleep until the IP is done
 
-
 ## How the IP works {#how-the-ip-works}
 
 The IP is a systolic matrix multiplier generated from HLS. It takes two n x n matrices, A and B, and writes the product into C. A and B hold 16 bit signed values, C holds 64 bit signed values so the accumulation has room and does not overflow.
 
 Internally it works on fixed size tiles, so n has to be a multiple of the tile size. That is the only part of the tiling that matters for the driver, and it is why the driver rejects a size that does not fit.
+
 ![Figure](images/fig01_p5.png)
 
 ![Figure](images/fig02_p5.png)
