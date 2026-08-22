@@ -634,9 +634,9 @@ We can view this value being provided to our IP through the [AXI-lite](#how-the-
 
 ![Figure](images/s3-ila-n64_p5.png)
 
-Here AW Channel is the address channel of AXI-lite and W channel is write data channel. we can see that at value 64 is being written at address 52 (decimal, `0x34`) which is the address for [register N](#reg-n)
+Here AW Channel is the address channel of AXI-lite and W channel is write data channel. we can see that at value 64 is being written at address 52 (decimal, `0x34` in hex) which is the address for [register N](#reg-n)
 
-Similarly, if we write value 128 using our userspace application, we can see value 128 being written at address 52 (`0x34`)
+Similarly, if we write value 128 using our userspace application, we can see value 128 being written at address 52 (`0x34` in hex)
 
 ![Figure](images/s3-term-n128_p5.png)
 
@@ -1216,7 +1216,6 @@ Now we test on board:
 ![Figure](images/s4-term-n128_p5.png)
 
 The driver prints the three buffer addresses it allocated, and those are the same values going out on the bus in the capture below. Each address register is 64 bit split across two 32 bit registers, so every buffer takes two writes, low half first:
-
 | Offset | Register | Value written | From the terminal |
 | --- | --- | --- | --- |
 | `0x10` | [`REG_A`](#s4-L29) low  | `1c000000` | `a=0x1c000000` |
