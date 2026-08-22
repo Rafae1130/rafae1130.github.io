@@ -272,7 +272,7 @@ MODULE_AUTHOR("Rafae");
 
 Lets start with our first struct. Now, as we want our driver to discover the our IP's device tree node and read its properties, we need to create a struct of [`platform_driver`](#s2-L70) type with the relevant information and provide it to the kernel.
 
-This struct contains the information about which function to call to setup the driver for use from userspace, for example it provides the probe function, which is called once when the driver is loaded to set everything up, remove is called to clean up and free up resources when driver is removed, .name is whatever name you want to give to your driver and .of_match_table gives the name of struct which contains the compatible string to look for in device tree.
+This struct contains the information about which function to call to setup the driver to make it available for use from userspace, for example it provides the probe function, which is called once for every device tree node match to set everything up, remove is called to clean up and free up resources when device tree node is removed, .name is whatever name you want to give to your driver and .of_match_table gives the name of struct which contains the compatible string to look for in device tree.
 
 It might seem like probe, remove are doing the same function as systolic_init and systolic_exit. But they run at different level, init and exit runs once when the driver is loaded and removed through insmod and rmmod commands respectively. Whereas probe and remove everytime kernel finds a matching node in device tree. For example for multiple instances of IPs it will run once for each instance. 
 
