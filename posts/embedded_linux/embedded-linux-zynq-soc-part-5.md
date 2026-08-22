@@ -78,17 +78,19 @@ The IP is a systolic matrix multiplier generated from HLS. It takes two n x n ma
 
 Internally it works on fixed size tiles, so n has to be a multiple of the tile size. That is the only part of the tiling that matters for the driver, and it is why the driver rejects a size that does not fit.
 
+The IP has two kinds of port, and the difference between them is the whole reason this driver looks the way it does:
+
+- **One AXI-Full master.** `m_axi_gmem`, on the right of the `systolic_matmul` IP in the picture below. The IP uses this to fetch A and B and to write C back, on its own, without the CPU. The driver never touches this interface. It only tells the IP which addresses to use.
+
+- **One AXI-Lite slave.** `s_axi_control`, on the left of the same block. This is the register space, and it is the only way the driver talks to the IP.
+
+
 ![Figure](images/fig01_p5.png)
 *The block design. `s_axi_control` on the left of `systolic_matmul_0` is the register interface the driver writes to. `m_axi_gmem` on the right is the IP's own master, wired through the interconnect to `S_AXI_HP0` so it can reach DDR without the CPU. The `interrupt` output goes to `IRQ_F2P[0:0]`, which is where the `interrupts` property in the overlay comes from.*
 
 
 
 
-The IP has two kinds of port, and the difference between them is the whole reason this driver looks the way it does:
-
-- **One AXI-Full master.** `m_axi_gmem`, on the right of the `systolic_matmul` IP in the picture above. The IP uses this to fetch A and B and to write C back, on its own, without the CPU. The driver never touches this interface. It only tells the IP which addresses to use.
-
-- **One AXI-Lite slave.** `s_axi_control`, on the left of the same block. This is the register space, and it is the only way the driver talks to the IP.
 
 ![Figure](images/fig02_p5.png)
 *The address editor, and the source of two numbers this driver depends on. `s_axi_control` is mapped at `0x4000_0000` with a 64K range, which is exactly the `reg = <0x40000000 0x10000>;` in the device tree overlay. Below it, `m_axi_gmem` reaches DDR through `S_AXI_HP0` across the low 1G, which is why a reserved buffer region at `0x1c000000` is somewhere the IP can actually address.*
