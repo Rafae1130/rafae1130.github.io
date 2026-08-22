@@ -1,4 +1,4 @@
-title: Embedded Design blogs and note
+title: Embedded Systems / FPGA Blogs
 description: Notes and blogs on FPGA design, timing analysis, and digital architectures
 theme: jekyll-theme-cayman
 
@@ -45,6 +45,7 @@ defaults:
       path: "posts/timing_analysis"
     values:
       series: Timing Analysis
+      series_blurb: How Vivado checks setup and hold, and how to read the reports.
       description: >-
         Understanding FPGA timing analysis in Vivado: setup and hold checks,
         slack, clock skew, pessimism removal, and reg-to-pin paths.
@@ -53,6 +54,7 @@ defaults:
       path: "posts/CDC"
     values:
       series: Clock Domain Crossing
+      series_blurb: Metastability, report_cdc, and synchronizers for crossing clocks.
       description: >-
         Clock domain crossing in FPGA design: reading report_cdc, single-bit
         synchronizers, and safe multi-bit CDC structures.
@@ -61,6 +63,7 @@ defaults:
       path: "posts/embedded_linux"
     values:
       series: Embedded Linux (Zynq SoC)
+      series_blurb: Device tree, overlays, UIO, and writing a kernel driver for PL IP.
       description: >-
         Embedded Linux on the Zynq SoC: device tree, overlays, UIO, and
         writing Linux device drivers for custom PL IP.
@@ -69,6 +72,7 @@ defaults:
       path: "posts/on-request"
     values:
       series: On Request
+      series_blurb: Rounding, dither and saturation when you cut word width in FPGA DSP.
       description: >-
         Reducing quantization error in FPGA DSP: rounding, dither, noise
         shaping, saturation, and block floating point.

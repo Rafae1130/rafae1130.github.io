@@ -35,8 +35,11 @@
       <h1 class="project-name">{{ site.title }}</h1>
       {% if page.series %}
       <h2 class="project-series">{{ page.series }}</h2>
+      {% if page.series_blurb %}
+      <p class="project-tagline">{{ page.series_blurb }}</p>
+      {% endif %}
       {% else %}
-      <h2 class="project-tagline">{{ site.description }}</h2>
+      <p class="project-tagline">{{ site.description }}</p>
       {% endif %}
     </header>
 
