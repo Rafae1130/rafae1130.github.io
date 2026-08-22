@@ -1670,7 +1670,8 @@ MODULE_AUTHOR("Rafae");
 
 ### New headers {#new-headers-s5}
 
-[`REG_GIE`](#s5-L31) is the global interrupt enable and [`GIE_ENABLE`](#s5-L40) is the bit that turns it on. [`REG_IER`](#s5-L32) enables the individual interrupt sources, and [`IER_AP_DONE`](#s5-L41) is the one for the done signal. [`REG_ISR`](#s5-L33) is the status register that the handler clears the interrupt bit on, and [`ISR_AP_DONE`](#s5-L42) is the bit it writes back to acknowledge it. Both the global enable and the source enable have to be set or the IP never raises the line.
+[`REG_GIE`](#s5-L31) is the global interrupt enable and [`GIE_ENABLE`](#s5-L40) is the bit that turns it on. [`REG_IER`](#s5-L32) enables the individual interrupt sources, and [`IER_AP_DONE`](#s5-L41) is the one for the done signal. [`REG_ISR`](#s5-L33) is the status register that the handler clears the interrupt bit on, and [`ISR_AP_DONE`](#s5-L42) is the bit it writes back to acknowledge it. Both the global enable and the source enable have to be set or the IP never raises the line. There are two enable registers because they enable interrupts at different levels: an IP can have multiple interrupts for different events, so IER can be used to enable only the interrupts currently required. This IP has two, done and ready, and we only want done. GIE is a single switch over all of these interrupts and can be used to enable or disable every interrupt from the IP at once.
+
 
 ### systolic_dev  {#systolic_dev-s5}
 
@@ -1822,7 +1823,8 @@ Output:
 
 ![Figure](images/s5-term-interrupts_p5.png)
 
-Here you can see that when i check the interrupts occurred for systolic driver after running application, its incremented by once each time. 
+Here you can see that when i check the interrupts occurred for systolic driver after running application, its incremented by once each time. That count is also the first thing to check when it doesn't work: if the line is missing from `/proc/interrupts` altogether then `request_irq` never ran and probe failed, and if it is there but stuck at zero while `read()` times out then the handler is registered fine and the IP simply is not raising the interrupt, which points at issue in `GIE`/`IER` or at the `interrupts` property in the overlay.
+
 
 ## Summary {#summary}
 
