@@ -99,14 +99,14 @@ The IP has two kinds of port, and the difference between them is the whole reaso
 
 | Offset | Name | What it is for |
 | --- | --- | --- |
-| `0x00` | AP_CTRL | control and status. Bit 0 starts the IP, bit 1 goes high when it has finished and clears as soon as it is read |
-| `0x04` | GIE | global interrupt enable |
-| `0x08` | IER | interrupt enable. Bit 0 is the done interrupt |
-| `0x0c` | ISR | interrupt status. Write a 1 back to a bit to clear it |
-| `0x10` | A | address of matrix A, low 32 bits. High half at `0x14` |
-| `0x1c` | B | address of matrix B, low 32 bits. High half at `0x20` |
-| `0x28` | C | address of matrix C, low 32 bits. High half at `0x2c` |
-| `0x34` | <span id="reg-n">N</span> | the matrix size n |
+| [`0x00`](#register-offsets) | AP_CTRL | control and status. Bit 0 starts the IP, bit 1 goes high when it has finished and clears as soon as it is read |
+| [`0x04`](#new-headers-s5) | GIE | global interrupt enable |
+| [`0x08`](#new-headers-s5) | IER | interrupt enable. Bit 0 is the done interrupt |
+| [`0x0c`](#new-headers-s5) | ISR | interrupt status. Write a 1 back to a bit to clear it |
+| [`0x10`](#new-headers) | A | address of matrix A, low 32 bits. High half at `0x14` |
+| [`0x1c`](#new-headers) | B | address of matrix B, low 32 bits. High half at `0x20` |
+| [`0x28`](#new-headers) | C | address of matrix C, low 32 bits. High half at `0x2c` |
+| [`0x34`](#register-offsets) | <span id="reg-n">N</span> | the matrix size n |
 
 The address registers are 64 bit, split across two 32 bit registers each.
 
