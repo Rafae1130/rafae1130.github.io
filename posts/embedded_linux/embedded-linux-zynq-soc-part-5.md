@@ -222,7 +222,7 @@ static int systolic_probe(struct platform_device *pdev)
         return rc;
 
     platform_set_drvdata(pdev, priv);
-    dev_info(&pdev->dev, "/dev/%s is ready at base_address = 0x%08x\n", priv->miscdev.name, priv->base);
+    printk("/dev/%s is ready at base_address = 0x%08x\n", priv->miscdev.name, priv->base);
     return 0;
 }
 
@@ -231,7 +231,7 @@ static int systolic_remove(struct platform_device *pdev)
     struct systolic_dev *priv = platform_get_drvdata(pdev);
 
     misc_deregister(&priv->miscdev);
-    dev_info(&pdev->dev, "removed\n");
+    printk("removed\n");
     return 0;
 }
 
@@ -367,7 +367,7 @@ In this step we'll add the capability in our driver so we can read and write our
 
 <div class="listing" id="ls-s3">
 
-{% highlight c linenos mark_lines="9 10 15 16 17 18 19 21 22 23 24 25 44 45 46 47 48 50 51 52 53 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 90 91 92 119" %}
+{% highlight c linenos mark_lines="9 10 15 16 17 18 19 21 22 23 24 25 44 45 46 47 48 50 51 52 53 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 90 91 92" %}
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
@@ -495,7 +495,7 @@ static int systolic_remove(struct platform_device *pdev)
     struct systolic_dev *priv = platform_get_drvdata(pdev);
 
     misc_deregister(&priv->miscdev);
-    dev_info(&pdev->dev, "removed\n");
+    printk("removed\n");
     return 0;
 }
 
@@ -654,7 +654,7 @@ Now we are ready to implement read/write functionality through DMA to provide da
 
 <div class="listing" id="ls-s4">
 
-{% highlight c linenos mark_lines="5 12 13 21 22 23 25 26 29 30 31 39 41 43 44 45 46 49 50 51 52 53 54 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100 101 102 103 104 105 106 107 120 121 122 123 124 125 126 127 128 129 130 131 132 133 134 135 136 137 138 139 140 141 142 143 144 145 146 147 148 149 150 151 152 153 154 155 156 157 158 159 160 161 162 164 165 166 167 168 169 170 171 172 173 174 175 176 177 178 179 180 181 182 183 184 189 190 194 196 197 198 201 202 203 204 205 206 207 208 209 210 213 214 215 216 219 220 221 222 225 226 227 228 229 231 232 233 234 235 246 247 260 261 267 268 269 270 271 272 273 274 279 283 287 290 291 292 300 301 314 317 318 321 322 326 327" %}
+{% highlight c linenos mark_lines="5 12 13 23 24 25 27 28 31 32 33 41 43 45 46 47 48 51 52 53 54 55 56 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100 101 102 103 104 105 106 107 108 109 122 123 124 125 126 127 128 129 130 131 132 133 134 135 136 137 138 139 140 141 142 143 144 145 146 147 148 149 150 151 152 153 154 155 156 157 158 159 160 161 162 163 164 166 167 168 169 170 171 172 173 174 175 176 177 178 179 180 181 182 183 184 185 186 191 192 196 198 199 200 203 204 205 206 207 208 209 210 211 212 215 216 217 218 221 222 223 224 227 228 229 230 231 233 234 235 236 237 248 249 262 263 269 270 271 272 273 274 275 276 281 285 289 292 293 294 302 303 319 320" %}
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
@@ -668,6 +668,8 @@ Now we are ready to implement read/write functionality through DMA to provide da
 #include <linux/uaccess.h>
 #include <linux/dma-mapping.h>
 #include <linux/mutex.h>
+
+#define DRIVER_NAME "systolic"
 
 #define SYSTOLIC_MAGIC  's'
 #define SYSTOLIC_START  _IO (SYSTOLIC_MAGIC, 1)
@@ -751,8 +753,8 @@ static int systolic_alloc_buffers(struct systolic_dev *priv, int matrix_size)
     systolic_set_ptr(priv, REG_C, priv->c_dma);
     writel(matrix_size, priv->base + REG_N);
 
-    dev_info(priv->dev, "size=%d: a=%pad b=%pad c=%pad\n",
-         matrix_size, &priv->a_dma, &priv->b_dma, &priv->c_dma);
+    printk("size=%d: a=0x%08x b=0x%08x c=0x%08x\n",
+           matrix_size, priv->a_dma, priv->b_dma, priv->c_dma);
     return 0;
 
 free_b:
@@ -926,7 +928,7 @@ static int systolic_probe(struct platform_device *pdev)
      */
     rc = of_reserved_mem_device_init(&pdev->dev);
     if (rc) {
-        dev_err(&pdev->dev, "no usable memory-region (%d)\n", rc);
+        printk("no usable memory-region (%d)\n", rc);
         return rc;
     }
 
@@ -941,7 +943,7 @@ static int systolic_probe(struct platform_device *pdev)
 
     platform_set_drvdata(pdev, priv);
 
-    dev_info(&pdev->dev, "ready at %p, buffers allocated on SET_N\n", priv->base);
+    printk("ready at 0x%08x, buffers allocated on SET_N\n", priv->base);
     return 0;
 
 err_rmem:
@@ -968,20 +970,20 @@ static const struct of_device_id systolic_of_match[] = {
 
 static struct platform_driver systolic_driver = {
     .driver = {
-        .name       = "systolic",
+        .name       = DRIVER_NAME,
         .of_match_table = systolic_of_match,
     },
     .probe  = systolic_probe,
     .remove = systolic_remove,
 };
 
-static int __init systolic_init(void)
-{
+static int systolic_init (void){
+    printk("hello from systolic\r\n");
     return platform_driver_register(&systolic_driver);
 }
 
-static void __exit systolic_exit(void)
-{
+static void systolic_exit(void){
+    printk("Goodbye from systolic\r\n");
     platform_driver_unregister(&systolic_driver);
 }
 
@@ -997,37 +999,37 @@ MODULE_AUTHOR("Rafae");
 
 ### New headers {#new-headers}
 
-[`TILE_SIZE`](#s4-L22) is the tile size the IP works on, so the matrix size has to be a multiple of it. [`MAX_MATRIX_SIZE`](#s4-L23) is the largest size we allow. Both are used to reject a bad size before we allocate anything.
+[`TILE_SIZE`](#s4-L24) is the tile size the IP works on, so the matrix size has to be a multiple of it. [`MAX_MATRIX_SIZE`](#s4-L25) is the largest size we allow. Both are used to reject a bad size before we allocate anything.
 
-[`AB_BYTES`](#s4-L25) and [`C_BYTES`](#s4-L26) work out how many bytes a matrix needs for a given size. A and B hold 16 bit values so they use s16, while C holds the accumulated result so it uses s64 and takes four times the memory for the same n.
+[`AB_BYTES`](#s4-L27) and [`C_BYTES`](#s4-L28) work out how many bytes a matrix needs for a given size. A and B hold 16 bit values so they use s16, while C holds the accumulated result so it uses s64 and takes four times the memory for the same n.
 
-[`REG_A`](#s4-L29), [`REG_B`](#s4-L30) and [`REG_C`](#s4-L31) are the register offsets for the buffer addresses for A, B and C matrix. [`REG_AP_CTRL`](#s4-L28) is the control register we already used in the previous step.
+[`REG_A`](#s4-L31), [`REG_B`](#s4-L32) and [`REG_C`](#s4-L33) are the register offsets for the buffer addresses for A, B and C matrix. [`REG_AP_CTRL`](#s4-L30) is the control register we already used in the previous step.
 
 ### systolic_dev struct {#systolic_dev-struct}
 
-Then we have to update the [`systolic_dev`](#s4-L37) struct for buffer pointers, mutex lock to handle multiple userspace applications trying to access the IP and dev.
+Then we have to update the [`systolic_dev`](#s4-L39) struct for buffer pointers, mutex lock to handle multiple userspace applications trying to access the IP and dev.
 
-The IP registers need physical addresses for the buffers. But [`s16 *a *b`](#s4-L44) and [`s64 *c`](#s4-L45) will provide the virtual addressses. Hence [`dma_addr_t`](#s4-L46) is used to write map those virtual addresses to physical address and write to the IP registers. [`mutex lock`](#s4-L41) is used so only one application can access the IP at a time, as our current IP has only one channel.
+The IP registers need physical addresses for the buffers. But [`s16 *a *b`](#s4-L46) and [`s64 *c`](#s4-L47) will provide the virtual addressses. Hence [`dma_addr_t`](#s4-L48) is used to write map those virtual addresses to physical address and write to the IP registers. [`mutex lock`](#s4-L43) is used so only one application can access the IP at a time, as our current IP has only one channel.
 
 ### systolic_set_ptr {#systolic_set_ptr}
 
-[`systolic_set_ptr`](#s4-L50) - this function is to write the buffer addresses to IP register. So that the IP knows where to read data from for computation and where to write it back. Since the IP takes a 64 bit address divided into two 32 bit register, we have to perform two 32 bit writes on  two registers.
+[`systolic_set_ptr`](#s4-L52) - this function is to write the buffer addresses to IP register. So that the IP knows where to read data from for computation and where to write it back. Since the IP takes a 64 bit address divided into two 32 bit register, we have to perform two 32 bit writes on  two registers.
 
 ### systolic_alloc_buffers {#systolic_alloc_buffers}
 
-[`systolic_alloc_buffers`](#s4-L72) - we use this function to allocate memory to the buffers a b and c in kernel space a. [`dma_alloc_coherent`](#s4-L76) is the kernel API that can be used to allocate memory to our buffers from reserved memory region in our device tree (We'll see the updated device tree for this later in this section)
-For each buffer: [`dma_alloc_coherent`](#s4-L76) -  we give the function the dev struct created by kernel (dev contains the information about the reserved memory region this IP can use) and the size, and the function writes the allocated physical address to [`priv->a_dma`](#s4-L76) and returns the virtual address to [`priv->a`](#s4-L76).
-After allocating the buffers we provide their pointer to the IP using [`systolic_set_ptr`](#s4-L50) function. notice that we use priv->a_dma instead of priv->a because the IP needs physical address.
+[`systolic_alloc_buffers`](#s4-L74) - we use this function to allocate memory to the buffers a b and c in kernel space a. [`dma_alloc_coherent`](#s4-L78) is the kernel API that can be used to allocate memory to our buffers from reserved memory region in our device tree (We'll see the updated device tree for this later in this section)
+For each buffer: [`dma_alloc_coherent`](#s4-L78) -  we give the function the dev struct created by kernel (dev contains the information about the reserved memory region this IP can use) and the size, and the function writes the allocated physical address to [`priv->a_dma`](#s4-L78) and returns the virtual address to [`priv->a`](#s4-L78).
+After allocating the buffers we provide their pointer to the IP using [`systolic_set_ptr`](#s4-L52) function. notice that we use priv->a_dma instead of priv->a because the IP needs physical address.
 
 ### systolic_free_buffers {#systolic_free_buffers}
 
-[`systolic_free_buffers`](#s4-L56) - we use this function to free up the alloacted buffers
+[`systolic_free_buffers`](#s4-L58) - we use this function to free up the alloacted buffers
 
 ### systolic_write {#systolic_write-s4}
 
 First the function takes the mutex lock so no other process can initiate a transfer while one is on going as there is only one IP in the design. Here the read and write is from perspective of userspace application, not the IP.
 
-Since there is only one write path but two different possible destinations (i.e matrix A and B), we need a way to tell the driver which matrix data is currently being written, either A or B. we use ppos for that. ppos is used to tell the current location in file. This really doesn't have any real meaning here and we're just using it as a distinguisher, we alternate it between [`ppos=0`](#s4-L143) for first matrix and then [`ppos=size`](#s4-L157) for the second matrix. And using these we set the destination for the incoming data. we use the [`copy_from_user`](#s4-L152) function to copy the data from userspace memory to kernel space memory.
+Since there is only one write path but two different possible destinations (i.e matrix A and B), we need a way to tell the driver which matrix data is currently being written, either A or B. we use ppos for that. ppos is used to tell the current location in file. This really doesn't have any real meaning here and we're just using it as a distinguisher, we alternate it between [`ppos=0`](#s4-L145) for first matrix and then [`ppos=size`](#s4-L159) for the second matrix. And using these we set the destination for the incoming data. we use the [`copy_from_user`](#s4-L154) function to copy the data from userspace memory to kernel space memory.
 
 Note that copy_from_user copies the whole matrix from userspace into the DMA buffer, so the CPU walks over all the data once before the IP even starts. For a big matrix that copy will cost alot of cycles which is not good. There are better ways to do this but for now to keep it simple we'll just use this.
 
@@ -1035,28 +1037,28 @@ Note that copy_from_user copies the whole matrix from userspace into the DMA buf
 
 for read, its much simpler because we only have one buffer to write. 
 
-It just does some error checking, take the mutex lock and then copy the data back to userspace using [`copy_to_user()`](#s4-L177).
+It just does some error checking, take the mutex lock and then copy the data back to userspace using [`copy_to_user()`](#s4-L179).
 
 ### systolic_ioctl {#systolic_ioctl-s4}
 
-In [`IOCTL fuction`](#s4-L186), the following cases are updated:
+In [`IOCTL fuction`](#s4-L188), the following cases are updated:
 
-[`SYSTOLIC_SET_N`](#s4-L193): It checks if if the new provided N value from userspace is same as before (if the application has been run before). Then it won't do anything as the previously allocated buffers can be used again. If the size is different(or if its a first run), then it will first free the previously allocated buffers using [`systolic_free_buffers`](#s4-L56) and then allocate using [`systolic_alloc_buffers`](#s4-L72).
+[`SYSTOLIC_SET_N`](#s4-L195): It checks if if the new provided N value from userspace is same as before (if the application has been run before). Then it won't do anything as the previously allocated buffers can be used again. If the size is different(or if its a first run), then it will first free the previously allocated buffers using [`systolic_free_buffers`](#s4-L58) and then allocate using [`systolic_alloc_buffers`](#s4-L74).
 
-[`SYSTOLIC_START`](#s4-L224): It'll set the start bit of the IP, telling it to start reading data of matrix A and B using the DMA through [AXI-Full](#how-the-ip-works) interface, then we poll the status register to wait for the completion of matrix multiplication.
+[`SYSTOLIC_START`](#s4-L226): It'll set the start bit of the IP, telling it to start reading data of matrix A and B using the DMA through [AXI-Full](#how-the-ip-works) interface, then we poll the status register to wait for the completion of matrix multiplication.
 
 ### systolic_probe {#systolic_probe-s4}
 
 We need to make a few changes in probe function as well. 
-[`of_reserved_mem_device_init`](#s4-L270): it connects the memory-region from the device tree to this device, so that every later dma_alloc_coherent on it comes out of your reserved 64 MB instead of the kernel's general pool. It stores that info in dev, that's why need to add this to our systolic struct so we can use this dev later for dma operations.
+[`of_reserved_mem_device_init`](#s4-L272): it connects the memory-region from the device tree to this device, so that every later dma_alloc_coherent on it comes out of your reserved 64 MB instead of the kernel's general pool. It stores that info in dev, that's why need to add this to our systolic struct so we can use this dev later for dma operations.
 
 ### file_operations {#file_operations_s4}
 
-In [`file_operation`](#s4-L242) struct, we have to make to new entries for two added system calls of [`systolic_read`](#s4-L246) and [`systolic_write`](#s4-L247).
+In [`file_operation`](#s4-L244) struct, we have to make to new entries for two added system calls of [`systolic_read`](#s4-L248) and [`systolic_write`](#s4-L249).
 
 ### systolic_remove {#systolic_remove-s4}
 
-For [`systolic_remove`](#s4-L295) we deallocate the buffers and release the attached memory region defined in device tree.
+For [`systolic_remove`](#s4-L297) we deallocate the buffers and release the attached memory region defined in device tree.
 
 ### Device tree update {#device-tree-update}
 
@@ -1218,13 +1220,13 @@ Now we test on board:
 The driver prints the three buffer addresses it allocated, and those are the same values going out on the bus in the capture below. Each address register is 64 bit split across two 32 bit registers, so every buffer takes two writes, low half first:
 | Offset | Register | Value written | From the terminal |
 | --- | --- | --- | --- |
-| `0x10` | [`REG_A`](#s4-L29) low  | `1c000000` | `a=0x1c000000` |
-| `0x14` | [`REG_A`](#s4-L29) high | `00000000` | |
-| `0x1c` | [`REG_B`](#s4-L30) low  | `1c008000` | `b=0x1c008000` |
-| `0x20` | [`REG_B`](#s4-L30) high | `00000000` | |
-| `0x28` | [`REG_C`](#s4-L31) low  | `1c020000` | `c=0x1c020000` |
-| `0x2c` | [`REG_C`](#s4-L31) high | `00000000` | |
-| `0x34` | [`REG_N`](#s4-L32)      | `00000080` | `size=128` |
+| `0x10` | [`REG_A`](#s4-L31) low  | `1c000000` | `a=0x1c000000` |
+| `0x14` | [`REG_A`](#s4-L31) high | `00000000` | |
+| `0x1c` | [`REG_B`](#s4-L32) low  | `1c008000` | `b=0x1c008000` |
+| `0x20` | [`REG_B`](#s4-L32) high | `00000000` | |
+| `0x28` | [`REG_C`](#s4-L33) low  | `1c020000` | `c=0x1c020000` |
+| `0x2c` | [`REG_C`](#s4-L33) high | `00000000` | |
+| `0x34` | [`REG_N`](#s4-L34)      | `00000080` | `size=128` |
 
 We can see these values being provided to their registers from the addr channel and write data channel in below screenshot.
 The high halves are all zero because the reserved region sits in the low 4GB, and `0x80` is just 128 in hex, the size we passed on the command line. All three addresses fall inside the `0x1c000000` region we reserved in the device tree, and `b` is `0x8000` above `a`, which is exactly one 128x128 matrix of s16. 
@@ -1243,7 +1245,7 @@ This will be our final step, we will add interrupt handling capability in our dr
 
 <div class="listing" id="ls-s5">
 
-{% highlight c linenos mark_lines="10 29 30 31 38 39 40 48 49 64 65 66 67 68 69 70 71 72 153 154 155 156 186 193 194 195 196 197 198 231 232 233 258 259 260 261 262 264 265 294 309 310 311 313 314 315 317 318 319" %}
+{% highlight c linenos mark_lines="10 31 32 33 40 41 42 50 51 66 67 68 69 70 71 72 73 74 155 156 157 158 188 195 196 197 198 199 200 233 234 235 260 261 262 263 264 266 267 296 311 312 313 315 316 317 319 320 321" %}
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
@@ -1257,6 +1259,8 @@ This will be our final step, we will add interrupt handling capability in our dr
 #include <linux/uaccess.h>
 #include <linux/dma-mapping.h>
 #include <linux/mutex.h>
+
+#define DRIVER_NAME "systolic"
 
 #define SYSTOLIC_MAGIC  's'
 #define SYSTOLIC_START  _IO (SYSTOLIC_MAGIC, 1)
@@ -1358,8 +1362,8 @@ static int systolic_alloc_buffers(struct systolic_dev *priv, int matrix_size)
     systolic_set_ptr(priv, REG_C, priv->c_dma);
     writel(matrix_size, priv->base + REG_N);
 
-    dev_info(priv->dev, "size=%d: a=%pad b=%pad c=%pad\n",
-         matrix_size, &priv->a_dma, &priv->b_dma, &priv->c_dma);
+    printk("size=%d: a=0x%08x b=0x%08x c=0x%08x\n",
+           matrix_size, priv->a_dma, priv->b_dma, priv->c_dma);
     return 0;
 
 free_b:
@@ -1548,7 +1552,7 @@ static int systolic_probe(struct platform_device *pdev)
      */
     rc = of_reserved_mem_device_init(&pdev->dev);
     if (rc) {
-        dev_err(&pdev->dev, "no usable memory-region (%d)\n", rc);
+        printk("no usable memory-region (%d)\n", rc);
         return rc;
     }
 
@@ -1556,7 +1560,7 @@ static int systolic_probe(struct platform_device *pdev)
     if (rc < 0)
         goto err_rmem;
 
-    rc = devm_request_irq(&pdev->dev, rc, systolic_isr, 0, "systolic", priv);
+    rc = devm_request_irq(&pdev->dev, rc, systolic_isr, 0, DRIVER_NAME, priv);
     if (rc)
         goto err_rmem;
 
@@ -1575,7 +1579,7 @@ static int systolic_probe(struct platform_device *pdev)
 
     platform_set_drvdata(pdev, priv);
 
-    dev_info(&pdev->dev, "ready at %p, buffers allocated on SET_N\n", priv->base);
+    printk("ready at 0x%08x, buffers allocated on SET_N\n", priv->base);
     return 0;
 
 err_rmem:
@@ -1602,20 +1606,20 @@ static const struct of_device_id systolic_of_match[] = {
 
 static struct platform_driver systolic_driver = {
     .driver = {
-        .name       = "systolic",
+        .name       = DRIVER_NAME,
         .of_match_table = systolic_of_match,
     },
     .probe  = systolic_probe,
     .remove = systolic_remove,
 };
 
-static int __init systolic_init(void)
-{
+static int systolic_init (void){
+    printk("hello from systolic\r\n");
     return platform_driver_register(&systolic_driver);
 }
 
-static void __exit systolic_exit(void)
-{
+static void systolic_exit(void){
+    printk("Goodbye from systolic\r\n");
     platform_driver_unregister(&systolic_driver);
 }
 
@@ -1631,7 +1635,7 @@ MODULE_AUTHOR("Rafae");
 
 ### New headers {#new-headers-s5}
 
-[`REG_GIE`](#s5-L29) is the global interrupt enable and [`GIE_ENABLE`](#s5-L38) is the bit that turns it on. [`REG_IER`](#s5-L30) enables the individual interrupt sources, and [`IER_AP_DONE`](#s5-L39) is the one for the done signal. [`REG_ISR`](#s5-L31) is the status register the handler reads and clears, and [`ISR_AP_DONE`](#s5-L40) is the bit it writes back to acknowledge it. Both the global enable and the source enable have to be set or the IP never raises the line.
+[`REG_GIE`](#s5-L31) is the global interrupt enable and [`GIE_ENABLE`](#s5-L40) is the bit that turns it on. [`REG_IER`](#s5-L32) enables the individual interrupt sources, and [`IER_AP_DONE`](#s5-L41) is the one for the done signal. [`REG_ISR`](#s5-L33) is the status register the handler reads and clears, and [`ISR_AP_DONE`](#s5-L42) is the bit it writes back to acknowledge it. Both the global enable and the source enable have to be set or the IP never raises the line.
 
 ### systolic_dev  {#systolic_de}
 
@@ -1649,7 +1653,7 @@ In SYSTOLIC_SET_N, we check busy is set already, if its true, we leave without g
 
 ### systolic_read {#systolic_read-s5}
 
-In [read call](#s5-L187) we wait for the interrupt, at this point, the application process is asleep and CPU is free to do other tasks.
+In [read call](#s5-L189) we wait for the interrupt, at this point, the application process is asleep and CPU is free to do other tasks.
 
 ### systolic_write {#systolic_write-s5}
 
@@ -1804,7 +1808,7 @@ Every header added across the five steps, and the one thing each was needed for.
 | Header | What we used it for |
 | --- | --- |
 | `<linux/module.h>` | module macros: `MODULE_LICENSE`, `MODULE_AUTHOR`, and what makes the file a loadable module. |
-| `<linux/init.h>` | `module_init` and `module_exit`, and the `__init` / `__exit` markers. |
+| `<linux/init.h>` | `module_init` and `module_exit`, which tell the kernel which functions to call on insmod and rmmod. |
 | `<linux/kernel.h>` | assorted kernel helpers and the printing macros. |
 | `<linux/of.h>` | device tree access, including `of_device_id` and the `compatible` matching. |
 | `<linux/miscdevice.h>` | `struct miscdevice`, `misc_register` and `misc_deregister`, which give us the `/dev/` node. |
