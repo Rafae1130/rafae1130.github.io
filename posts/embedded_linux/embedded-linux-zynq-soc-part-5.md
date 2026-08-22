@@ -1218,6 +1218,7 @@ Now we test on board:
 ![Figure](images/s4-term-n128_p5.png)
 
 The driver prints the three buffer addresses it allocated, and those are the same values going out on the bus in the capture below. Each address register is 64 bit split across two 32 bit registers, so every buffer takes two writes, low half first:
+
 | Offset | Register | Value written | From the terminal |
 | --- | --- | --- | --- |
 | `0x10` | [`REG_A`](#s4-L31) low  | `1c000000` | `a=0x1c000000` |
