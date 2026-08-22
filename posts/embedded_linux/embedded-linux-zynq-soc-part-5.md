@@ -222,7 +222,7 @@ static int systolic_probe(struct platform_device *pdev)
         return rc;
 
     platform_set_drvdata(pdev, priv);
-    printk("/dev/%s is ready at base_address = 0x%08x\n", priv->miscdev.name, priv->base);
+    dev_info(&pdev->dev, "/dev/%s is ready at base_address = 0x%08x\n", priv->miscdev.name, priv->base);
     return 0;
 }
 
@@ -231,7 +231,7 @@ static int systolic_remove(struct platform_device *pdev)
     struct systolic_dev *priv = platform_get_drvdata(pdev);
 
     misc_deregister(&priv->miscdev);
-    printk("removed\n");
+    dev_info(&pdev->dev, "removed\n");
     return 0;
 }
 
@@ -314,7 +314,7 @@ For miscdevice, we need to assign some fields:
 
 [`platform_set_drvdata`](#s2-L54) - this will store the local priv pointer into the pdev which is global (per device) and will retain its value even after probe function ends.
 
-[`printk`](#s2-L55) - this will just print a message which the ip name and its base address. keep note that priv->base will be a virtual address so it wont be same as base address in the device tree reg property.
+[`dev_info`](#s2-L55) - this will just print a message which the ip name and its base address. keep note that priv->base will be a virtual address so it wont be same as base address in the device tree reg property.
 
 ### systolic_remove {#systolic_remove-s2}
 
@@ -486,7 +486,7 @@ static int systolic_probe(struct platform_device *pdev)
         return rc;
 
     platform_set_drvdata(pdev, priv);
-    printk("/dev/%s is ready at base_address = 0x%08x\n", priv->miscdev.name, priv->base);
+    dev_info(&pdev->dev, "/dev/%s is ready at base_address = 0x%08x\n", priv->miscdev.name, priv->base);
     return 0;
 }
 
@@ -495,7 +495,7 @@ static int systolic_remove(struct platform_device *pdev)
     struct systolic_dev *priv = platform_get_drvdata(pdev);
 
     misc_deregister(&priv->miscdev);
-    printk("removed\n");
+    dev_info(&pdev->dev, "removed\n");
     return 0;
 }
 
@@ -753,8 +753,8 @@ static int systolic_alloc_buffers(struct systolic_dev *priv, int matrix_size)
     systolic_set_ptr(priv, REG_C, priv->c_dma);
     writel(matrix_size, priv->base + REG_N);
 
-    printk("size=%d: a=0x%08x b=0x%08x c=0x%08x\n",
-           matrix_size, priv->a_dma, priv->b_dma, priv->c_dma);
+    dev_info(priv->dev, "size=%d: a=%pad b=%pad c=%pad\n",
+         matrix_size, &priv->a_dma, &priv->b_dma, &priv->c_dma);
     return 0;
 
 free_b:
@@ -928,7 +928,7 @@ static int systolic_probe(struct platform_device *pdev)
      */
     rc = of_reserved_mem_device_init(&pdev->dev);
     if (rc) {
-        printk("no usable memory-region (%d)\n", rc);
+        dev_err(&pdev->dev, "no usable memory-region (%d)\n", rc);
         return rc;
     }
 
@@ -943,7 +943,7 @@ static int systolic_probe(struct platform_device *pdev)
 
     platform_set_drvdata(pdev, priv);
 
-    printk("ready at 0x%08x, buffers allocated on SET_N\n", priv->base);
+    dev_info(&pdev->dev, "ready at 0x%08x, buffers allocated on SET_N\n", priv->base);
     return 0;
 
 err_rmem:
@@ -958,7 +958,7 @@ static int systolic_remove(struct platform_device *pdev)
     misc_deregister(&priv->miscdev);
     systolic_free_buffers(priv);
     of_reserved_mem_device_release(&pdev->dev);
-    printk("removed\n");
+    dev_info(&pdev->dev, "removed\n");
     return 0;
 }
 
@@ -1364,8 +1364,8 @@ static int systolic_alloc_buffers(struct systolic_dev *priv, int matrix_size)
     systolic_set_ptr(priv, REG_C, priv->c_dma);
     writel(matrix_size, priv->base + REG_N);
 
-    printk("size=%d: a=0x%08x b=0x%08x c=0x%08x\n",
-           matrix_size, priv->a_dma, priv->b_dma, priv->c_dma);
+    dev_info(priv->dev, "size=%d: a=%pad b=%pad c=%pad\n",
+         matrix_size, &priv->a_dma, &priv->b_dma, &priv->c_dma);
     return 0;
 
 free_b:
@@ -1554,7 +1554,7 @@ static int systolic_probe(struct platform_device *pdev)
      */
     rc = of_reserved_mem_device_init(&pdev->dev);
     if (rc) {
-        printk("no usable memory-region (%d)\n", rc);
+        dev_err(&pdev->dev, "no usable memory-region (%d)\n", rc);
         return rc;
     }
 
@@ -1581,7 +1581,7 @@ static int systolic_probe(struct platform_device *pdev)
 
     platform_set_drvdata(pdev, priv);
 
-    printk("ready at 0x%08x, buffers allocated on SET_N\n", priv->base);
+    dev_info(&pdev->dev, "ready at 0x%08x, buffers allocated on SET_N\n", priv->base);
     return 0;
 
 err_rmem:
@@ -1596,7 +1596,7 @@ static int systolic_remove(struct platform_device *pdev)
     misc_deregister(&priv->miscdev);
     systolic_free_buffers(priv);
     of_reserved_mem_device_release(&pdev->dev);
-    printk("removed\n");
+    dev_info(&pdev->dev, "removed\n");
     return 0;
 }
 
