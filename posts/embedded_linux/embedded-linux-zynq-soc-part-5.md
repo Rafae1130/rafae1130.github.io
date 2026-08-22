@@ -40,9 +40,9 @@
    - [6.14 The userspace application](#the-userspace-application-s4)
 7. [Step 5 - interrupts](#step-5-interrupts)
    - [7.1 New headers](#new-headers-s5)
-   - [7.2 systolic_dev](#systolic_de)
-   - [7.3 systolic_isr](#systolic_isrr)
-   - [7.4 systolic_ioctl](#starting-the-ip-without-polling)
+   - [7.2 systolic_dev](#systolic_dev-s5)
+   - [7.3 systolic_isr](#systolic_isr-s5)
+   - [7.4 systolic_ioctl](#systolic_ioctl-s5)
    - [7.5 systolic_read](#systolic_read-s5)
    - [7.6 systolic_write](#systolic_write-s5)
    - [7.7 systolic_probe](#systolic_probe-s5)
@@ -1672,19 +1672,21 @@ MODULE_AUTHOR("Rafae");
 
 [`REG_GIE`](#s5-L31) is the global interrupt enable and [`GIE_ENABLE`](#s5-L40) is the bit that turns it on. [`REG_IER`](#s5-L32) enables the individual interrupt sources, and [`IER_AP_DONE`](#s5-L41) is the one for the done signal. [`REG_ISR`](#s5-L33) is the status register that the handler clears the interrupt bit on, and [`ISR_AP_DONE`](#s5-L42) is the bit it writes back to acknowledge it. Both the global enable and the source enable have to be set or the IP never raises the line.
 
-### systolic_dev  {#systolic_de}
+### systolic_dev  {#systolic_dev-s5}
 
 busy is a flag that is used to indicate that the IP is currently working. Its 0 when IP is free. And wq is the queue where the process sleeps as we discussed in [our previous blog](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-4.html#sec-6-8).
 
-### systolic_isr {#systolic_isrr}
+### systolic_isr {#systolic_isr-s5}
 
 This is the interrupt handler for our interrupt. It just clears the interrupt, sets busy to false and wakes up the sleeping application process.
 
-### systolic_ioctl {#starting-the-ip-without-polling}
+### systolic_ioctl {#systolic_ioctl-s5}
 
 SYSTOLIC_START: In previous section, when we started the IP in [IOCTL function](#systolic_ioctl-s4), we also waited there in polling mode to wait for IP to complete its operation.
-But now, we just set the start bit and sets busy true, and exits.
-In SYSTOLIC_SET_N, we check busy is set already, if its true, we leave without going further.
+
+But now, we just set the start bit, set busy to true, and return.
+
+In SYSTOLIC_SET_N, we check whether busy is already set, and if it is we return without going further. This matters because SET_N is the call that frees the old buffers and allocates new ones, and doing that while the IP is still reading A and B or writing C would hand memory back to the kernel while the hardware is still using it.
 
 ### systolic_read {#systolic_read-s5}
 
@@ -1824,7 +1826,17 @@ Here you can see that when i check the interrupts occurred for systolic driver a
 
 ## Summary {#summary}
 
-The driver binds to the device tree node through the compatible string, nothing else. probe() runs on that match: it maps the registers, attaches the reserved memory, and creates /dev/systolic0. devm_ helpers (ioremap, irq, the systolic_dev allocation) are freed by the kernel on remove. A misc device is the short way to get a /dev/ node (major 10, dynamic minor). file_operations is how open / ioctl / write / read from userspace land in the driver. ioctl starts the IP and sets n, write and read move the matrices. The IP DMAs itself, so it needs physical addresses: dma_alloc_coherent gives a virtual pointer for the driver and a physical address for the registers. Those buffers have to be large and contiguous, which is why the region is reserved in the device tree at boot; kzalloc cannot do that. Polling the done bit holds the CPU for the whole multiply. An interrupt and a wait queue let the process sleep, and the ISR wakes it. 
+Five steps, and the one idea each of them added:
+
+- **[Module init and exit](#step-1-module-init-and-exit).** `module_init` and `module_exit` run once each, when the module is loaded and unloaded. On their own they know nothing about hardware, which is why this step needed no bitstream and no overlay.
+
+- **[probe and the device tree](#step-2-probe-the-device-tree-and-a-misc-device).** The driver binds to a device tree node through the compatible string and nothing else. `probe()` runs on that match, once per matching node, so that is where the registers get mapped and where `/dev/systolic0` appears. A misc device is the short way to get that node: major 10, dynamic minor. The `devm_` helpers mean the kernel gives back what probe took when the device goes away.
+
+- **[IOCTL](#step-3-ioctl-register-read-and-write).** `file_operations` is the table that lands `open`, `ioctl`, `read` and `write` from an application in the driver. ioctl is the right fit for control rather than data: setting n, starting the IP, reading status.
+
+- **[DMA buffers](#step-4-dma-buffers-and-the-data-path).** The IP fetches and writes the matrices itself, so it needs physical addresses, not the driver's pointers. `dma_alloc_coherent` returns both at once: a virtual pointer for the CPU and a physical address for the IP's registers. Those buffers have to be large and physically contiguous, which `kzalloc` cannot guarantee, so the region is reserved in the device tree at boot.
+
+- **[Interrupts](#step-5-interrupts).** Polling the done bit holds the CPU for the whole multiply. An interrupt and a wait queue let the process sleep instead, and the ISR wakes it when the IP is finished.
 
 ## Glossary: the headers we included {#glossary}
 
@@ -1892,7 +1904,7 @@ Every header added across the five steps, and the one thing each was needed for.
 
 (function () {
 
-  var XREF = {"s1":{"systolic_init":"step-1-module-init-and-exit","systolic_exit":"step-1-module-init-and-exit"},"s2":{"systolic_dev":"of_device_id","systolic_probe":"systolic_probe-s2","systolic_remove":"systolic_remove-s2"},"s3":{"SYSTOLIC_SET_N":"register-offsets","REG_N":"register-offsets","systolic_open":"systolic_open_release","systolic_release":"systolic_open_release","systolic_ioctl":"ioctl-commands"},"s3app":{"SYSTOLIC_SET_N":"register-offsets"},"s4":{"SYSTOLIC_SET_N":"systolic_set_ptr","systolic_dev":"device-tree-update","systolic_set_ptr":"systolic_set_ptr","systolic_free_buffers":"systolic_free_buffers","systolic_alloc_buffers":"systolic_alloc_buffers","systolic_write":"systolic_write-s4","systolic_read":"systolic_read-s4","systolic_ioctl":"systolic_ioctl-s4","systolic_probe":"systolic_probe-s4","systolic_remove":"systolic_remove-s4"},"s4app":{"SYSTOLIC_SET_N":"systolic_set_ptr"},"s5":{"systolic_dev":"systolic_de","systolic_isr":"systolic_isrr","systolic_write":"systolic_write-s5","systolic_read":"systolic_read-s5","systolic_ioctl":"starting-the-ip-without-polling","systolic_probe":"systolic_probe-s5"}};
+  var XREF = {"s1":{"systolic_init":"step-1-module-init-and-exit","systolic_exit":"step-1-module-init-and-exit"},"s2":{"systolic_dev":"of_device_id","systolic_probe":"systolic_probe-s2","systolic_remove":"systolic_remove-s2"},"s3":{"SYSTOLIC_SET_N":"register-offsets","REG_N":"register-offsets","systolic_open":"systolic_open_release","systolic_release":"systolic_open_release","systolic_ioctl":"ioctl-commands"},"s3app":{"SYSTOLIC_SET_N":"register-offsets"},"s4":{"SYSTOLIC_SET_N":"systolic_set_ptr","systolic_dev":"device-tree-update","systolic_set_ptr":"systolic_set_ptr","systolic_free_buffers":"systolic_free_buffers","systolic_alloc_buffers":"systolic_alloc_buffers","systolic_write":"systolic_write-s4","systolic_read":"systolic_read-s4","systolic_ioctl":"systolic_ioctl-s4","systolic_probe":"systolic_probe-s4","systolic_remove":"systolic_remove-s4"},"s4app":{"SYSTOLIC_SET_N":"systolic_set_ptr"},"s5":{"systolic_dev":"systolic_dev-s5","systolic_isr":"systolic_isr-s5","systolic_write":"systolic_write-s5","systolic_read":"systolic_read-s5","systolic_ioctl":"systolic_ioctl-s5","systolic_probe":"systolic_probe-s5"}};
 
   var HDRS = {"<fcntl.h>":"gl-fcntl","<linux/dma-mapping.h>":"gl-linux-dma-mapping","<linux/fs.h>":"gl-linux-fs","<linux/init.h>":"gl-linux-init","<linux/interrupt.h>":"gl-linux-interrupt","<linux/io.h>":"gl-linux-io","<linux/iopoll.h>":"gl-linux-iopoll","<linux/kernel.h>":"gl-linux-kernel","<linux/miscdevice.h>":"gl-linux-miscdevice","<linux/module.h>":"gl-linux-module","<linux/mutex.h>":"gl-linux-mutex","<linux/of.h>":"gl-linux-of","<linux/of_reserved_mem.h>":"gl-linux-of_reserved_mem","<linux/platform_device.h>":"gl-linux-platform_device","<linux/uaccess.h>":"gl-linux-uaccess","<stdint.h>":"gl-stdint","<stdio.h>":"gl-stdio","<stdlib.h>":"gl-stdlib","<sys/ioctl.h>":"gl-sys-ioctl","<unistd.h>":"gl-unistd"};
 
