@@ -814,12 +814,53 @@
     return pre ? pre.innerText.replace(/\s+$/, '') + '\n' : '';
   }
 
+  /* The step comes from the nearest heading above the listing rather than
+     from its id, so moving a listing to another step renames the download
+     with it. The kind comes from the id suffix, which is what actually
+     distinguishes the driver from the program and the two device trees. */
+  function stepOf(box) {
+    var el = box.closest('div.listing') || box;
+    while (el) {
+      var p = el.previousElementSibling;
+      while (p) {
+        if (/^H[1-6]$/.test(p.tagName)) {
+          var m = (p.textContent || '').match(/step\s*(\d+)/i);
+          if (m) { return 'step' + m[1]; }
+        }
+        p = p.previousElementSibling;
+      }
+      el = el.parentElement;
+      if (el && el.classList && el.classList.contains('main-content')) { break; }
+    }
+    return 'intro';
+  }
+
   function nameOf(box, i) {
-    var lang = (box.className.match(/language-(\w+)/) || [])[1] || 'plaintext';
     var host = box.closest('div.listing');
-    var stem = host ? host.id.replace(/^ls-/, '') : ('snippet-' + i);
-    var page = (location.pathname.split('/').pop() || 'listing').replace(/\.html?$/, '');
-    return page + '-' + stem + '.' + (EXT[lang] || 'txt');
+    var key  = host ? host.id.replace(/^ls-/, '') : '';
+    /* a fenced block carries language-x on the wrapper, the highlight tag
+       puts it on the inner code element instead */
+    var lang = (box.className.match(/language-(\w+)/) || [])[1];
+    if (!lang) {
+      var c = box.querySelector('code[data-lang]');
+      lang = c ? c.getAttribute('data-lang') : 'plaintext';
+    }
+
+    var suffix = (key.match(/^s\d+(app|dt|ov)$/) || [])[1];
+    var kind = suffix === 'app' ? 'userspace'
+             : suffix === 'dt'  ? 'device-tree'
+             : suffix === 'ov'  ? 'device-tree_overlay'
+             : /^s\d+$/.test(key) ? 'driver'
+             : (lang === 'dts' ? 'device-tree' : 'driver');
+
+    /* the overlay in the opening section carries no step suffix */
+    if (!suffix && lang === 'dts' && /ov$/.test(key)) { kind = 'device-tree_overlay'; }
+
+    var ext = (kind === 'device-tree' || kind === 'device-tree_overlay') ? 'dts'
+            : (EXT[lang] || 'c');
+
+    if (!key) { return 'code-' + stepOf(box) + '-' + (i + 1) + '.' + ext; }
+    return 'code-' + stepOf(box) + '-' + kind + '.' + ext;
   }
 
   function flash(btn, text) {
