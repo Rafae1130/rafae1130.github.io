@@ -91,11 +91,11 @@ So the sequence never changes. Write the three buffer addresses and n, set the s
 
 To start writing the driver, we first need to create a module template in petalinux. Inside your petalinux directory, run this command:
 
-petalinux-create modules –name `<driver-name>` --enable
+`petalinux-create modules --name <driver-name> --enable`
 
 In our case it will be:
 
-petalinux-create modules –name systolic --enable
+`petalinux-create modules --name systolic --enable`
 
 This will create a folder in recipes-modules with build files and a c file in your petalinux project directory like this:
 
@@ -562,7 +562,7 @@ systolic_release() is empty because we're not allocating any new memory in open(
 
 This is the function that will use the IOCTL commands header we defined above and do the actual register read and write.
 
-We first get the pointer to our struct which we retrieved from kernel in systolic_open() above( todo: add link here to above systolic_open explanation), then we check what the ioctl command is that is called using a switch case. For each command type, if its a command that writes a value, then we use [`get_user()`](#s3-L63) function to get the value from userspace, and if the command reads a value back to userspace then we use [`put_user()`](#s3-L72) command to give the value back to userspace.
+We first get the pointer to our struct which we retrieved from kernel in [`systolic_open()`](#systolic_open_release) above, then we check what the ioctl command is that is called using a switch case. For each command type, if its a command that writes a value, then we use [`get_user()`](#s3-L63) function to get the value from userspace, and if the command reads a value back to userspace then we use [`put_user()`](#s3-L72) command to give the value back to userspace.
 
 [`writel`](#s3-L67) (write long) and [`readl`](#s3-L71) (read long) are the functions that writes and reads the data to and from the IP registers respectively.
 
@@ -1007,7 +1007,7 @@ MODULE_AUTHOR("Rafae");
 
 Then we have to update the [`systolic_dev`](#s4-L37) struct for buffer pointers, mutex lock to handle multiple userspace applications trying to access the IP and dev.
 
-The IP registers need physical addresses for the buffers. But s16 *a *b and s64 *c will provide the virtual addressses. Hence dma_addr_t is used to write map those virtual addresses to physical address and write to the IP registers. mutex lock is used so only one application can access the IP at a time, as our current IP has only one channel.( todo: link dma_addr_t and s16 *a *b s64 *c and mutex lock here)
+The IP registers need physical addresses for the buffers. But [`s16 *a *b`](#s4-L44) and [`s64 *c`](#s4-L45) will provide the virtual addressses. Hence [`dma_addr_t`](#s4-L46) is used to write map those virtual addresses to physical address and write to the IP registers. [`mutex lock`](#s4-L41) is used so only one application can access the IP at a time, as our current IP has only one channel.
 
 ### systolic_set_ptr {#systolic_set_ptr}
 
@@ -1752,7 +1752,7 @@ int main(int argc, char **argv)
 
 ### Device tree overlay {#device-tree-overlay-s5}
 
-We just add the interrupt number and parent property. These are calculated same as we discussed in device tree overlay blog( todo: link)
+We just add the interrupt number and parent property. These are calculated same as we discussed in [device tree overlay blog](https://rafae1130.github.io/posts/embedded_linux/embedded-linux-zynq-soc-part-3.html#sec-irq-calc).
 
 <div class="listing" id="ls-s5ov">
 
