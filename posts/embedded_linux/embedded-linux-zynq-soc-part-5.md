@@ -314,7 +314,7 @@ For miscdevice, we need to assign some fields:
 
 [`platform_set_drvdata`](#s2-L54) - this will store the local priv pointer into the pdev which is global (per device) and will retain its value even after probe function ends.
 
-[`printk`](#s2-L82) - this will just print a message which the ip name and its base address. keep note that priv->base will be a virtual address so it wont be same as base address in the device tree reg property.
+[`printk`](#s2-L55) - this will just print a message which the ip name and its base address. keep note that priv->base will be a virtual address so it wont be same as base address in the device tree reg property.
 
 ### systolic_remove {#systolic_remove-s2}
 
@@ -654,7 +654,7 @@ Now we are ready to implement read/write functionality through DMA to provide da
 
 <div class="listing" id="ls-s4">
 
-{% highlight c linenos mark_lines="5 12 13 23 24 25 27 28 31 32 33 41 43 45 46 47 48 51 52 53 54 55 56 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100 101 102 103 104 105 106 107 108 109 122 123 124 125 126 127 128 129 130 131 132 133 134 135 136 137 138 139 140 141 142 143 144 145 146 147 148 149 150 151 152 153 154 155 156 157 158 159 160 161 162 163 164 166 167 168 169 170 171 172 173 174 175 176 177 178 179 180 181 182 183 184 185 186 191 192 196 198 199 200 203 204 205 206 207 208 209 210 211 212 215 216 217 218 221 222 223 224 227 228 229 230 231 233 234 235 236 237 248 249 262 263 269 270 271 272 273 274 275 276 281 285 289 292 293 294 302 303 319 320" %}
+{% highlight c linenos mark_lines="5 12 13 23 24 25 27 28 31 32 33 41 43 45 46 47 48 51 52 53 54 55 56 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100 101 102 103 104 105 106 107 108 109 122 123 124 125 126 127 128 129 130 131 132 133 134 135 136 137 138 139 140 141 142 143 144 145 146 147 148 149 150 151 152 153 154 155 156 157 158 159 160 161 162 163 164 166 167 168 169 170 171 172 173 174 175 176 177 178 179 180 181 182 183 184 185 186 191 192 196 198 199 200 203 204 205 206 207 208 209 210 211 212 215 216 217 218 221 222 223 224 227 228 229 230 231 233 234 235 236 237 248 249 262 263 269 270 271 272 273 274 275 276 281 285 289 292 293 294 302 303 320 321" %}
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
@@ -958,6 +958,7 @@ static int systolic_remove(struct platform_device *pdev)
     misc_deregister(&priv->miscdev);
     systolic_free_buffers(priv);
     of_reserved_mem_device_release(&pdev->dev);
+    printk("removed\n");
     return 0;
 }
 
@@ -1595,6 +1596,7 @@ static int systolic_remove(struct platform_device *pdev)
     misc_deregister(&priv->miscdev);
     systolic_free_buffers(priv);
     of_reserved_mem_device_release(&pdev->dev);
+    printk("removed\n");
     return 0;
 }
 
