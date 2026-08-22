@@ -99,7 +99,7 @@ The base address of `0x4000_0000` is for IP's register space. It contains the re
 
 | Offset | Name | What it is for |
 | --- | --- | --- |
-| `0x00` | AP_CTRL | control and status. Bit 0 starts the IP, bit 1 goes high when it has finished |
+| `0x00` | AP_CTRL | control and status. Bit 0 starts the IP, bit 1 goes high when it has finished and clears as soon as it is read |
 | `0x04` | GIE | global interrupt enable |
 | `0x08` | IER | interrupt enable. Bit 0 is the done interrupt |
 | `0x0c` | ISR | interrupt status. Write a 1 back to a bit to clear it |
