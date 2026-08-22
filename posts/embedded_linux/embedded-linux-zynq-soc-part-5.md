@@ -95,6 +95,7 @@ The IP has two kinds of port, and the difference between them is the whole reaso
 ![Figure](images/fig02_p5.png)
 *The address editor, and the source of two numbers this driver depends on. `s_axi_control` is mapped at `0x4000_0000` with a 64K range, which is exactly the `reg = <0x40000000 0x10000>;` in the device tree overlay. Below it, `m_axi_gmem` reaches DDR through `S_AXI_HP0` across the low 1G, which is why a reserved buffer region at `0x1c000000` is somewhere the IP can actually address.*
 
+The base address of `0x4000_0000` is for IP's register space. It contains the registers provided below along with their offsets:
 | Offset | Name | What it is for |
 | --- | --- | --- |
 | `0x00` | AP_CTRL | control and status. Bit 0 starts the IP, bit 1 goes high when it has finished |
