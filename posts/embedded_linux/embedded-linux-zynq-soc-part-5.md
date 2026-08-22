@@ -55,7 +55,7 @@
 
 This blog we'll be writing our own kernel driver for a custom IP.  the custom IP being used is a systolic array used for matrix multiplication in AI silicon like google TPUs. This one is created in HLS and not really optimized as the purpose of this blog is kernel driver not HLS (which will come in a later series). I won't give a whole driver from start and then explain. Rather we'll start with bare minimum and then add functionality one by one testing at each step.
 
-The main functionality required by this driver is to initiate data transfer through inbuilt dma in the ip. Perform matmul, return the results and generate an interrupt to the userspace application. But we’ll do this step by step:
+The main functionality required by this driver is to initiate data transfer through inbuilt dma in the ip. Perform matmul, return the results and generates an interrupt. But we’ll do this step by step:
 
 ![Figure](images/fig01_p5.png)
 
@@ -1646,7 +1646,7 @@ MODULE_AUTHOR("Rafae");
 
 ### New headers {#new-headers-s5}
 
-[`REG_GIE`](#s5-L31) is the global interrupt enable and [`GIE_ENABLE`](#s5-L40) is the bit that turns it on. [`REG_IER`](#s5-L32) enables the individual interrupt sources, and [`IER_AP_DONE`](#s5-L41) is the one for the done signal. [`REG_ISR`](#s5-L33) is the status register the handler reads and clears, and [`ISR_AP_DONE`](#s5-L42) is the bit it writes back to acknowledge it. Both the global enable and the source enable have to be set or the IP never raises the line.
+[`REG_GIE`](#s5-L31) is the global interrupt enable and [`GIE_ENABLE`](#s5-L40) is the bit that turns it on. [`REG_IER`](#s5-L32) enables the individual interrupt sources, and [`IER_AP_DONE`](#s5-L41) is the one for the done signal. [`REG_ISR`](#s5-L33) is the status register that the handler clears the interrupt bit on, and [`ISR_AP_DONE`](#s5-L42) is the bit it writes back to acknowledge it. Both the global enable and the source enable have to be set or the IP never raises the line.
 
 ### systolic_dev  {#systolic_de}
 
