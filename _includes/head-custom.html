@@ -748,8 +748,12 @@
   /* Copy and download sit over the top right of a listing. They are added to
      the wrapper, not to the pre, so they stay put while the code scrolls
      underneath them. */
+  /* A fenced block renders as div.highlighter-rouge > div.highlight, but the
+     highlight tag renders as figure.highlight. Both shapes have to be named
+     or the posts using one of them get no buttons at all. */
   .main-content div.highlighter-rouge,
-  .main-content div.highlight { position: relative; }
+  .main-content div.highlight,
+  .main-content figure.highlight { position: relative; }
 
   .code-tools {
     position: absolute;
@@ -765,6 +769,7 @@
   }
   .main-content div.highlighter-rouge:hover .code-tools,
   .main-content div.highlight:hover .code-tools,
+  .main-content figure.highlight:hover .code-tools,
   .code-tools:focus-within { opacity: 1; }
 
   .code-tools button {
@@ -825,7 +830,7 @@
   }
 
   function dress() {
-  var blocks = document.querySelectorAll('.main-content div.highlighter-rouge, .main-content div.highlight');
+  var blocks = document.querySelectorAll('.main-content div.highlighter-rouge, .main-content div.highlight, .main-content figure.highlight');
   blocks.forEach(function (box, i) {
     /* a rouge wrapper contains a highlight div; only dress the outermost */
     if (box.parentElement && box.parentElement.closest('div.highlighter-rouge')) { return; }
