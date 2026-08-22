@@ -6,7 +6,7 @@
 
 This blog we'll be writing our own kernel driver for a custom IP.  the custom IP being used is a systolic array used for matrix multiplication in AI silicon like google TPUs. This one is created in HLS and not really optimized as the purpose of this blog is kernel driver not HLS (which will come in a later series). I won't give a whole driver from start and then explain. Rather we'll start with bare minimum and then add functionality one by one testing at each step.
 
-The main functionality requried by this driver is to initiate data transfer through inbuilt dma in the ip. Perform matmul, return the results and generate an interrupt to the userspace application. But we’ll do this step by step:
+The main functionality required by this driver is to initiate data transfer through inbuilt dma in the ip. Perform matmul, return the results and generate an interrupt to the userspace application. But we’ll do this step by step:
 
 ![Figure](images/fig01_p5.png)
 
@@ -68,7 +68,7 @@ Internally it works on fixed size tiles, so n has to be a multiple of the tile s
 
 The IP has two kinds of port, and the difference between them is the whole reason this driver looks the way it does:
 
-- One AXI-full master to read matrix A and B and write back matric C. The driver does not interact to the IP through this interface. 
+- One AXI-full master to read matrix A and B and write back matrix C. The driver does not interact to the IP through this interface. 
 
 - One AXI-Lite slave port. This is the register space, its the only way the driver interact with out IP. 
 
@@ -131,7 +131,7 @@ MODULE_AUTHOR("Rafae");
 </div>
 
 This is the simplest kernel driver. Right now the main thing its doing is creating init and exit function and telling kernel to register them as init and exit through moduleinit() and module_exit(). [`systolic_init()`](#s1-L5) will then be called whenever we load the driver through insmod command, and [`systolic_exit()`](#s1-L10) will be called whenever we remove the driver through rmmod command.
-Declaring the license as GPL means its open source. Which is required to use most of the kernel APIs and features. And descriptions and author are just for module readibilty.
+Declaring the license as GPL means its open source. Which is required to use most of the kernel APIs and features. And descriptions and author are just for module readability.
 
 After writing our code in systolic.c we can build it like:
 
@@ -296,7 +296,7 @@ Miscdevice is used to create a node for our IP under /dev/ which is then used in
 
 Now in the probe function:
 
-[`devm_kzalloc`](#s2-L38): is simply memory allocation in kernel space for out [`systolic_dev`](#s2-L12) struct. K means kernel and z means it will zero our the whole memory.
+[`devm_kzalloc`](#s2-L38): is simply memory allocation in kernel space for our [`systolic_dev`](#s2-L12) struct. K means kernel and z means it will zero our the whole memory.
 
 Then we assign values to this struct:
 
@@ -308,7 +308,7 @@ For miscdevice, we need to assign some fields:
 
 [`priv->miscdev.name`](#s2-L47): This is the name our IP will show as under /dev/
 
-[`priv->miscdev.fops`](#s2-L48): This points to the struct file_operations containinig mapping between userspace function names and their corresponding functions in the driver. we have not written those functions yet.
+[`priv->miscdev.fops`](#s2-L48): This points to the struct file_operations containing mapping between userspace function names and their corresponding functions in the driver. we have not written those functions yet.
 
 [`misc_register`](#s2-L50): This adds the device under /dev/
 
@@ -327,6 +327,9 @@ And the corresponding device tree overlay:
 <div class="listing" id="ls-introov">
 
 {% highlight dts linenos %}
+/dts-v1/;
+/plugin/;
+
 &amba {
     #address-cells = <1>;
     #size-cells = <1>;
@@ -535,7 +538,7 @@ Lets see the changes from the start:
 
 ### IOCTL commands {#ioctl-commands}
 
-[`SYSTOLIC_MAGIC`](#s3-L15) - the magic number is a 8 bit identifier per driver. It should be unique per driver ( kernel won't through any error if two drivers have same magic number but its better for error handling). Then 1 2 3 4 are command numbers for each unique ioctl command in this driver. The third is the type of argument passed from or to userspace. IO does not take or pass anything, IOW takes the value to write from userspace,  and IOR reads a value back to userspace.
+[`SYSTOLIC_MAGIC`](#s3-L15) - the magic number is a 8 bit identifier per driver. It should be unique per driver ( kernel won't throw any error if two drivers have same magic number but its better for error handling). Then 1 2 3 4 are command numbers for each unique ioctl command in this driver. The third is the type of argument passed from or to userspace. IO does not take or pass anything, IOW takes the value to write from userspace,  and IOR reads a value back to userspace.
 These headers are then called [IOCTL commands](#ioctl-commands) and can then simply be used to read and write IPs registers from userspace.
 
 [`SYSTOLIC_START`](#s3-L16): can be used to start the IP operation.
@@ -554,7 +557,7 @@ BIT(0) means 1 left shifted by 0 so just 1.
 
 ### systolic_open and systolic_release {#systolic_open_release}
 
-In systolic_open we retrieve the pointer to our struct from the kernel that was created in probe function and that we povided to kernel at the end of probe function to preserve it. This is then passed on to other functions like [systolic_ioctl](#systolic_ioctl-s3) as we'll see below.
+In systolic_open we retrieve the pointer to our struct from the kernel that was created in probe function and that we provided to kernel at the end of probe function to preserve it. This is then passed on to other functions like [systolic_ioctl](#systolic_ioctl-s3) as we'll see below.
 
 systolic_release() is empty because we're not allocating any new memory in open(), therefore there nothing to clean up in release.
 
@@ -1010,7 +1013,7 @@ MODULE_AUTHOR("Rafae");
 
 Then we have to update the [`systolic_dev`](#s4-L39) struct for buffer pointers, mutex lock to handle multiple userspace applications trying to access the IP and dev.
 
-The IP registers need physical addresses for the buffers. But [`s16 *a *b`](#s4-L46) and [`s64 *c`](#s4-L47) will provide the virtual addressses. Hence [`dma_addr_t`](#s4-L48) is used to write map those virtual addresses to physical address and write to the IP registers. [`mutex lock`](#s4-L43) is used so only one application can access the IP at a time, as our current IP has only one channel.
+The IP registers need physical addresses for the buffers. But [`s16 *a *b`](#s4-L46) and [`s64 *c`](#s4-L47) will provide the virtual addresses. Hence [`dma_addr_t`](#s4-L48) is used to write map those virtual addresses to physical address and write to the IP registers. [`mutex lock`](#s4-L43) is used so only one application can access the IP at a time, as our current IP has only one channel.
 
 ### systolic_set_ptr {#systolic_set_ptr}
 
@@ -1024,15 +1027,15 @@ After allocating the buffers we provide their pointer to the IP using [`systolic
 
 ### systolic_free_buffers {#systolic_free_buffers}
 
-[`systolic_free_buffers`](#s4-L58) - we use this function to free up the alloacted buffers
+[`systolic_free_buffers`](#s4-L58) - we use this function to free up the allocated buffers
 
 ### systolic_write {#systolic_write-s4}
 
 First the function takes the mutex lock so no other process can initiate a transfer while one is on going as there is only one IP in the design. Here the read and write is from perspective of userspace application, not the IP.
 
-Since there is only one write path but two different possible destinations (i.e matrix A and B), we need a way to tell the driver which matrix data is currently being written, either A or B. we use ppos for that. ppos is used to tell the current location in file. This really doesn't have any real meaning here and we're just using it as a distinguisher, we alternate it between [`ppos=0`](#s4-L145) for first matrix and then [`ppos=size`](#s4-L159) for the second matrix. And using these we set the destination for the incoming data. we use the [`copy_from_user`](#s4-L154) function to copy the data from userspace memory to kernel space memory.
+Since there is only one write path but two different possible destinations (i.e matrix A and B), we need a way to tell the driver which matrix data is currently being written, either A or B. we use ppos for that. ppos is used to tell the current location in file. This really doesn't have any real meaning here and we're just using it as a distinguisher, we alternate it between [`ppos=0`](#s4-L145) for first matrix and then [`ppos=size`](#s4-L147) for the second matrix. And using these we set the destination for the incoming data. we use the [`copy_from_user`](#s4-L154) function to copy the data from userspace memory to kernel space memory.
 
-Note that copy_from_user copies the whole matrix from userspace into the DMA buffer, so the CPU walks over all the data once before the IP even starts. For a big matrix that copy will cost alot of cycles which is not good. There are better ways to do this but for now to keep it simple we'll just use this.
+Note that copy_from_user copies the whole matrix from userspace into the DMA buffer, so the CPU walks over all the data once before the IP even starts. For a big matrix that copy will cost a lot of cycles which is not good. There are better ways to do this but for now to keep it simple we'll just use this.
 
 ### systolic_read {#systolic_read-s4}
 
@@ -1042,9 +1045,9 @@ It just does some error checking, take the mutex lock and then copy the data bac
 
 ### systolic_ioctl {#systolic_ioctl-s4}
 
-In [`IOCTL fuction`](#s4-L188), the following cases are updated:
+In [`IOCTL function`](#s4-L188), the following cases are updated:
 
-[`SYSTOLIC_SET_N`](#s4-L195): It checks if if the new provided N value from userspace is same as before (if the application has been run before). Then it won't do anything as the previously allocated buffers can be used again. If the size is different(or if its a first run), then it will first free the previously allocated buffers using [`systolic_free_buffers`](#s4-L58) and then allocate using [`systolic_alloc_buffers`](#s4-L74).
+[`SYSTOLIC_SET_N`](#s4-L195): It checks if the new provided N value from userspace is same as before (if the application has been run before). Then it won't do anything as the previously allocated buffers can be used again. If the size is different(or if its a first run), then it will first free the previously allocated buffers using [`systolic_free_buffers`](#s4-L58) and then allocate using [`systolic_alloc_buffers`](#s4-L74).
 
 [`SYSTOLIC_START`](#s4-L226): It'll set the start bit of the IP, telling it to start reading data of matrix A and B using the DMA through [AXI-Full](#how-the-ip-works) interface, then we poll the status register to wait for the completion of matrix multiplication.
 
@@ -1055,7 +1058,7 @@ We need to make a few changes in probe function as well.
 
 ### file_operations {#file_operations_s4}
 
-In [`file_operation`](#s4-L244) struct, we have to make to new entries for two added system calls of [`systolic_read`](#s4-L248) and [`systolic_write`](#s4-L249).
+In [`file_operation`](#s4-L244) struct, we have to make two new entries for two added system calls of [`systolic_read`](#s4-L248) and [`systolic_write`](#s4-L249).
 
 ### systolic_remove {#systolic_remove-s4}
 
@@ -1063,7 +1066,7 @@ For [`systolic_remove`](#s4-L297) we deallocate the buffers and release the atta
 
 ### Device tree update {#device-tree-update}
 
-dma_alloc_coherent needs a reserved memory region in the device tree. We cannot use kzalloc for reverving this memory as DMA operations usually needs large contigous buffers. and kzalloc cannot provide large contiguous buffers. So using the device tree we tell the kernel to reserve some memory for DMA buffers and then the kernels DMA APIs can allocate buffers in this region.
+dma_alloc_coherent needs a reserved memory region in the device tree. We cannot use kzalloc for reserving this memory as DMA operations usually needs large contiguous buffers. and kzalloc cannot provide large contiguous buffers. So using the device tree we tell the kernel to reserve some memory for DMA buffers and then the kernels DMA APIs can allocate buffers in this region.
 
 However, this memory needs to be reserved at boot time, so we cannot add it in the overlay and will have to add this node in the main device tree which is loaded at boot time. 
 We need to add the following node:
@@ -1095,7 +1098,11 @@ We then compile it using following command:
 
 dtc -@ -I dts -O dtb system.dts -o system.dtb
 
-The -@ is use to convert the labels([`systolic_reserved`](#s4dt-L6) here) to symbols like:
+The -@ is used to convert the labels([`systolic_reserved`](#s4dt-L6) here) to symbols like:
+
+```dts
+systolic_reserved = "/reserved-memory/systolic@1c000000";
+```
 
 Symbols are then used to reference the nodes in main device tree from overlay device tree.
 
@@ -1208,7 +1215,7 @@ int main(int argc, char **argv)
 </div>
 
 We use write function to provide the data for matrix A and B to the driver. This will call the systolic_write function in driver.
-Then we start the IP and poll to check IP completion. Once done we read the result buffer back in userspace and compare with expected output( which i matrix A in our case)
+Then we start the IP and poll to check IP completion. Once done we read the result buffer back in userspace and compare with expected output( which is matrix A in our case)
 
 But how can malloc provide contiguous memory when kzalloc couldn't, and we had to reserve a region in the device tree for the driver's buffers?
 
@@ -1763,7 +1770,10 @@ We just add the interrupt number and parent property. These are calculated same 
 
 <div class="listing" id="ls-s5ov">
 
-{% highlight dts linenos mark_lines="8 9" %}
+{% highlight dts linenos mark_lines="11 12" %}
+/dts-v1/;
+/plugin/;
+
 &amba {
     #address-cells = <1>;
     #size-cells = <1>;
@@ -1787,7 +1797,7 @@ From the terminal output nothing seems different much.
 
 ![Figure](images/s5-term-interrupts_p5.png)
 
-Here you can see that when i check the interrupts occured for systolic driver after runnig application, its incremented by once each time. 
+Here you can see that when i check the interrupts occurred for systolic driver after running application, its incremented by once each time. 
 
 ## Summary {#summary}
 
