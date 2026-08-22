@@ -1,4 +1,4 @@
-title: FPGA Design Notes
+title: Embedded Design blogs and note
 description: Notes and blogs on FPGA design, timing analysis, and digital architectures
 theme: jekyll-theme-cayman
 
@@ -44,6 +44,7 @@ defaults:
   - scope:
       path: "posts/timing_analysis"
     values:
+      series: Timing Analysis
       description: >-
         Understanding FPGA timing analysis in Vivado: setup and hold checks,
         slack, clock skew, pessimism removal, and reg-to-pin paths.
@@ -51,6 +52,7 @@ defaults:
   - scope:
       path: "posts/CDC"
     values:
+      series: Clock Domain Crossing
       description: >-
         Clock domain crossing in FPGA design: reading report_cdc, single-bit
         synchronizers, and safe multi-bit CDC structures.
@@ -58,6 +60,7 @@ defaults:
   - scope:
       path: "posts/embedded_linux"
     values:
+      series: Embedded Linux (Zynq SoC)
       description: >-
         Embedded Linux on the Zynq SoC: device tree, overlays, UIO, and
         writing Linux device drivers for custom PL IP.
@@ -65,6 +68,7 @@ defaults:
   - scope:
       path: "posts/on-request"
     values:
+      series: On Request
       description: >-
         Reducing quantization error in FPGA DSP: rounding, dither, noise
         shaping, saturation, and block floating point.
