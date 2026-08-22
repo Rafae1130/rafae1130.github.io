@@ -26,7 +26,7 @@
 
     --ink:        #e7eef8;
     --ink-soft:   #9db0c8;
-    --ink-faint:  #718499;
+    --ink-faint:  #7d90a8;   /* #718499 measured 4.49:1 — AA by 0.01 short */
 
     --accent:     #5eead4;
     --accent-hi:  #a7f3e4;
@@ -249,7 +249,17 @@
     font-family: var(--mono);
     font-size: 0.9rem;
     line-height: 1.55;          /* explicit: .hll blocks align to it */
-    overflow-x: auto;
+    /* A listing scrolls inside itself once it passes 85vh, so a 380 line
+       driver takes up one screen of the page instead of sixteen. Reaching
+       the end of the listing hands the scroll back to the page, which is
+       what makes it possible to read past one without wading through it.
+       Short listings are unaffected - max-height only bites above ~34 lines.
+       position:relative so the jump marker can sit inside and scroll with
+       the code rather than staying put while it moves. */
+    position: relative;
+    overflow: auto;
+    max-height: 85vh;
+    overscroll-behavior: auto;
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.05),
       0 8px 24px rgba(0, 0, 0, 0.35);
@@ -285,6 +295,46 @@
     font-family: inherit;
     font-size: inherit;
     font-weight: inherit;
+  }
+
+  /* With linenos, Rouge nests a pre inside each cell of a two-column table.
+     `.main-content pre` matches those too, so the gutter and the code each
+     became their own padded, bordered, rounded, shadowed box with its own
+     overflow — three nested boxes, and two columns whose metrics no longer
+     had any reason to agree. The line numbers drifted out of step with the
+     lines they number.
+
+     The inner pres are stripped back to plain text here; only the outer
+     block keeps the frame. vertical-align is set explicitly because a table
+     cell defaults to baseline, which lets the two columns settle against
+     each other rather than both against the top. */
+  .main-content .highlight table,
+  .main-content .highlight table tbody,
+  .main-content .highlight table tr,
+  .main-content .highlight table td {
+    padding: 0;
+    margin: 0;
+    border: 0;
+    background: none;
+    vertical-align: top;
+  }
+  .main-content .highlight table { width: 100%; display: table; }
+  .main-content .highlight table td.rouge-gutter { padding-right: 1rem; }
+  .main-content .highlight table td.rouge-code   { width: 100%; }
+  /* The inner pres must not scroll or clip - only the outer block does, so
+     the gutter and the code stay locked together. */
+  .main-content .highlight table pre {
+    padding: 0;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    overflow: visible;
+    max-height: none;
+    position: static;
+    font-size: inherit;
+    line-height: inherit;
   }
   /* A soft light chip with teal text. Both signals are mild on their own
      and the pair is what reads: the chip separates the span from the line
@@ -690,6 +740,139 @@
   } else {
     start();
   }
+})();
+{% endraw %}
+</script>
+
+<style>
+  /* Copy and download sit over the top right of a listing. They are added to
+     the wrapper, not to the pre, so they stay put while the code scrolls
+     underneath them. */
+  .main-content div.highlighter-rouge,
+  .main-content div.highlight { position: relative; }
+
+  .code-tools {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.6rem;
+    z-index: 3;
+    display: flex;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+  .main-content div.highlighter-rouge:hover .code-tools,
+  .main-content div.highlight:hover .code-tools,
+  .code-tools:focus-within { opacity: 1; }
+
+  .code-tools button {
+    font: 600 11px/1 var(--mono);
+    letter-spacing: 0.02em;
+    color: var(--ink-soft);
+    background: rgba(255, 255, 255, 0.10);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 5px;
+    padding: 5px 9px;
+    cursor: pointer;
+  }
+  .code-tools button:hover {
+    color: var(--ink);
+    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.16);
+  }
+  .code-tools button.done {
+    color: #0d1420;
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  @media print { .code-tools { display: none; } }
+</style>
+
+<script>
+{% raw %}
+/* Copy and download buttons on every listing.
+ *
+ * The code text is read from the code cell only, so line numbers never end
+ * up on the clipboard. Nothing here rewrites the highlighted markup - the
+ * buttons are appended to the wrapper as a sibling of the pre, because
+ * touching the pre's innerHTML re-parses Rouge's output and breaks it. */
+(function () {
+  var EXT = { c: 'c', cpp: 'cpp', dts: 'dts', verilog: 'v', vhdl: 'vhd',
+              bash: 'sh', shell: 'sh', python: 'py', tcl: 'tcl',
+              makefile: 'mk', plaintext: 'txt', text: 'txt' };
+
+  function codeOf(box) {
+    var cell = box.querySelector('td.rouge-code') || box.querySelector('td.code');
+    var pre  = cell ? cell.querySelector('pre') || cell : box.querySelector('pre');
+    return pre ? pre.innerText.replace(/\s+$/, '') + '\n' : '';
+  }
+
+  function nameOf(box, i) {
+    var lang = (box.className.match(/language-(\w+)/) || [])[1] || 'plaintext';
+    var host = box.closest('div.listing');
+    var stem = host ? host.id.replace(/^ls-/, '') : ('snippet-' + i);
+    var page = (location.pathname.split('/').pop() || 'listing').replace(/\.html?$/, '');
+    return page + '-' + stem + '.' + (EXT[lang] || 'txt');
+  }
+
+  function flash(btn, text) {
+    var was = btn.textContent;
+    btn.textContent = text;
+    btn.classList.add('done');
+    setTimeout(function () { btn.textContent = was; btn.classList.remove('done'); }, 1400);
+  }
+
+  var blocks = document.querySelectorAll('.main-content div.highlighter-rouge, .main-content div.highlight');
+  blocks.forEach(function (box, i) {
+    /* a rouge wrapper contains a highlight div; only dress the outermost */
+    if (box.parentElement && box.parentElement.closest('div.highlighter-rouge')) { return; }
+    if (!box.querySelector('pre')) { return; }
+
+    var tools = document.createElement('div');
+    tools.className = 'code-tools';
+
+    var copy = document.createElement('button');
+    copy.type = 'button';
+    copy.textContent = 'copy';
+    copy.addEventListener('click', function () {
+      var text = codeOf(box);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { flash(copy, 'copied'); },
+                                                 function () { flash(copy, 'failed'); });
+      } else {
+        /* file:// and older browsers have no async clipboard */
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); flash(copy, 'copied'); }
+        catch (e) { flash(copy, 'failed'); }
+        ta.remove();
+      }
+    });
+
+    var dl = document.createElement('button');
+    dl.type = 'button';
+    dl.textContent = 'download';
+    dl.addEventListener('click', function () {
+      var blob = new Blob([codeOf(box)], { type: 'text/plain;charset=utf-8' });
+      var url  = URL.createObjectURL(blob);
+      var a    = document.createElement('a');
+      a.href = url;
+      a.download = nameOf(box, i);
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+      flash(dl, 'saved');
+    });
+
+    tools.appendChild(copy);
+    tools.appendChild(dl);
+    box.appendChild(tools);
+  });
 })();
 {% endraw %}
 </script>
