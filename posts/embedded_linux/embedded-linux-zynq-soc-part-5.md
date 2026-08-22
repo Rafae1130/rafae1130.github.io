@@ -1162,7 +1162,7 @@ In the userspace application, we now create matrix A and B. We make B as identit
 
 <div class="listing" id="ls-s4app">
 
-{% highlight c linenos mark_lines="16 19 21 22 30 31 32 33 35 36 37 39 40 41 42 43 45 46 48 49 50 51 53 55 56 57 65 67 68 69 71" %}
+{% highlight c linenos mark_lines="19 21 22 30 31 32 33 35 36 37 39 40 41 42 43 45 46 48 49 50 51 53 55 56 57 65 67 68 69 71" %}
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
