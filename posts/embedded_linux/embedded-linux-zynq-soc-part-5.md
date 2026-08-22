@@ -53,19 +53,34 @@
 
 ## Introduction {#introduction}
 
-This blog we'll be writing our own kernel driver for a custom IP.  the custom IP being used is a systolic array used for matrix multiplication in AI silicon like google TPUs. This one is created in HLS and not really optimized as the purpose of this blog is kernel driver not HLS (which will come in a later series). I won't give a whole driver from start and then explain. Rather we'll start with bare minimum and then add functionality one by one testing at each step.
+In this blog we'll write our own kernel driver for a custom IP. The IP is a systolic array for matrix multiplication, the same structure used in AI silicon like Google's TPUs. This one is written in HLS and is not optimized, because the subject here is the kernel driver rather than the HLS, which will come in a later series.
+I won't drop a whole driver on you and then explain it all in one go. We'll start with the bare minimum and add one piece of functionality at a time, testing on the board at each step.
+The main functionality required by this driver is to initiate data transfer through inbuilt dma in the ip. Perform matmul, return the results and generates an interrupt. 
+The driver has to do four main things:
 
-The main functionality required by this driver is to initiate data transfer through inbuilt dma in the ip. Perform matmul, return the results and generates an interrupt. But we’ll do this step by step:
+- Tell the IP where matrix A, B and C live in memory, and how big they are, so it can fetch and write them over its own DMA
+- Get the matrix data from userspace and Start the multiply
+- Generate an interrupt when the IP has finished, without wasting cpu cycles
+- Hand the result back to the userspace application
 
-![Figure](images/fig01_p5.png)
+We'll get there in five steps, each one building on the last and tested on the board before moving on:
 
-![Figure](images/fig02_p5.png)
+1. [Module init and exit](#step-1-module-init-and-exit) - the smallest thing that loads and unloads
+2. [probe, the device tree and a misc device](#step-2-probe-the-device-tree-and-a-misc-device) - find the IP, map its registers, appear under `/dev/`
+3. [IOCTL register read and write](#step-3-ioctl-register-read-and-write) - read and write the IP's registers from an application
+4. [DMA buffers and read/write](#step-4-dma-buffers-and-the-data-path) - move the matrices in and out, and start the multiply
+5. [Interrupts](#step-5-interrupts) - stop polling and let the process sleep until the IP is done
+
 
 ## How the IP works {#how-the-ip-works}
 
 The IP is a systolic matrix multiplier generated from HLS. It takes two n x n matrices, A and B, and writes the product into C. A and B hold 16 bit signed values, C holds 64 bit signed values so the accumulation has room and does not overflow.
 
 Internally it works on fixed size tiles, so n has to be a multiple of the tile size. That is the only part of the tiling that matters for the driver, and it is why the driver rejects a size that does not fit.
+![Figure](images/fig01_p5.png)
+
+![Figure](images/fig02_p5.png)
+
 
 The IP has two kinds of port, and the difference between them is the whole reason this driver looks the way it does:
 
@@ -1684,7 +1699,7 @@ writel then enable the interrupts in IP's registers.
 
 ### The userspace application {#the-userspace-application-s5}
 
-The only difference from previous section's application is that now we don't wait for interrupt. The application sleeps in read function. Note that it can be done in a separate poll function call as well as we discussed in previous blog.
+The only difference from previous section's application is that now we don't poll for the IP to complete its operation. The application sleeps in read function. Note that it can be done in a separate poll function call as well as we discussed in previous blog.
 
 <div class="listing" id="ls-s5app">
 
