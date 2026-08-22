@@ -223,7 +223,7 @@ static int systolic_probe(struct platform_device *pdev)
         return rc;
 
     platform_set_drvdata(pdev, priv);
-    dev_info(&pdev->dev, "/dev/%s is ready at base_address = 0x%08x\n", priv->miscdev.name, priv->base);
+    dev_info(&pdev->dev, "/dev/%s is ready at base_address = %p\n", priv->miscdev.name, priv->base);
     return 0;
 }
 
@@ -490,7 +490,7 @@ static int systolic_probe(struct platform_device *pdev)
         return rc;
 
     platform_set_drvdata(pdev, priv);
-    dev_info(&pdev->dev, "/dev/%s is ready at base_address = 0x%08x\n", priv->miscdev.name, priv->base);
+    dev_info(&pdev->dev, "/dev/%s is ready at base_address = %p\n", priv->miscdev.name, priv->base);
     return 0;
 }
 
@@ -539,7 +539,7 @@ Lets see the changes from the start:
 
 ### IOCTL commands {#ioctl-commands}
 
-[`SYSTOLIC_MAGIC`](#s3-L15) - the magic number is a 8 bit identifier per driver. It should be unique per driver ( kernel won't throw any error if two drivers have same magic number but its better for error handling). Then 1 2 3 4 are command numbers for each unique ioctl command in this driver. The third is the type of argument passed from or to userspace. IO does not take or pass anything, IOW takes the value to write from userspace,  and IOR reads a value back to userspace.
+[`SYSTOLIC_MAGIC`](#s3-L15) - the magic number is a 8 bit identifier per driver. It should be unique per driver ( kernel won't throw any error if two drivers have same magic number but its better for error handling). Then 1 2 3 4 are command numbers for each unique ioctl command in this driver. The third is the type of argument passed from or to userspace. IO does not take or pass anything, IOW takes the value to write from userspace, and IOR reads a value back to userspace.
 These headers are then called [IOCTL commands](#ioctl-commands) and can then simply be used to read and write IPs registers from userspace.
 
 [`SYSTOLIC_START`](#s3-L16): can be used to start the IP operation.
@@ -599,7 +599,7 @@ Now we need a userspace application as well to test our added calls in the drive
 
 int main(int argc, char **argv)
 {
-    int n = (argc > 1) ? atoi(argv[1]) : 4;
+    int n = (argc > 1) ? atoi(argv[1]) : 64;
     int readback = 0;
     uint32_t status = 0;
 
