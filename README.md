@@ -25,6 +25,7 @@ This site contains my notes and blogs on various FPGA tips, techniques and desig
 - [Embedded Linux (Zynq SoC): Part 2 - Device Tree](posts/embedded_linux/embedded-linux-zynq-soc-part-2.md)
 - [Embedded Linux (Zynq SoC): Part 3 - Device Tree Overlay and UIO](posts/embedded_linux/embedded-linux-zynq-soc-part-3.md)
 - [Writing a Linux Platform Driver for a Zynq PL IP (Part 4)](posts/embedded_linux/embedded-linux-zynq-soc-part-4.md)
+- [Writing a Kernel Driver for a Custom HLS Systolic Matmul IP (Part 5)](posts/embedded_linux/embedded-linux-zynq-soc-part-5.md)
 
 ## On Request
 - [FPGA Quantization: Rounding, Dither and Saturation](posts/on-request/fpga-dsp-quantization-error-reduction.md)
