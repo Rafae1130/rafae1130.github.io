@@ -86,14 +86,14 @@ The IP has two kinds of port, and the difference between them is the whole reaso
 
 
 ![Figure](images/fig01_p5.png)
-*This is the FPGAeblock design. `systolic_matmul_0` is our matrix multiplication IP created in HLS. `s_axi_control` on the left of `systolic_matmul_0` is the register interface the driver writes to. `m_axi_gmem` on the right is the IP's own master, wired through the interconnect to `S_AXI_HP0` so it can reach DDR without the CPU. The `interrupt` output goes to `IRQ_F2P[0:0]`, which is where the `interrupts` property in the overlay comes from.*
+*This is the FPGA block design. `systolic_matmul_0` is our matrix multiplication IP created in HLS. `s_axi_control` on the left of `systolic_matmul_0` is the register interface the driver writes to. `m_axi_gmem` on the right is the IP's own master, wired through the interconnect to `S_AXI_HP0` so it can reach DDR without the CPU. The `interrupt` output goes to `IRQ_F2P[0:0]`, which is where the `interrupts` property in the overlay comes from.*
 
 
 
 
 
 ![Figure](images/fig02_p5.png)
-*This is the address editor in Vivado. `s_axi_control` is mapped at `0x4000_0000` with a 64K range, which is the `reg = <0x40000000 0x10000>;` we will see in the device tree overlay. Below it, `m_axi_gmem` reaches DDR through `S_AXI_HP0`.
+*This is the address editor in Vivado. `s_axi_control` is mapped at `0x4000_0000` with a 64K range, which is the `reg = <0x40000000 0x10000>;` we will see in the device tree overlay. Below it, `m_axi_gmem` reaches DDR through `S_AXI_HP0`.*
 
 `0x4000_0000` is the base of the IP's register space. These are the registers inside it, with their offsets from that base:
 
@@ -1114,7 +1114,7 @@ We need to add the following node:
 
 </div>
 
-[`reg = <0x1c000000 0x4000000>;`](#s4dt-L9) Defines the starting address of our reserved memory and its size. `ranges;` with nothing after it means a 1:1 mapping, so an address inside a child node is the same address the CPU uses. But if it were `ranges = <0x0 0x1c000000 0x4000000>;` instead, a child sitting at `0x0` would really be at `0x1c000000`, and every address in that node would be offset by the same amount by that driver
+[`reg = <0x1c000000 0x4000000>;`](#s4dt-L9) Defines the starting address of our reserved memory and its size. `ranges;` with nothing after it means a 1:1 mapping, so an address inside a child node is the same address the CPU uses. But if it were `ranges = <0x0 0x1c000000 0x4000000>;` instead, a child sitting at `0x0` would really be at `0x1c000000`, and every address in that node would be offset by the same amount.
 
 [`reusable;`](#s4dt-L8) Means the kernel can use it for other operations as long as we're not using it, whenever our DMA needs this region, kernel will clear it up and provide this to the DMA.
 [`compatible = "shared-dma-pool";`](#s4dt-L7) is used so that the kernel knows its for dma and we can access it through the dma apis in the driver.
@@ -1244,7 +1244,7 @@ Then we start the IP and poll to check IP completion. Once done we read the resu
 
 But how can malloc provide contiguous memory when kzalloc couldn't, and we had to reserve a region in the device tree for the driver's buffers?
 
-malloc does not give us physically contiguous memory, and it doesn't need to. It provides us virtually contiguous memory not physically contiguous, so `a[0]` to `a[n*n-1]` are next to each other as far as the application is concerned, while the pages behind them can be scattered anywhere in RAM. That is fine in the applicattio because the application works with virtual memory. But the IP works with physically contiguous memory. So, write() hands the buffer to the driver, the driver copies it into the `dma_alloc_coherent` buffer, and that one is physically contiguous because it comes out of the region we reserved in the device tree. If we tried to give the IP a malloc pointer directly it would read the wrong memory as soon as the buffer crossed a page boundary.
+malloc does not give us physically contiguous memory, and it doesn't need to. It provides us virtually contiguous memory not physically contiguous, so `a[0]` to `a[n*n-1]` are next to each other as far as the application is concerned, while the pages behind them can be scattered anywhere in RAM. That is fine in the application because the application works with virtual memory. But the IP works with physically contiguous memory. So, write() hands the buffer to the driver, the driver copies it into the `dma_alloc_coherent` buffer, and that one is physically contiguous because it comes out of the region we reserved in the device tree. If we tried to give the IP a malloc pointer directly it would read the wrong memory as soon as the buffer crossed a page boundary.
 
 Now we test on board:
 
@@ -1263,7 +1263,7 @@ The driver prints the three buffer addresses it allocated, and those are the sam
 | `0x34` | [`REG_N`](#s4-L34)      | `00000080` | `size=128` |
 
 We can see these values being provided to their registers from the addr channel and write data channel in below screenshot.
-`0x80` is just 128 in hex, which is the size we passed on the command line. All three buffer addresses being written at  `0x10`, `0x1c`, `0x28` fall inside the `0x1c000000` region we reserved in the device tree. 
+`0x80` is just 128 in hex, which is the size we passed on the command line. All three buffer addresses being written at `0x10`, `0x1c`, `0x28` fall inside the `0x1c000000` region we reserved in the device tree. 
 
 ![Figure](images/s4-ila-axilite_p5.png)
 
