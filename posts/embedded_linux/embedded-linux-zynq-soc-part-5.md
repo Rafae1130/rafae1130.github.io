@@ -1325,20 +1325,20 @@ This will be our final step, we will add interrupt handling capability in our dr
 
 struct systolic_dev {
     struct miscdevice miscdev;
-    struct device    *dev;      /* dma_* needs this outside probe */
+    struct device    *dev;      // dma_* needs this outside probe 
     void __iomem     *base;
     struct mutex      lock;
 
     wait_queue_head_t wq;       /* read() sleeps here while the IP runs */
     bool          busy;     /* set by START, cleared by the ISR */
 
-    int       matrix_size;  /* 0 = nothing allocated yet */
+    int       matrix_size;  // 0 = nothing allocated yet
     s16      *a, *b;
     s64      *c;
     dma_addr_t    a_dma, b_dma, c_dma;
 };
 
-/* the pointer registers are 64-bit, split across two 32-bit words */
+// the pointer registers are 64-bit, split across two 32-bit words 
 static void systolic_set_ptr(struct systolic_dev *priv, u32 reg, dma_addr_t addr)
 {
     writel(lower_32_bits(addr), priv->base + reg);
@@ -1390,7 +1390,7 @@ static int systolic_alloc_buffers(struct systolic_dev *priv, int matrix_size)
 
     priv->matrix_size = matrix_size;
 
-    /* the addresses changed, so the IP has to be told again */
+   
     systolic_set_ptr(priv, REG_A, priv->a_dma);
     systolic_set_ptr(priv, REG_B, priv->b_dma);
     systolic_set_ptr(priv, REG_C, priv->c_dma);
@@ -1431,7 +1431,7 @@ static ssize_t systolic_write(struct file *f, const char __user *buf,
     mutex_lock(&priv->lock);
 
     if (!priv->matrix_size) {
-        rc = -ENXIO;            /* SET_N not called yet */
+        rc = -ENXIO;            // if SET_N not called yet 
         goto out;
     }
     if (priv->busy) {
@@ -1456,11 +1456,11 @@ static ssize_t systolic_write(struct file *f, const char __user *buf,
     }
 
     if (copy_from_user(dst, buf, count)) {
-        rc = -EFAULT;           /* position unchanged, safe to retry */
+        rc = -EFAULT;           
         goto out;
     }
 
-    *ppos = (*ppos == 0) ? size : 0;    /* A -> B -> A */
+    *ppos = (*ppos == 0) ? size : 0;    // A -> B -> A 
     rc = count;
 out:
     mutex_unlock(&priv->lock);
@@ -1517,7 +1517,7 @@ static long systolic_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
         } else if (matrix_size == priv->matrix_size) {
             rc = 0;         /* same size, keep the buffers */
         } else {
-            /* free first: at 2048 we cannot hold both sets */
+            // free first
             systolic_free_buffers(priv);
             rc = systolic_alloc_buffers(priv, matrix_size);
         }
