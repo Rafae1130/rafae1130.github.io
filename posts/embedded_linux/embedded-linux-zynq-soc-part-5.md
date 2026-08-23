@@ -53,7 +53,7 @@
 
 ## Introduction {#introduction}
 
-In this blog we'll write our own kernel driver for a custom IP. The IP is a systolic array for matrix multiplication in High Level Synthesis (HLS), the same structure used in AI silicon like Google's TPUs. This one is written in HLS and is not optimized, because the subject here is the kernel driver rather than the HLS, which will come in a later series.
+In this blog we'll write our own kernel driver for a custom IP. The IP is a [systolic array](https://en.wikipedia.org/wiki/Systolic_array) for matrix multiplication in [High Level Synthesis (HLS)](https://en.wikipedia.org/wiki/High-level_synthesis), the same structure used in AI silicon like Google's [TPUs](https://en.wikipedia.org/wiki/Tensor_Processing_Unit). This one is written in HLS and is not optimized, because the subject here is the kernel driver rather than the HLS, which will come in a later series.
 
 I won't drop a whole driver on you and then explain it all in one go. We'll start with the bare minimum and add one piece of functionality at a time, testing on the board at each step.
 
@@ -80,9 +80,9 @@ Internally it works on fixed size tiles, so n has to be a multiple of the tile s
 
 The IP has two kinds of port, and the difference between them is the whole reason this driver looks the way it does:
 
-- **One AXI-Full master.** `m_axi_gmem`, on the right of the `systolic_matmul` IP in the picture below. The IP uses this to fetch A and B and to write C back, on its own, without the CPU. The driver never touches this interface. It only tells the IP which addresses to use.
+- **One [AXI-Full](https://docs.amd.com/v/u/en-US/ug1037-vivado-axi-reference-guide) master.** `m_axi_gmem`, on the right of the `systolic_matmul` IP in the picture below. The IP uses this to fetch A and B and to write C back, on its own, without the CPU. The driver never touches this interface. It only tells the IP which addresses to use.
 
-- **One AXI-Lite slave.** `s_axi_control`, on the left of the same block. This is the register space, and it is the only way the driver talks to the IP.
+- **One [AXI-Lite](https://docs.amd.com/v/u/en-US/ug1037-vivado-axi-reference-guide) slave.** `s_axi_control`, on the left of the same block. This is the register space, and it is the only way the driver talks to the IP.
 
 
 ![Figure](images/fig01_p5.png)
@@ -114,7 +114,7 @@ So the sequence never changes. Write the three buffer addresses and n, set the s
 
 ## Step 1 - module init and exit {#step-1-module-init-and-exit}
 
-To start writing the driver, we first need to create a module template in petalinux. Inside your petalinux directory, run this command:
+To start writing the driver, we first need to create a module template in [petalinux](https://docs.amd.com/r/en-US/ug1144-petalinux-tools-reference-guide). Inside your petalinux directory, run this command:
 
 `petalinux-create modules --name <driver-name> --enable`
 
@@ -156,7 +156,7 @@ MODULE_AUTHOR("Rafae");
 </div>
 
 This is the simplest kernel driver. Right now the main thing its doing is creating init and exit function and telling kernel to register them as init and exit through moduleinit() and module_exit(). [`systolic_init()`](#s1-L5) will then be called whenever we load the driver through insmod command, and [`systolic_exit()`](#s1-L10) will be called whenever we remove the driver through rmmod command.
-Declaring the license as GPL means its open source. Which is required to use most of the kernel APIs and features. And descriptions and author are just for module readability.
+Declaring the license as [GPL](https://en.wikipedia.org/wiki/GNU_General_Public_License) means its open source. Which is required to use most of the kernel APIs and features. And descriptions and author are just for module readability.
 
 After writing our code in systolic.c we can build it like:
 
@@ -182,7 +182,7 @@ And remove through rmmod command:
 
 ![Figure](images/fig07b_p5.png)
 
-You might notice that we didn't load any fpga bitstream and overlay. That is because the current driver is not talking to the hardware at all so there's no need for it. In next step we'll start talking to the hardware and thus will need both.
+You might notice that we didn't load any fpga [bitstream](https://docs.amd.com/r/en-US/ug908-vivado-programming-debugging) and overlay. That is because the current driver is not talking to the hardware at all so there's no need for it. In next step we'll start talking to the hardware and thus will need both.
 
 Next step is probing the device tree from driver and read the node properties.
 
@@ -563,7 +563,7 @@ Lets see the changes from the start:
 
 ### IOCTL commands {#ioctl-commands}
 
-[`SYSTOLIC_MAGIC`](#s3-L15) - the magic number is a 8 bit identifier per driver. It should be unique per driver ( kernel won't throw any error if two drivers have same magic number but its better for error handling). Then 1 2 3 4 are command numbers for each unique ioctl command in this driver. The third is the type of argument passed from or to userspace. IO does not take or pass anything, IOW takes the value to write from userspace, and IOR reads a value back to userspace.
+[`SYSTOLIC_MAGIC`](#s3-L15) - the magic number is a 8 bit identifier per driver. It should be unique per driver ( kernel won't throw any error if two drivers have same magic number but its better for error handling). Then 1 2 3 4 are command numbers for each unique [ioctl](https://en.wikipedia.org/wiki/Ioctl) command in this driver. The third is the type of argument passed from or to userspace. IO does not take or pass anything, IOW takes the value to write from userspace, and IOR reads a value back to userspace.
 These headers are then called [IOCTL commands](#ioctl-commands) and can then simply be used to read and write IPs registers from userspace.
 
 [`SYSTOLIC_START`](#s3-L16): can be used to start the IP operation.
@@ -658,7 +658,7 @@ After running the application, we get the following output:
 
 ![Figure](images/s3-term-n64_p5.png)
 
-We can view this value being provided to our IP through the [AXI-lite](#how-the-ip-works) interface using ILA.
+We can view this value being provided to our IP through the [AXI-lite](#how-the-ip-works) interface using [ILA](https://docs.amd.com/r/en-US/pg172-ila).
 
 ![Figure](images/s3-ila-n64_p5.png)
 
@@ -670,7 +670,7 @@ Similarly, if we write value 128 using our userspace application, we can see val
 
 ![Figure](images/s3-ila-n128_p5.png)
 
-We can use devmem command as well to verify the value written at the register. devmem is a command which can be used to read/write memory from shell using physical addresses.
+We can use [devmem](https://busybox.net/downloads/BusyBox.html) command as well to verify the value written at the register. devmem is a command which can be used to read/write memory from shell using physical addresses.
 
 ![Figure](images/fig12_p5.png)
 
@@ -1121,7 +1121,7 @@ We need to add the following node:
 
 We then compile it using following command:
 
-dtc -@ -I dts -O dtb system.dts -o system.dtb
+[dtc](https://manpages.debian.org/stable/device-tree-compiler/dtc.1.en.html) -@ -I dts -O dtb system.dts -o system.dtb
 
 The -@ is used to convert the labels([`systolic_reserved`](#s4dt-L6) here) to symbols like:
 
