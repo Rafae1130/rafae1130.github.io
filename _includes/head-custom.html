@@ -31,6 +31,12 @@
     --accent:     #5eead4;
     --accent-hi:  #a7f3e4;
 
+    /* Links that leave the site. Blue rather than teal so a reader can tell
+       before clicking whether they are staying in the series or being sent
+       to the kernel docs. */
+    --link-ext:     #79c0ff;
+    --link-ext-hi:  #a5d6ff;
+
     --line:       rgba(255, 255, 255, 0.10);
     --line-hi:    rgba(255, 255, 255, 0.17);
 
@@ -238,6 +244,19 @@
   .main-content a:hover {
     color: var(--accent-hi);
     text-decoration-thickness: 2px;
+  }
+
+  /* Anything absolute that is not this site. Relative links, in-page anchors
+     and the cross-series links all stay teal because they do not start with
+     http; the ones written out in full to rafae1130.github.io are excluded
+     explicitly. */
+  .main-content a[href^="http"]:not([href*="rafae1130.github.io"]) {
+    color: var(--link-ext);
+    text-decoration-color: var(--link-ext);
+  }
+  .main-content a[href^="http"]:not([href*="rafae1130.github.io"]):hover {
+    color: var(--link-ext-hi);
+    text-decoration-color: var(--link-ext-hi);
   }
 
   /* ---- code ------------------------------------------------------- */
@@ -543,8 +562,17 @@
     color: var(--ink-faint);
     font-size: 0.85rem;
   }
-  .site-footer a { color: var(--accent); }
-  .site-footer a:hover { color: var(--accent-hi); }
+  /* The footer is inside .main-content, so these need to outrank the
+     external-link rule above. Both footer links point at github.com and
+     should match each other rather than one going blue. */
+  .main-content .site-footer a {
+    color: var(--accent);
+    text-decoration-color: var(--accent);
+  }
+  .main-content .site-footer a:hover {
+    color: var(--accent-hi);
+    text-decoration-color: var(--accent-hi);
+  }
 
   /* ---- existing components ---------------------------------------- */
 
