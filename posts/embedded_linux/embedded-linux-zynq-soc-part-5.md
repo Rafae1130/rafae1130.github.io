@@ -53,7 +53,7 @@
 
 ## Introduction {#introduction}
 
-In this blog we'll write our own kernel driver for a custom IP. The IP is a [systolic array](https://en.wikipedia.org/wiki/Systolic_array) for matrix multiplication, the same structure used in AI silicon like Google's [TPUs](https://en.wikipedia.org/wiki/Tensor_Processing_Unit). This one is written in [High Level Synthesis (HLS)](https://en.wikipedia.org/wiki/High-level_synthesis) (HLS) and is not optimized yet much, because the subject here is the kernel driver rather than the HLS, which will come in a later series.
+In this blog we'll write our own kernel driver for a custom IP. The IP is a [systolic array](https://en.wikipedia.org/wiki/Systolic_array) for matrix multiplication, the same structure used in AI silicon like Google's [TPUs](https://en.wikipedia.org/wiki/Tensor_Processing_Unit). This one is written in [High Level Synthesis (HLS)](https://en.wikipedia.org/wiki/High-level_synthesis) and is not optimized yet much, because the subject here is the kernel driver rather than the HLS, which will come in a later series.
 
 I won't drop a whole driver on you and then explain it all in one go. We'll start with the bare minimum and add one piece of functionality at a time, testing on the board at each step.
 
