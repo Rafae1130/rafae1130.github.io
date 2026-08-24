@@ -49,7 +49,7 @@
   - [The userspace application](#the-userspace-application-s5)
   - [Device tree overlay](#device-tree-overlay-s5)
 - [Summary](#summary)
-- [Glossary: the headers we included](#glossary)
+- [Glossary](#glossary)
 
 
 ## Introduction {#introduction}
