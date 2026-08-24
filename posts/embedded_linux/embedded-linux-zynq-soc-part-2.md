@@ -149,7 +149,7 @@ where the address and size are each represented using two 32-bit cells.
 
 **reserved-memory:** This lists memory regions that must not be used by kernel as normal RAM. This is for cases in which fixed large memory buffers are required such as in DMA buffers, framebuffers etc.
 
-**axi:** axi groups peripherals reached through the AXI bus. PS(processor-system) Peripherals such as UART and I2C, and custom PL(programmable logic) IP nodes, are children of this node. This can be named amba as well in some cases. In some device trees, `amba` and `amba_pl` is used to differentiate the peripherals connected to PS and PL respectively. This is just for device tree reprersenttion. this does not represent seperate axi buses for processor and FPGA
+**axi:** axi groups peripherals reached through the AXI bus. PS(processor-system) Peripherals such as UART and I2C, and custom PL(programmable logic) IP nodes, are children of this node. This can also be named amba in some cases. In some device trees, `amba` and `amba_pl` is used to differentiate the peripherals connected to PS and PL respectively. This is just for device tree reprersenttion. this does not represent seperate axi buses for processor and FPGA
 
 **fpga-region:** On many Zynq boards this node is an empty placeholder until FPGA manager is used which is for runtime conguration such as programming new bitstream at runtime..
 
