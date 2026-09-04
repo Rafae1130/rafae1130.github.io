@@ -1,14 +1,14 @@
 # FPGA Quantization: Rounding, Dither and Saturation
 
-# **1. Introduction**
+## **1. Introduction**
 
 Whenever you multiply or accumulate in an FPGA pipeline, the word width grows. A 16×16 multiply produces 32 bits; accumulating a hundred of those needs 39. But the next block, the memory, or the output port is usually only 16 bits wide. So, at some point the wide word has to be cut down to fit, and the bits you throw away in that cut are the quantization error of the stage.
 
 This post walks through the standard techniques for reducing bit-width. We start with the cheapest one, find its drawback, reach for the next technique that fixes it, and repeat.
 
-If an incorrect technique is used, your system doesn't just get noisy. It starts producing spurs that looks exactly like real signals.
+If an incorrect technique is used, your system doesn't just get noisy. It starts producing spurs that look exactly like real signals.
 
-# **2. Notation: LSB, Full Scale, dBFS**
+## **2. Notation: LSB, Full Scale, dBFS**
 
 Three units appear on every plot and spec sheet below.
 
@@ -18,7 +18,7 @@ Three units appear on every plot and spec sheet below.
 
 **dBFS.** A logarithmic scale. 0 dBFS represents the max value the quantizer can represent, i.e. full scale. Every -6 dB halves the amplitude. So -6 dBFS is half of FS, -12 dBFS is a quarter, -48 dBFS is 1/256 of FS, which on a 12-bit output (FS = 2048) is a sine peaking at only ±8. We use -12 dBFS as the healthy case and -48 dBFS as the case where quantization starts to misbehave. Appendix A has the full glossary for SQNR, SFDR, SINAD, and ENOB.
 
-# **3. The Quantization Model**
+## **3. The Quantization Model**
 
 Picture a ruler with only inch marks measuring a smooth curve. Every reading has to snap to the nearest available level. The information you lose is the gap between the true value and the nearest level.
 
@@ -31,7 +31,7 @@ The ±Δ/2 bound only tells you how wrong any single reading can be. It says not
 
 So we describe the error statistically instead. To do this, we make some assumptions: each sample's error is uniformly distributed on [-Δ/2, +Δ/2], independent from one sample to the next, and independent of the signal.
 
-**Uniform on [-Δ/2, +Δ/2] ⇒ mean is zero.** A non-zero mean is a constant added to every sample. In a single pass FIR path, it just shifts the baseline i.e. adds an offset and is mostly harmless. Inside an IIR or any integrator i.e. feedback systems, the loop keeps adding that constant back into itself, so even a fraction of an LSB of bias accumulates without bound and eventually walks the output off the rails. This problem in feedback loops is avoided if the mean quantization is 0.
+**Uniform on [-Δ/2, +Δ/2] ⇒ mean is zero.** A non-zero mean is a constant added to every sample. In a single pass FIR path, it just shifts the baseline i.e. adds an offset and is mostly harmless. Inside an IIR or any integrator i.e. feedback systems, the loop keeps adding that constant back into itself, so even a fraction of an LSB of bias accumulates without bound and eventually walks the output off the rails. This problem in feedback loops is avoided if the mean quantization error is 0.
 
 Another way to see it: if mean is 0, the error is just as likely to push the value up as down, so over many samples it cancels itself out instead of building into a constant offset.
 
@@ -62,7 +62,7 @@ However, the case is not the same for smaller amplitude signals. A -12 dBFS sine
 
 The same thing happens inside a feedback loop. The quantizer error gets fed back into its own input, which correlates this sample's error with last sample's error, and independence between samples is gone. The whole chain of techniques below exists because of these two cases: low amplitudes and feedback loops, the exact places where the random-error story breaks down.
 
-# **4. Truncation**
+## **4. Truncation**
 
 This is the cheapest way to drop bits: keep the top ones, discard the rest. In two's complement this is arithmetic floor. It has zero hardware cost as it's just routing.
 
@@ -91,7 +91,7 @@ The output is always at or below the input, never above.
 
 The next technique fixes exactly this.
 
-# **5. Round Half Up**
+## **5. Round Half Up**
 
 This adds half an LSB before truncating. Thus the bias drops from -½ LSB to near zero.
 
@@ -117,7 +117,7 @@ For any signal that doesn't land exactly on a midpoint (so, essentially every re
 
 **Drawback.** If the input does land on exact midpoints (slow ramps, decimation filters seeing carry patterns, DC inputs a half-step off), half-up always pushes them the same way. That reintroduces a small DC bias proportional to how often midpoints hit.
 
-# **6. Convergent Rounding**
+## **6. Convergent Rounding**
 
 On a tie, round to the nearest even integer. Ties alternate up and down on repeated midpoint hits, so the long-run DC bias is exactly zero, not approximately. This is what we want inside IIR accumulators, ADC decimation, anywhere DC bias/offset matters.
 
@@ -152,7 +152,7 @@ At high amplitude you usually don't notice this because the noise power is sprea
 
 **Drawback.** DC bias can be solved through rounding, but spectral purity is not. Any rounding rule that depends only on the input cannot break this relation between input signal and output error. The fix has to inject something the rule cannot predict.
 
-# **7. Dither**
+## **7. Dither**
 
 It might sound counter intuitive, but this adds a small amount of random noise to the input before quantizing. Rounding tries to make each sample more accurate. Dither instead makes the error behave better over time and avoids it looking like actual signal. To understand why it works, recall what created the spurs in the first place. The rounding rule is a fixed function of the input, so a periodic input produces a periodic error, and the FFT shows that periodic error as tones at the harmonics of the signal. The error has structure because of the fixed structure in rounding schemes.
 
@@ -200,7 +200,7 @@ wire signed [11:0] out = dithered[23:12];
 
 **Drawback.** Dither fixes the small-signal spectrum but does nothing about the wrapping: a sample that's too large for the bitwidth. In two's complement, +max + 1 = -max, so overflow results in sign flips. One such flip inside an IIR can trigger a limit cycle and can result in design failure.
 
-# **8. Saturation**
+## **8. Saturation**
 
 When a value goes past the maximum the word can hold, two's-complement arithmetic wraps it: +max + 1 becomes -max i.e. a sign flip. Saturation prevents this by clamping to the rails instead of wrapping.
 
@@ -226,7 +226,7 @@ AMD DSP58 exposes OVERFLOW/UNDERFLOW flags; Intel Stratix V saturates inside its
 
 **Drawback.** Saturation keeps the datapath stable at a single level of precision, but it doesn't expand the dynamic range. For an FFT or a wide filterbank where inputs vary over many orders of magnitude, a fixed word simply can't cover it all.
 
-# **9. Block Floating Point and Microscaling**
+## **9. Block Floating Point and Microscaling**
 
 Static scaling pre-attenuates the input so the worst case fits. Simple and overflow-free, but it throws away SNR for typical signals. Full floating point (FP32) gives about 1500 dB of dynamic range but costs far more logic. Block Floating Point is the compromise: a block of N samples shares one common exponent, with the mantissas normalized to the block peak.
 
@@ -234,11 +234,11 @@ The AMD FFT LogiCORE uses BFP internally. Each stage monitors for imminent overf
 
 For AI inference, the current standard is Microscaling (MX): blocks of 32 elements share an 8-bit exponent, with 4-6 bit minifloats per element (MXFP4, MXFP6). AMD Small Floating Point research shows multipliers fitting in about 9.5 LUT6s at 600 MHz, with no DSP slice required. Intel Stratix 10 NX Tensor Blocks pack around 30 such MACs per DSP block per cycle.
 
-# **10. Bit-True Vivado Comparison**
+## **10. Bit-True Vivado Comparison**
 
-Five quantizers run in parallel on the same input inside one xsim run (Vivado 2024.2, 24-bit → 12-bit, sine on bin 113 of 8192 for coherent sampling). Tables and plots below are lifted directly from the simulator's CSV dump.
+Four quantizers run in parallel on the same input inside one xsim run (Vivado 2024.2, 24-bit → 12-bit, sine on bin 113 of 8192 for coherent sampling). Tables and plots below are lifted directly from the simulator's CSV dump.
 
-## **10.1 -12 dBFS Sine**
+### **10.1 -12 dBFS Sine**
 
 | Technique      | mean   | rms   | SQNR | SFDR | SINAD | ENOB  |
 |----------------|--------|-------|------|------|-------|-------|
@@ -247,9 +247,9 @@ Five quantizers run in parallel on the same input inside one xsim run (Vivado 20
 | Convergent     | +0.000 | 0.288 | 62.0 | 82.8 | 62.0  | 10.01 |
 | dither + trunc | -0.500 | 0.710 | 54.2 | 82.9 | 57.1  | 9.20  |
 
-All five land near the theoretical limit. Truncation shows its -½ LSB bias; half-up and convergent are indistinguishable because the sine almost never hits a midpoint exactly.
+All but dither land near the theoretical limit. Truncation shows its -½ LSB bias; half-up and convergent are indistinguishable because the sine almost never hits a midpoint exactly.
 
-## **10.2 -48 dBFS Sine**
+### **10.2 -48 dBFS Sine**
 
 | Technique      | mean   | rms   | SQNR | SFDR | SINAD | ENOB |
 |----------------|--------|-------|------|------|-------|------|
@@ -258,9 +258,9 @@ All five land near the theoretical limit. Truncation shows its -½ LSB bias; hal
 | Convergent     | +0.000 | 0.276 | 26.2 | 35.1 | 26.3  | 4.08 |
 | dither + trunc | -0.500 | 0.712 | 18.0 | 47.5 | 20.9  | 3.19 |
 
-SQNR is nearly flat across all five; SFDR spreads from 35 dB (spurs dominant) to 50 dB (spurs gone). This is the whole case for dither. Not to reduce noise, but to stop your system from lying to you with fake tones. Total noise barely changes, but its distribution does, and anything doing detection downstream (CFAR, FFT bin watch, audio) cares about spurs, not total noise. If you care about SFDR and you're not using dither, you're taking a risk.
+SQNR is nearly flat across all four; SFDR spreads from 35 dB (spurs dominant) to 47.5 dB (spurs gone). This is the whole case for dither. Not to reduce noise, but to stop your system from lying to you with fake tones. Total noise barely changes, but its distribution does, and anything doing detection downstream (CFAR, FFT bin watch, audio) cares about spurs, not total noise. If you care about SFDR and you're not using dither, you're taking a risk.
 
-# **11. When to Use What**
+## **11. When to Use What**
 
 Almost every quantization bug you'll hit falls into two buckets:
 
@@ -283,17 +283,17 @@ Pick from the chain you just walked:
 
 Bit-width reduction is never free. Each technique on this list pays a different price (a DC bias, a tone, a clipped peak, an extra LFSR, a shared exponent), and the whole design exercise is choosing which price you can afford in your particular signal path. The chain in this post is the menu. Truncation is the cheapest and the noisiest. Convergent rounding fixes DC. Dither fixes spurs. Saturation fixes overflow. BFP and microscaling fix dynamic range. Pick the first one that survives your worst-case input and stop there.
 
-# **Appendix A: Glossary**
+## **Appendix A: Glossary**
 
 Every metric used in the tables and plots, with a worked example from this study.
 
-## **A.1 Time-Domain Error**
+### **A.1 Time-Domain Error**
 
 **Mean error.** DC component of the quantization error. Truncation: -½ LSB. Half-up and convergent: 0. Fatal inside an IIR.
 
 **RMS error.** Root-mean-square of the per-sample error. Uniform quantizer: Δ/√12 ≈ 0.289 LSB. Truncation picks up the bias term and rises to ~0.577 LSB.
 
-## **A.2 Frequency-Domain Error**
+### **A.2 Frequency-Domain Error**
 
 **FFT bin.** One frequency slot in an N-point DFT. Our test uses N = 8192 and places the sine on bin 113. Bin 113 is prime, so harmonics land on distinct bins (coherent sampling).
 
@@ -305,7 +305,7 @@ Every metric used in the tables and plots, with a worked example from this study
 
 **ENOB.** Effective Number of Bits = (SINAD - 1.76) / 6.02. SINAD = 62 dB → ENOB = 10. What datasheets print; what actually matters.
 
-## **A.3 Dither Terms**
+### **A.3 Dither Terms**
 
 **RPDF.** Rectangular PDF: uniform random on ± ½ LSB, one LFSR. Removes mean error; noise still varies with signal.
 
@@ -313,7 +313,7 @@ Every metric used in the tables and plots, with a worked example from this study
 
 **LFSR.** Linear Feedback Shift Register. Cheap pseudo-random source in HDL. A 32-bit maximal-length LFSR repeats every 2³² − 1 cycles.
 
-## **A.4 Filter / Overflow**
+### **A.4 Filter / Overflow**
 
 **Limit cycle.** Self-sustaining oscillation inside an IIR, set off by quantization non-linearity plus overflow wrap. Persists even at zero input.
 
