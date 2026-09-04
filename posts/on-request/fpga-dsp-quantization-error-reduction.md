@@ -12,7 +12,7 @@ If an incorrect technique is used, your system doesn't just get noisy. It starts
 
 Three units appear on every plot and spec sheet below.
 
-**LSB.** The smallest step the quantizer can resolve. For a 12-bit signed output, 1 LSB = 1/4096 ≈ 0.000244 of full scale. Any change in the input smaller than that is invisible to the quantizer, it simply gets lost. "-½ LSB bias" means half of that step.
+**LSB.** The smallest step the quantizer can resolve. For a 12-bit signed output, 1 LSB = 1/4096 ≈ 0.000244 of the full-scale range. Any change in the input smaller than that is invisible to the quantizer, it simply gets lost. "-½ LSB bias" means half of that step.
 
 **Full scale (FS).** The largest magnitude the quantizer can represent without clipping. 12-bit signed → FS = 2048.
 
@@ -276,7 +276,7 @@ Pick from the chain you just walked:
 | Non-recursive path, DC doesn't matter | Truncation | Free. The -½ LSB bias is harmless if nothing integrates it. |
 | General-purpose rounder | Round half up | One adder; ~6 dB better SQNR; near-zero bias for real signals. |
 | IIR feedback, decimation, anything that feeds DC | Convergent rounding | Exactly zero bias. Free inside DSP48E2/DSP58 via PATTERNDETECT. |
-| Low-amplitude signals where spurs hurt (audio, DDS, radar, ADC readout) | dither | Trades ~5 dB SQNR for ~15 dB SFDR. Signal-independent noise. |
+| Low-amplitude signals where spurs hurt (audio, DDS, radar, ADC readout) | dither | Trades ~8 dB SQNR for ~12 dB SFDR. Signal-independent noise. |
 | Anything that can overflow | Saturation | Wrap triggers limit cycles. Saturation just clips. Free in DSP58. |
 | Wide dynamic range, parallel arithmetic (FFT, filterbanks) | Block floating point | Near-FP32 DR on fixed-point slices. Built into the AMD FFT LogiCORE. |
 | Neural-network inference | Microscaling (MXFP4 / MXFP6) | Shared 8-bit exponent, 4-6 bit mantissa. AMD SFP fits in ~9.5 LUT6s; Intel NX packs ~30 MACs/cycle. |
