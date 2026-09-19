@@ -5,17 +5,19 @@
 - [Introduction](#sec-intro)
 - [1. Fixed Point vs Floating Point](#sec-1)
   - [1.1 Floating Point Scaling](#sec-1-1)
+  - [1.2 Fixed Point Scaling](#sec-1-2)
 - [2. Why Use Fixed Point in FPGAs?](#sec-2)
   - [2.1 Arithmetic Difference Between Floating and Fixed Point](#sec-2-1)
   - [2.2 Resource Usage](#sec-2-2)
-- [3. Practical Example](#sec-3)
-  - [3.1 The IIR Filter](#sec-3-1)
-  - [3.2 MATLAB Flow](#sec-3-2)
-  - [3.3 RTL Flow](#sec-3-3)
+- [3. How Fractions Are Converted to Fixed Point and Floating Point](#sec-3)
+- [4. Practical Example](#sec-4)
+  - [4.1 The IIR Filter](#sec-4-1)
+  - [4.2 MATLAB Flow](#sec-4-2)
+  - [4.3 RTL Flow](#sec-4-3)
     - [Why This Happens](#sec-why)
     - [Proper Truncation](#sec-truncation)
-- [4. When to Use Which?](#sec-4)
-- [5. Summary](#sec-5)
+- [5. When to Use Which?](#sec-5)
+- [6. Summary](#sec-6)
 
 ## **Introduction** {#sec-intro}
 
@@ -38,7 +40,7 @@ Just as a refresher: Qm.n is a fixed point format with m bits before the binary 
 | Floating point, FP16 (half precision) | 16 | −65,504 to 65,504 |
 {: #range-table}
 
-One odd thing you might notice is that the distinct values an 8 bit and 16 bit number can represent is 256 and 65536 values respectively. However, in the [table above](#range-table), an 8 bit floating point is representing 114688 distinct values ( −57,344 to 57,344 ) and a 16 bit fp is representing 131008 ( −65,504 to 65,504 ). How is this possible??? Can a floating point representation magically increase the number of possible distinct values??
+One odd thing you might notice is that the distinct values an 8 bit and 16 bit number can represent is 256 and 65536 values respectively. However, in the [table above](#range-table), an 8 bit floating point is seem to be representing 114688 distinct values ( −57,344 to 57,344 ) and a 16 bit fp is seem to be representing 131008 ( −65,504 to 65,504 ). How is this possible??? Can a floating point representation magically increase the number of possible distinct values??
 
 That is not the case. 
 One thing to keep in mind is that a n bit fixed point word and n bit floating point can represent same number of values i.e. at most 2^n. For example an 8 bit fixed point number and 8 floating point number both have 256 bit patterns. So if they can represent same number of distinct values, the question arises that how can floating point represent much larger range of numbers. The answer is that it doesn't represent all the values in between, and it takes jumps (gaps/steps/resolution) in between the values. 
@@ -117,7 +119,9 @@ A more comprehensive table is given below for a simplified floating point format
 
 The significand repeats the same four values for every exponent, only the scale changes. And the gap is 0.25 × scale, so it doubles with every step of the exponent: 0.25, 0.5, 1, 2. These 16 values are the floating point dots in Figure 1.
 
-**And fixed point?** Fixed point uses the same idea, but unlike the floating point which can have different multiplier/scales, a fixed point's multiplier/scale is fixed at design time. For example, if we have an 8 bit number and we choose the format Q6.2 (6 bits before the binary point, the sign included, and 2 after it), the multiplier is 2⁻² = 0.25 for every number. The stored integer (the whole 8 bit word) is simply multiplied by 0.25. For example, the word 00000101 is the integer 5, so its value is 5 × 0.25 = 1.25, which is 000001.01₂ with the binary point in place. So 4 → 1, 5 → 1.25, 6 → 1.5, 7 → 1.75, the same values as the floating point significand. But the next integers keep the same multiplier, 8 → 2, 9 → 2.25, so the gap stays 0.25 everywhere, over the whole range from −32 to 31.75:
+### **1.2 Fixed Point Scaling** {#sec-1-2}
+
+ Fixed point uses the same idea, but unlike the floating point which can have different multiplier/scales, a fixed point's multiplier/scale is fixed at design time. For example, if we have an 8 bit number and we choose the format Q6.2 (6 bits before the binary point, the sign included, and 2 after it), the multiplier is 2⁻² = 0.25 for every number. The stored integer (the whole 8 bit word) is simply multiplied by 0.25. For example, the word 00000101 is the integer 5, so its value is 5 × 0.25 = 1.25, which is 000001.01₂ with the binary point in place. So 4 → 1, 5 → 1.25, 6 → 1.5, 7 → 1.75, the same values as the floating point significand. But the next integers keep the same multiplier, 8 → 2, 9 → 2.25, so the gap stays 0.25 everywhere, over the whole range from −32 to 31.75:
 
 | Stored integer | 4 | 5 | 6 | 7 | 8 | 9 | … | 19 |
 |---|---|---|---|---|---|---|---|---|
@@ -155,11 +159,25 @@ Below is the resource usage for the practical example we'll do later, we create 
 
 Compared to FP16, the fixed point filter uses 37% fewer LUTs, 43% fewer registers and 62% fewer DSPs (5 instead of 13) for the same application.
 
-## **3. Practical Example** {#sec-3}
+## **3. How Fractions Are Converted to Fixed Point and Floating Point** {#sec-3}
+
+We'll see how fractions are converted to their corresponding fixed and floating point representation with an example below.
+
+**Fixed point (Q2.14):** multiply by 2¹⁴ and store the integer: 1.75 × 16384 = 28672. With the binary point in place:
+
+```
+01.11000000000000
+```
+
+Reading it back: 28672 / 2¹⁴ = 1.75. A number that falls between two steps, like 0.1, can't be stored exactly and ends up on a step next to it.
+
+**Floating point:** converting to floating point takes more steps (bringing the number into the right form, a biased exponent, rounding and special values like infinity), and explaining them in detail is not the goal of this post. Good explanations with examples: [IEEE 754](https://en.wikipedia.org/wiki/IEEE_754), the [single precision format](https://en.wikipedia.org/wiki/Single-precision_floating-point_format), and this [float converter](https://www.h-schmidt.net/FloatConverter/IEEE754.html), where you can type a number and see its bits.
+
+## **4. Practical Example** {#sec-4}
 
 Now we'll go through an actual flow of how to design a fixed point application for an FPGA. Usually when we design a system, we first model it in software using tools such as Matlab, to validate and ensure that the algorithm is working as intended. This is how we'll start here. 
 
-### **3.1 The IIR Filter** {#sec-3-1}
+### **4.1 The IIR Filter** {#sec-4-1}
 
 We'll design an IIR filter to remove noise from our input signal. An IIR filter has a feedback loop. So if we have any error in our output i.e. quantization error, it will be fed back to the loop resulting in more and more errors. Unlike an FIR filter, which only uses past inputs, an IIR filter also uses its own past outputs, so an error in one output gets fed into every output after it. Therefore the selection of correct fixed point format is more important in case of IIR filters. 
 
@@ -172,7 +190,7 @@ The structure for our IIR filter is as below. It has both feed forward and feed 
 
 As discussed above, our current goal is to just verify if our filter design works for our application. So we start the modelling with floating point numbers. And once our design is proven to work, we'll move toward fixed point. 
 
-### **3.2 MATLAB Flow** {#sec-3-2}
+### **4.2 MATLAB Flow** {#sec-4-2}
 
 #### **Floating Point (Double)**
 
@@ -382,7 +400,7 @@ set(gca, 'Color', 'w', 'XColor', 'k', 'YColor', 'k', ...
 
 Now we get Output RMS: 0.698438, close to the floating point result. Sample by sample, the error against the double result is only 0.0007 ([RMSE](https://en.wikipedia.org/wiki/Root_mean_square_deviation)).
 
-### **3.3 RTL Flow** {#sec-3-3}
+### **4.3 RTL Flow** {#sec-4-3}
 
 Now that we have tested our design and have our correct fixed point format, we can move toward RTL. 
 The following figure represents a block level design for our RTL flow. Notice that it's the same as the [Matlab block diagram above](#fig-iir), just the delays are replaced with registers. 
@@ -462,7 +480,7 @@ module iir_filter (
 endmodule
 {% endhighlight %}
 
-The RTL does exactly what the MATLAB loop does. Here's how each MATLAB line maps to it:
+We model the same system as in Matlab, and as we know we don't need any special hardware for fixed point, we can just use normal arithmetic. Here's how each MATLAB line maps to it:
 
 - `W = 16; F = 14;` → `reg signed [15:0] x, x1, x2, y1, y2;` (line 19). 16 bit signed registers; the 14 fraction bits only exist in our heads, the hardware just sees integers.
 - `b = fi(b, T, M); a = fi(a, T, M);` → `coefficients.vh` (line 14). The same Q2.14 coefficients, exported from MATLAB as `B0` to `A2`.
@@ -814,7 +832,7 @@ Output RMS from MATLAB to the board:
 
 RMS only shows the size of the output, so to compare accuracy we look at the error sample by sample: against the double precision output, the [RMSE](https://en.wikipedia.org/wiki/Root_mean_square_deviation) is 0.000701 for Q2.14 and 0.002111 for FP16. For this application, fixed point was clearly the better choice, as it resulted in fewer resources and better performance.
 
-## **4. When to Use Which?** {#sec-4}
+## **5. When to Use Which?** {#sec-5}
 
 So which one should we use? For the same number of bits, floating point gives us more range, and fixed point gives us finer steps over the range we choose.
 
@@ -834,7 +852,7 @@ So which one should we use? For the same number of bits, floating point gives us
 
 **On an FPGA**, fixed point also uses a lot less resources, as we saw in section 2. So if you know your range, fixed point is usually the better choice.
 
-## **5. Summary** {#sec-5}
+## **6. Summary** {#sec-6}
 
 - With the same number of bits, fixed point and floating point can represent the same number of values. Floating point spreads them over a huge range with gaps that grow with the numbers, fixed point keeps the same gap everywhere.
 - Floating point needs special hardware to line up the exponents, add, then shift back and round, so it costs more resources. In our filter, fixed point used 37% fewer LUTs, 43% fewer registers and 62% fewer DSPs.
