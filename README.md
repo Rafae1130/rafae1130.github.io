@@ -29,7 +29,7 @@ This site contains my notes and blogs on various FPGA tips, techniques and desig
 
 ## On Request
 - [FPGA Quantization: Rounding, Dither and Saturation](posts/on-request/fpga-dsp-quantization-error-reduction.md)
-- [Fixed Point Scaling](posts/on-request/fixed-point-scaling.md)
+- [Fractions in FPGA](posts/on-request/fixed-point-scaling.md)
 <div style="text-align: right; margin-top: 50px;">
   <em>— Abdur Rafae Haqqani</em><br>
   <a href="mailto:rafae50@yahoo.com">rafae50@yahoo.com</a>
