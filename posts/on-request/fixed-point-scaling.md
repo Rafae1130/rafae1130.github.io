@@ -4,11 +4,16 @@
 
 - [Introduction](#sec-intro)
 - [1. Fixed Point vs Floating Point](#sec-1)
+  - [1.1 Floating Point Scaling](#sec-1-1)
 - [2. Why Use Fixed Point in FPGAs?](#sec-2)
+  - [2.1 Arithmetic Difference Between Floating and Fixed Point](#sec-2-1)
+  - [2.2 Resource Usage](#sec-2-2)
 - [3. Practical Example](#sec-3)
-  - [3.1 MATLAB Flow](#sec-3-1)
-  - [3.2 RTL Flow](#sec-3-2)
-    - [Why This Happens and How to Truncate Properly](#sec-truncation)
+  - [3.1 The IIR Filter](#sec-3-1)
+  - [3.2 MATLAB Flow](#sec-3-2)
+  - [3.3 RTL Flow](#sec-3-3)
+    - [Why This Happens](#sec-why)
+    - [Proper Truncation](#sec-truncation)
 - [4. When to Use Which?](#sec-4)
 - [5. Summary](#sec-5)
 
@@ -60,6 +65,8 @@ Why is that??
 The answer is in the name of the formats, i.e. fixed and floating point. The jumps between two consecutive represented numbers in either format depends upon the location of its fractional point (or binary point). In case of fixed point, that fractional point is fixed, thus the jumps also remain fixed. However, as its name suggests, in floating point, the fractional point is floating, i.e. can move around. Therefore, the jumps also change. 
 
 But how does that explain the gap/resolution getting bigger with larger numbers. 
+
+### **1.1 Floating Point Scaling** {#sec-1-1}
 
 Start with plain integers. Take four numbers one apart, 4, 5, 6 and 7, and multiply them by 1, 2, 4 and 8. Read each column down:
 
@@ -122,6 +129,8 @@ The significand repeats the same four values for every exponent, only the scale 
 
 Mainly because of resource usage and precision. Fixed point arithmetic can be treated simply as normal arithmetic for the most part. However, floating point requires special hardware which in turn result in extra resource usage. So it's a trade off whether your design requires more range or more precision and more efficient resource usage.
 
+### **2.1 Arithmetic Difference Between Floating and Fixed Point** {#sec-2-1}
+
 **Why does floating point need special hardware?** A floating point number isn't one integer, it's two: a significand and an exponent (plus the sign), and its value is significand × 2^exponent. The hardware has to handle these parts separately, so it can't use a normal integer adder or multiplier.
 
 Adding shows it best. Two numbers can only be added when they have the same scale, i.e. the same exponent. It's like adding 3 m and 5 cm: you can't just add 3 + 5, you first write both in the same unit, 3 m + 0.05 m = 3.05 m. In the figure below, 6 is 1.10₂ × 2² and 2 is 1.00₂ × 2¹; adding 1.10 + 1.00 directly would mix fours with twos. So the hardware first compares the exponents, shifts the smaller number until the scales match, adds, then shifts the result back into the 1.xx form and rounds it. Each step is extra logic: a subtractor, shifters and rounding. Multiplying is simpler (multiply the significands, add the exponents), but it still needs the shift back and the rounding.
@@ -131,6 +140,8 @@ In fixed point all numbers have the same scale, because the binary point is fixe
 ![](images/fixed-point-scaling/fig26_float_add_steps.png)
 
 **Figure 3: Adding 6 + 2: four steps in floating point, one integer add in fixed point**
+
+### **2.2 Resource Usage** {#sec-2-2}
 
 Below is the resource usage for the practical example we'll do later, we create the project for both Floating point and fixed point, and we can see that floating point is using a lot more resources as compared to fixed point. We'll see in the example that we don't lose accuracy for it.
 
@@ -147,6 +158,9 @@ Compared to FP16, the fixed point filter uses 37% fewer LUTs, 43% fewer register
 ## **3. Practical Example** {#sec-3}
 
 Now we'll go through an actual flow of how to design a fixed point application for an FPGA. Usually when we design a system, we first model it in software using tools such as Matlab, to validate and ensure that the algorithm is working as intended. This is how we'll start here. 
+
+### **3.1 The IIR Filter** {#sec-3-1}
+
 We'll design an IIR filter to remove noise from our input signal. An IIR filter has a feedback loop. So if we have any error in our output i.e. quantization error, it will be fed back to the loop resulting in more and more errors. Unlike an FIR filter, which only uses past inputs, an IIR filter also uses its own past outputs, so an error in one output gets fed into every output after it. Therefore the selection of correct fixed point format is more important in case of IIR filters. 
 
 The structure for our IIR filter is as below. It has both feed forward and feed back loop. The square boxes are delay lines, i.e. previous sample, and the triangles are filter coefficients which we'll generate in Matlab. 
@@ -158,7 +172,7 @@ The structure for our IIR filter is as below. It has both feed forward and feed 
 
 As discussed above, our current goal is to just verify if our filter design works for our application. So we start the modelling with floating point numbers. And once our design is proven to work, we'll move toward fixed point. 
 
-### **3.1 MATLAB Flow** {#sec-3-1}
+### **3.2 MATLAB Flow** {#sec-3-2}
 
 #### **Floating Point (Double)**
 
@@ -368,7 +382,7 @@ set(gca, 'Color', 'w', 'XColor', 'k', 'YColor', 'k', ...
 
 Now we get Output RMS: 0.698438. Which is equivalent to the floating point result.
 
-### **3.2 RTL Flow** {#sec-3-2}
+### **3.3 RTL Flow** {#sec-3-3}
 
 Now that we have tested our design and have our correct fixed point format, we can move toward RTL. 
 The following figure represents a block level design for our RTL flow. Notice that it's the same as the [Matlab block diagram above](#fig-iir), just the delays are replaced with registers. 
@@ -377,7 +391,7 @@ The following figure represents a block level design for our RTL flow. Notice th
 
 **Figure 10: The same filter in RTL, with the multiplier and adder IPs and the truncation**
 
-#### **Q2.14 RTL**
+#### **Q2.14 in RTL**
 
 {% highlight verilog linenos %}
 `timescale 1ns/1ps
@@ -469,7 +483,7 @@ The RTL does exactly what the MATLAB loop does. Here's how each MATLAB line maps
 
 Why is this? We did everything correctly. Used the matlab generated coefficients, same fixed point format as tested in Matlab, then why still incorrect result. The reason is truncation. Remember y(n) = fi(value, T, M); in the matlab code, we discussed that this is needed to convert the 36 bit output of the filter back to 16 bits. But this function hides the detail of how the truncation is actually done. In the above RTL we're just truncating the MSBs and keeping the 16 LSBs. Before explaining why this causes problem, lets see what happens if we do the inverse, i.e. discard the LSBs and keep the 16 MSBs.
 
-#### **Q2.14, Lowest 20 Bits Dropped**
+##### **What If We Keep the MSBs?**
 
 {% highlight verilog linenos mark_lines="43" %}
 `timescale 1ns/1ps
@@ -551,7 +565,7 @@ endmodule
 
 The output isn't any better. 
 
-#### **Why This Happens and How to Truncate Properly** {#sec-truncation}
+##### **Why This Happens** {#sec-why}
 
 This is mainly the only thing that needs to be handled differently from normal integer arithmetic in FPGAs. 
 
@@ -577,6 +591,8 @@ Now the two wirings, all on this same sum:
 
 And since `y` goes back into the filter as `y1` and `y2`, a wrong `y` doesn't stay in one sample. It is used again in the next two sums, so the error goes around the loop. That's why the first output was noise and the second almost zero.
 
+#### **Proper Truncation** {#sec-truncation}
+
 **The proper way to truncate:** find the binary point in the sum, then keep the bits around it that fit the output format. An output in Qm.n has m bits before the point (the sign included) and n bits after it. *Here: Q2.14, so m = 2 and n = 14.*
 
 ![](images/fixed-point-scaling/fig25_truncation_bits.png)
@@ -589,7 +605,7 @@ And since `y` goes back into the filter as `y1` and `y2`, a wrong `y` doesn't st
 
 **Rule:** with F fraction bits in the sum, a Qm.n output is bits [F+m−1 : F−n]. *Here: F = 28 and Q2.14, so [29:14], which is `assign y = sum[29:14];`.*
 
-#### **Q2.14 in RTL**
+#### **Q2.14 RTL with Correct Truncation**
 
 {% highlight verilog linenos mark_lines="43 44 45 46 47 48" %}
 `timescale 1ns/1ps
