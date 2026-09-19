@@ -40,7 +40,7 @@ Just as a refresher: Qm.n is a fixed point format with m bits before the binary 
 | Floating point, FP16 (half precision) | 16 | −65,504 to 65,504 |
 {: #range-table}
 
-One odd thing you might notice is that the distinct values an 8 bit and 16 bit number can represent is 256 and 65536 values respectively. However, in the [table above](#range-table), an 8 bit floating point is seem to be representing 114688 distinct values ( −57,344 to 57,344 ) and a 16 bit fp is seem to be representing 131008 ( −65,504 to 65,504 ). How is this possible??? Can a floating point representation magically increase the number of possible distinct values??
+One odd thing you might notice is that the distinct values an 8 bit and 16 bit number can represent is 256 and 65536 values respectively. However, in the [table above](#range-table), an 8 bit floating point seems to be representing 114688 distinct values ( −57,344 to 57,344 ) and a 16 bit fp seems to be representing 131008 ( −65,504 to 65,504 ). How is this possible??? Can a floating point representation magically increase the number of possible distinct values??
 
 That is not the case. 
 One thing to keep in mind is that a n bit fixed point word and n bit floating point can represent same number of values i.e. at most 2^n. For example an 8 bit fixed point number and 8 floating point number both have 256 bit patterns. So if they can represent same number of distinct values, the question arises that how can floating point represent much larger range of numbers. The answer is that it doesn't represent all the values in between, and it takes jumps (gaps/steps/resolution) in between the values. 
@@ -70,7 +70,7 @@ But how does that explain the gap/resolution getting bigger with larger numbers.
 
 ### **1.1 Floating Point Scaling** {#sec-1-1}
 
-Start with plain integers. Take four numbers one apart, 4, 5, 6 and 7, and multiply them by 1, 2, 4 and 8. Read each column down:
+Let's first look at this with plain integers. We take four numbers that are one apart, 4, 5, 6 and 7, and multiply each of them by 1, 2, 4 and 8. If you read each column of the table below from top to bottom, you can see what happens to the gap:
 
 | Number | × 1 | × 2 | × 4 | × 8 |
 |---|---|---|---|---|
@@ -121,7 +121,7 @@ The significand repeats the same four values for every exponent, only the scale 
 
 ### **1.2 Fixed Point Scaling** {#sec-1-2}
 
- Fixed point uses the same idea, but unlike the floating point which can have different multiplier/scales, a fixed point's multiplier/scale is fixed at design time. For example, if we have an 8 bit number and we choose the format Q6.2 (6 bits before the binary point, the sign included, and 2 after it), the multiplier is 2⁻² = 0.25 for every number. The stored integer (the whole 8 bit word) is simply multiplied by 0.25. For example, the word 00000101 is the integer 5, so its value is 5 × 0.25 = 1.25, which is 000001.01₂ with the binary point in place. So 4 → 1, 5 → 1.25, 6 → 1.5, 7 → 1.75, the same values as the floating point significand. But the next integers keep the same multiplier, 8 → 2, 9 → 2.25, so the gap stays 0.25 everywhere, over the whole range from −32 to 31.75:
+ Fixed point uses the same idea, but unlike the floating point which can have different multiplier/scales, a fixed point's multiplier/scale is fixed at design time. For example, if we have an 8 bit number and we choose the format Q6.2 (6 bits before the binary point, the sign included, and 2 after it), the multiplier is 2⁻² = 0.25 for every number. To get the value, we just multiply the stored integer, i.e. the whole 8 bit word, by 0.25. For example, the word 00000101 is the integer 5, so its value is 5 × 0.25 = 1.25, and if we put the binary point in place it reads 000001.01. In the same way 4, 5, 6 and 7 give 1, 1.25, 1.5 and 1.75, which are the same values as the floating point significand. But the next integers use the same multiplier as well, so 8 gives 2 and 9 gives 2.25, and the gap stays 0.25 everywhere, over the whole range from −32 to 31.75:
 
 | Stored integer | 4 | 5 | 6 | 7 | 8 | 9 | … | 19 |
 |---|---|---|---|---|---|---|---|---|
@@ -135,9 +135,9 @@ Mainly because of resource usage and precision. Fixed point arithmetic can be tr
 
 ### **2.1 Arithmetic Difference Between Floating and Fixed Point** {#sec-2-1}
 
-So why does floating point need special hardware? A floating point number is stored as separate parts, a sign, a significand and an exponent, and its value is significand x 2^exponent. The hardware has to handle each part separately, so we can't just use a normal integer adder or multiplier on it.
+So why does floating point need special hardware? A floating point number is stored as separate parts, a sign, a significand and an exponent, and its value is significand × 2^exponent. The hardware has to handle each part separately, so we can't just use a normal integer adder or multiplier on it.
 
-Addition is a good example. We can only add two numbers when they have the same scale, i.e. the same exponent. It's like adding 3 m and 5 cm: we can't just do 3 + 5, we first have to write both in the same unit, 3 m + 0.05 m = 3.05 m. In the figure below, 6 is 1.10 x 2^2 and 2 is 1.00 x 2^1, so if we add 1.10 + 1.00 directly, the result is wrong because the two numbers have different scales. So the hardware first compares the exponents, shifts the smaller number until both have the same exponent, adds them, and then shifts the result back and rounds it. All of these steps need extra logic: a subtractor, shifters and rounding logic. Multiplication is a bit simpler, we multiply the significands and add the exponents, but it still needs the shift back and the rounding.
+Addition is a good example. We can only add two numbers when they have the same scale, i.e. the same exponent. It's like adding 3 m and 5 cm: we can't just do 3 + 5, we first have to write both in the same unit, 3 m + 0.05 m = 3.05 m. In the figure below, 6 is 1.10 × 2² and 2 is 1.00 × 2¹, so if we add 1.10 + 1.00 directly, the result is wrong because the two numbers have different scales. So the hardware first compares the exponents, shifts the smaller number until both have the same exponent, adds them, and then shifts the result back and rounds it. All of these steps need extra logic: a subtractor, shifters and rounding logic. Multiplication is a bit simpler, we multiply the significands and add the exponents, but it still needs the shift back and the rounding.
 
 In fixed point, all numbers have the same scale since the binary point is fixed at design time, so adding is just a normal integer addition.
 
@@ -163,15 +163,15 @@ Compared to FP16, the fixed point filter uses 37% fewer LUTs, 43% fewer register
 
 We'll see how fractions are converted to their corresponding fixed and floating point representation with an example below.
 
-**Fixed point (Q2.14):** multiply by 2¹⁴ and store the integer: 1.75 × 16384 = 28672. With the binary point in place:
+For fixed point, say Q2.14, we multiply the number by 2¹⁴ and store the result as an integer. For 1.75 that's 1.75 × 16384 = 28672, which in binary, with the binary point in place, is:
 
 ```
 01.11000000000000
 ```
 
-Reading it back: 28672 / 2¹⁴ = 1.75. A number that falls between two steps, like 0.1, can't be stored exactly and ends up on a step next to it.
+To get the value back we just divide by 2¹⁴ again: 28672 / 16384 = 1.75. If a number falls between two steps, like 0.1, it can't be stored exactly and it ends up on one of the steps next to it.
 
-**Floating point:** converting to floating point takes more steps (bringing the number into the right form, a biased exponent, rounding and special values like infinity), and explaining them in detail is not the goal of this post. Good explanations with examples: [IEEE 754](https://en.wikipedia.org/wiki/IEEE_754), the [single precision format](https://en.wikipedia.org/wiki/Single-precision_floating-point_format), and this [float converter](https://www.h-schmidt.net/FloatConverter/IEEE754.html), where you can type a number and see its bits.
+For floating point the conversion takes a few more steps, like bringing the number into the right form, the biased exponent, rounding and special values like infinity. Explaining these in detail is not the goal of this post, and there are already good explanations with examples, e.g. [IEEE 754](https://en.wikipedia.org/wiki/IEEE_754), the [single precision format](https://en.wikipedia.org/wiki/Single-precision_floating-point_format) and this [float converter](https://www.h-schmidt.net/FloatConverter/IEEE754.html), where you can type in a number and see its bits.
 
 ## **4. Practical Example** {#sec-4}
 
@@ -324,7 +324,14 @@ set(gca, 'Color', 'w', 'XColor', 'k', 'YColor', 'k', ...
 
 **Figure 8: MATLAB, Q1.15: the input wraps around, output RMS: 0.029698**
 
-The input looks like noise because about a quarter of its samples (240 of 1000) are bigger than Q1.15 can hold, and they wrap around to the other side: +1.160 is stored as −0.840, and +1.458 as −0.542. That's what dropping the top bit does in two's complement; clipping them at ±1 (saturation) would need extra logic.
+The input looks like noise because about a quarter of its samples (240 of 1000) are bigger than what Q1.15 can hold, so they wrap around to the other side, e.g. +1.160 is stored as −0.840 and +1.458 as −0.542 because:
+
+```
+1.458 in binary needs 17 bits:        0 1.011101010011001
+Q1.15 keeps only the lowest 16 bits:    1.011101010011001
+```
+
+In Q1.15 the first bit is the sign bit and is worth −1, so the kept bits read −1 + 0.458 = −0.542. The integer 1 of 1.458 has become the sign bit.
 
 In the output we see that magnitude is very less as compared to our floating point test above. The Output RMS is 0.029698 as compared to 0.698052 in case of floating point. This means something is wrong. 
 
@@ -605,7 +612,7 @@ Now let's see what the two wirings give for this same sum:
 | `assign y = sum[35:20];` | [35:20] | 0000 0001 0000 0000 | 0.015625 |
 
 - `sum[15:0]`: these are the lowest 16 fraction bits of the sum. In the sum they are worth only 0.00003, but when we read them as Q2.14 they become 0.4958. The integer part (the 1 before the binary point) is dropped, so the result is completely wrong.
-- `sum[35:20]`: here the 1 is kept, but only 8 fraction bits come with it (bits 27 to 20). Since `y` is still read as Q2.14, i.e. with 14 fraction bits, the binary point is 6 bits off and the value is 2^6 = 64 times too small: 0.0156 instead of 1.0019.
+- `sum[35:20]`: here the 1 is kept, but only 8 fraction bits come with it (bits 27 to 20). Since `y` is still read as Q2.14, i.e. with 14 fraction bits, the binary point is 6 bits off and the value is 2⁶ = 64 times too small: 0.0156 instead of 1.0019.
 
 And since `y` is fed back into the filter as `y1` and `y2`, this error is also used in the next two samples, and from there it goes around the loop. That's why the first output is just noise and the second one is almost zero.
 
@@ -617,13 +624,13 @@ So how do we truncate properly? First we need to know where the binary point is 
 
 **Figure 13: Truncating the sum: keep the bits around the binary point**
 
-To find the binary point, remember that when we multiply two fixed point numbers, their fraction bits add up, same as with decimals, e.g. 0.5 x 0.25 = 0.125 has 1 + 2 = 3 digits after the point. Adding doesn't move the point. In our case Q2.14 x Q2.14 gives 14 + 14 = 28 fraction bits, so bits 27 to 0 of the sum are the fraction.
+To find the binary point, remember that when we multiply two fixed point numbers, their fraction bits add up, same as with decimals, e.g. 0.5 × 0.25 = 0.125 has 1 + 2 = 3 digits after the point. Adding doesn't move the point. In our case Q2.14 × Q2.14 gives 14 + 14 = 28 fraction bits, so bits 27 to 0 of the sum are the fraction.
 
 After the point, we keep only the n bits we need and drop the rest. The dropped bits are very small, so dropping them just rounds the value down by less than one step. In our case we keep bits 27 to 14 and drop bits 13 to 0, which were worth only 0.00003, less than one Q2.14 step (0.00006).
 
 Before the point, we keep m bits and drop the ones above them. This is only safe if the value fits in Qm.n, because then the dropped bits are just copies of the sign bit (all 0s or all 1s) and we don't lose anything. That's why we selected the format in MATLAB first. In our case we keep bits 29 and 28 and drop bits 35 to 30, which are all 0 here. Note that MATLAB only checked this for the input we tested. Our output peaks at 1.002, well inside ±2, but a different input could still overflow.
 
-So in general, if the sum has F fraction bits and the output is Qm.n, we keep bits [F+m-1 : F-n]. For us that's F = 28, m = 2 and n = 14, i.e. bits [29:14], which is `assign y = sum[29:14];`.
+So in general, if the sum has F fraction bits and the output is Qm.n, we keep bits [F+m−1 : F−n]. For us that's F = 28, m = 2 and n = 14, i.e. bits [29:14], which is `assign y = sum[29:14];`.
 
 #### **Q2.14 RTL with Correct Truncation**
 
@@ -832,7 +839,7 @@ Output RMS from MATLAB to the board:
 | Floating point | 0.698052 (double) | 0.696214 (FP16) | 0.696214 (FP16) |
 | Fixed point, Q2.14 | 0.698438 | 0.698438 | 0.698438 |
 
-RMS only shows the size of the output, so to compare accuracy we look at the error sample by sample: against the double precision output, the [RMSE](https://en.wikipedia.org/wiki/Root_mean_square_deviation) is 0.000701 for Q2.14 and 0.002111 for FP16. For this application, fixed point was clearly the better choice, as it resulted in fewer resources and better performance.
+RMS only tells us the size of the output, not if each sample is correct. So to compare the accuracy, we compare each output sample with the double precision output. The [RMSE](https://en.wikipedia.org/wiki/Root_mean_square_deviation) of this error is 0.000701 for Q2.14 and 0.002111 for FP16. For this application, fixed point was clearly the better choice, as it resulted in fewer resources and better performance.
 
 ## **5. When to Use Which?** {#sec-5}
 
