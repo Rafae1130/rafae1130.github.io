@@ -6,18 +6,18 @@
 - [1. Fixed Point vs Floating Point](#sec-1)
   - [1.1 Floating Point Scaling](#sec-1-1)
   - [1.2 Fixed Point Scaling](#sec-1-2)
+  - [1.3 How Fractions Are Converted to Fixed Point and Floating Point](#sec-1-3)
 - [2. Why Use Fixed Point in FPGAs?](#sec-2)
   - [2.1 Arithmetic Difference Between Floating and Fixed Point](#sec-2-1)
   - [2.2 Resource Usage](#sec-2-2)
-- [3. How Fractions Are Converted to Fixed Point and Floating Point](#sec-3)
-- [4. Practical Example](#sec-4)
-  - [4.1 The IIR Filter](#sec-4-1)
-  - [4.2 MATLAB Flow](#sec-4-2)
-  - [4.3 RTL Flow](#sec-4-3)
+- [3. Practical Example](#sec-3)
+  - [3.1 The IIR Filter](#sec-3-1)
+  - [3.2 MATLAB Flow](#sec-3-2)
+  - [3.3 RTL Flow](#sec-3-3)
     - [Why This Happens](#sec-why)
     - [Proper Truncation](#sec-truncation)
-- [5. When to Use Which?](#sec-5)
-- [6. Summary](#sec-6)
+- [4. When to Use Which?](#sec-4)
+- [5. Summary](#sec-5)
 
 ## **Introduction** {#sec-intro}
 
@@ -127,7 +127,35 @@ The significand repeats the same four values for every exponent, only the scale 
 |---|---|---|---|---|---|---|---|---|
 | Value (× 0.25) | 1 | 1.25 | 1.5 | 1.75 | 2 | 2.25 | … | 4.75 |
 
+So with fixed point, we have to choose the format ourselves: more fraction bits give us smaller steps but a smaller range, and fewer fraction bits give a bigger range but bigger steps.
+
 > **Note:** Since we have control over the step size and that step size is fixed, we can put the resolution where our signal is, and for a signal with a known range this can reduce quantization noise in DSP and other relevant applications. More on this in [FPGA Quantization: Rounding, Dither and Saturation](fpga-dsp-quantization-error-reduction.md).
+
+### **1.3 How Fractions Are Converted to Fixed Point and Floating Point** {#sec-1-3}
+
+We'll see how fractions are converted to their corresponding fixed and floating point representation with an example below.
+
+For fixed point, say Q2.14, we multiply the number by 2¹⁴ and store the result as an integer. For 1.75 that's 1.75 × 16384 = 28672, which in binary, with the binary point in place, is:
+
+```
+01.11000000000000
+```
+
+To get the value back we just divide by 2¹⁴ again: 28672 / 16384 = 1.75. If a number falls between two steps, like 0.1, it can't be stored exactly and it ends up on one of the steps next to it.
+
+For floating point the conversion takes a few more steps, like bringing the number into the right form, the biased exponent, rounding and special values like infinity. Explaining these in detail is not the goal of this post, and there are already good explanations with examples, e.g. [IEEE 754](https://en.wikipedia.org/wiki/IEEE_754), the [single precision format](https://en.wikipedia.org/wiki/Single-precision_floating-point_format) and this [float converter](https://www.h-schmidt.net/FloatConverter/IEEE754.html), where you can type in a number and see its bits.
+
+Here is the same 1.75 in different fixed point formats:
+
+| Format | Calculation | Stored integer | In binary |
+|---|---|---|---|
+| Q6.2 | 1.75 × 4 | 7 | 00000111 |
+| Q4.4 | 1.75 × 16 | 28 | 00011100 |
+| Q2.6 | 1.75 × 64 | 112 | 01110000 |
+| Q2.14 | 1.75 × 16384 | 28672 | 0111000000000000 |
+| Q1.15 | 1.75 × 32768 | 57344 is too big for 16 bits, it wraps to −8192, i.e. −0.25 | 1110000000000000 |
+
+Hence when converting our application to fixed point in Matlab, special care needs to be taken as a wrong format can result in wrong values and wrong results on hardware.
 
 ## **2. Why Use Fixed Point in FPGAs?** {#sec-2}
 
@@ -159,25 +187,11 @@ Below is the resource usage for the practical example we'll do later, we create 
 
 Compared to FP16, the fixed point filter uses 37% fewer LUTs, 43% fewer registers and 62% fewer DSPs (5 instead of 13) for the same application.
 
-## **3. How Fractions Are Converted to Fixed Point and Floating Point** {#sec-3}
-
-We'll see how fractions are converted to their corresponding fixed and floating point representation with an example below.
-
-For fixed point, say Q2.14, we multiply the number by 2¹⁴ and store the result as an integer. For 1.75 that's 1.75 × 16384 = 28672, which in binary, with the binary point in place, is:
-
-```
-01.11000000000000
-```
-
-To get the value back we just divide by 2¹⁴ again: 28672 / 16384 = 1.75. If a number falls between two steps, like 0.1, it can't be stored exactly and it ends up on one of the steps next to it.
-
-For floating point the conversion takes a few more steps, like bringing the number into the right form, the biased exponent, rounding and special values like infinity. Explaining these in detail is not the goal of this post, and there are already good explanations with examples, e.g. [IEEE 754](https://en.wikipedia.org/wiki/IEEE_754), the [single precision format](https://en.wikipedia.org/wiki/Single-precision_floating-point_format) and this [float converter](https://www.h-schmidt.net/FloatConverter/IEEE754.html), where you can type in a number and see its bits.
-
-## **4. Practical Example** {#sec-4}
+## **3. Practical Example** {#sec-3}
 
 Now we'll go through an actual flow of how to design a fixed point application for an FPGA. Usually when we design a system, we first model it in software using tools such as Matlab, to validate and ensure that the algorithm is working as intended. This is how we'll start here. 
 
-### **4.1 The IIR Filter** {#sec-4-1}
+### **3.1 The IIR Filter** {#sec-3-1}
 
 We'll design an IIR filter to remove noise from our input signal. An IIR filter has a feedback loop. So if we have any error in our output i.e. quantization error, it will be fed back to the loop resulting in more and more errors. Unlike an FIR filter, which only uses past inputs, an IIR filter also uses its own past outputs, so an error in one output gets fed into every output after it. Therefore the selection of correct fixed point format is more important in case of IIR filters. 
 
@@ -190,7 +204,7 @@ The structure for our IIR filter is as below. It has both feed forward and feed 
 
 As discussed above, our current goal is to just verify if our filter design works for our application. So we start the modelling with floating point numbers. And once our design is proven to work, we'll move toward fixed point. 
 
-### **4.2 MATLAB Flow** {#sec-4-2}
+### **3.2 MATLAB Flow** {#sec-3-2}
 
 #### **Floating Point (Double)**
 
@@ -407,7 +421,7 @@ set(gca, 'Color', 'w', 'XColor', 'k', 'YColor', 'k', ...
 
 Now we get Output RMS: 0.698438, close to the floating point result. Sample by sample, the error against the double result is only 0.0007 ([RMSE](https://en.wikipedia.org/wiki/Root_mean_square_deviation)).
 
-### **4.3 RTL Flow** {#sec-4-3}
+### **3.3 RTL Flow** {#sec-3-3}
 
 Now that we have tested our design and have our correct fixed point format, we can move toward RTL. 
 The following figure represents a block level design for our RTL flow. Notice that it's the same as the [Matlab block diagram above](#fig-iir), just the delays are replaced with registers. 
@@ -730,6 +744,8 @@ endmodule
 
 #### **Floating Point (FP16)**
 
+Now that the fixed point filter works, let's build the same filter in floating point, so we can compare the two. We use FP16, since it has the same 16 bits as Q2.14. The coefficients, the input and the equation are all the same, only the number format changes. This is the FP16 version of the same filter, the one whose resource usage we saw in section 2.2.
+
 {% highlight verilog linenos mark_lines="2 19 20 21 22 28 29 30 31 32 33 34 35 36 37 39 40 41 42 43 44 45 46 47 48 49 51" %}
 `timescale 1ns/1ps
 // IIR low-pass filter, FP16 floating point (IEEE half precision).
@@ -841,7 +857,7 @@ Output RMS from MATLAB to the board:
 
 RMS only tells us the size of the output, not if each sample is correct. So to compare the accuracy, we compare each output sample with the double precision output. The [RMSE](https://en.wikipedia.org/wiki/Root_mean_square_deviation) of this error is 0.000701 for Q2.14 and 0.002111 for FP16. For this application, fixed point was clearly the better choice, as it resulted in fewer resources and better performance.
 
-## **5. When to Use Which?** {#sec-5}
+## **4. When to Use Which?** {#sec-4}
 
 So which one should we use? It mainly depends upon our application and the range of values it needs for proper functioning. With the same number of bits, floating point gives us more range, and fixed point gives us finer steps inside the range we choose.
 
@@ -851,7 +867,7 @@ If we know the range, like in our filter, fixed point makes more sense. Most DSP
 
 And on an FPGA it also uses a lot less resources, as we saw in section 2. So if you know your range, fixed point is usually the better choice.
 
-## **6. Summary** {#sec-6}
+## **5. Summary** {#sec-5}
 
 - With the same number of bits, both formats have the same number of values. Floating point spreads them wider, with increasing gaps.
 - Floating point needs extra hardware, so it uses more resources. Our fixed point filter used 37% fewer LUTs, 43% fewer registers and 62% fewer DSPs.
