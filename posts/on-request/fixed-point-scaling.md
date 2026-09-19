@@ -16,8 +16,9 @@
   - [3.3 RTL Flow](#sec-3-3)
     - [Why This Happens](#sec-why)
     - [Proper Truncation](#sec-truncation)
-- [4. When to Use Which?](#sec-4)
-- [5. Summary](#sec-5)
+- [4. Choosing the Latency](#sec-4)
+- [5. Fixed vs Floating: When to Use Which?](#sec-5)
+- [6. Summary](#sec-6)
 
 ## **Introduction** {#sec-intro}
 
@@ -179,13 +180,13 @@ Below is the resource usage for the practical example we'll do later, we create 
 
 ![](images/fixed-point-scaling/fig23_fp16_utilization.png)
 
-**Figure 4: FP16: 525 LUTs, 1092 registers, 13 DSPs**
+**Figure 4: FP16: 532 LUTs, 411 registers, 13 DSPs**
 
 ![](images/fixed-point-scaling/fig22_q2_14_utilization.png)
 
-**Figure 5: Fixed point Q2.14: 334 LUTs, 605 registers, 5 DSPs**
+**Figure 5: Fixed point Q2.14: 187 LUTs, 441 registers, 5 DSPs**
 
-Compared to FP16, the fixed point filter uses 36% fewer LUTs, 45% fewer registers and 62% fewer DSPs (5 instead of 13) for the same application.
+Compared to FP16, the fixed point filter uses 65% fewer LUTs and 62% fewer DSPs (5 instead of 13), but 7% more registers (441 instead of 411). That's because the fixed point adders work on the full 36 bit sum with 3 pipeline registers each, while FP16 only carries 16 bits.
 
 ## **3. Practical Example** {#sec-3}
 
@@ -249,7 +250,6 @@ set(gca, 'Color', 'w', 'XColor', 'k', 'YColor', 'k', ...
     'FontName', 'Arial', 'GridAlpha', 0.15);
 {% endhighlight %}
 
-- `clear; clc`: clears the workspace and the command window.
 - `fs`: sampling rate, 1000 samples per second.
 - `t`: time of each sample, 0 to 0.999 s.
 - `x`: input signal, a 20 Hz sine to keep plus a 200 Hz sine noise which we have to remove.
@@ -261,7 +261,6 @@ set(gca, 'Color', 'w', 'XColor', 'k', 'YColor', 'k', ...
 - `y`: output signal, one value per input sample.
 - `n`: index of the current sample.
 - `value`: filter output for the current sample.
-- The rest are related to plotting
 
 ![](images/fixed-point-scaling/fig08_matlab_double.png)
 
@@ -447,8 +446,8 @@ module iir_filter (
     output reg  [15:0] out_data
 );
     `include "coefficients.vh"             // B0, B1, B2, A1, A2 from MATLAB
-    localparam MULT_LATENCY = 3;           // multiplier IP latency (create_projects.tcl)
-    localparam ADD_LATENCY  = 8;           // adder/subtractor IP latency
+    localparam MULT_LATENCY = 1;           // multiplier IP latency (create_projects.tcl)
+    localparam ADD_LATENCY  = 3;           // adder/subtractor IP latency
     localparam LATENCY = MULT_LATENCY + 4*ADD_LATENCY;
 
     reg  signed [15:0] x, x1, x2, y1, y2;  // Q2.14
@@ -515,6 +514,7 @@ We model the same system as in Matlab, and as we know we don't need any special 
 - `y(n) = fi(value, T, M);` → `assign y = sum;` (line 43). Back to 16 bits: the 36 bit sum is connected straight to the 16 bit `y`. Verilog keeps the lowest 16 bits, `sum[15:0]`, and drops the top 20. The simulator compiles it with no error and no warning.
 - `x2 = x1; x1 = x(n); y2 = y1; y1 = y(n);` → the same lines with `<=` (lines 64–65). The delays, z⁻¹ in the figure.
 - `for n = 1:length(x)` → `in_valid`, `in_ready`, `out_valid` and `count`. One sample at a time; this part only moves the samples through the pipeline and is the same in every version below.
+- `count` (lines 53–62): the five multipliers work in parallel and take 1 clock, then the two adders and two subtractors work one after the other, 3 clocks each, so a sample needs 1 + 4 × 3 = 13 clocks (`LATENCY`, line 17). How we chose these latencies is discussed in more detail in [section 4](#sec-4). When a sample comes in, `count` starts at `LATENCY + 1` and counts down every clock. At 1 the result is ready and gets stored in `out_data` and the delays (the + 1 is this clock), and at 0 the next sample can come in.
 - The plot scale here is ±2.05 instead of ±1.5, so the output fits.
 
 ##### **Simulation**
@@ -542,8 +542,8 @@ module iir_filter (
     output reg  [15:0] out_data
 );
     `include "coefficients.vh"             // B0, B1, B2, A1, A2 from MATLAB
-    localparam MULT_LATENCY = 3;           // multiplier IP latency (create_projects.tcl)
-    localparam ADD_LATENCY  = 8;           // adder/subtractor IP latency
+    localparam MULT_LATENCY = 1;           // multiplier IP latency (create_projects.tcl)
+    localparam ADD_LATENCY  = 3;           // adder/subtractor IP latency
     localparam LATENCY = MULT_LATENCY + 4*ADD_LATENCY;
 
     reg  signed [15:0] x, x1, x2, y1, y2;  // Q2.14
@@ -669,8 +669,8 @@ module iir_filter (
     output reg  [15:0] out_data
 );
     `include "coefficients.vh"             // B0, B1, B2, A1, A2 from MATLAB
-    localparam MULT_LATENCY = 3;           // multiplier IP latency (create_projects.tcl)
-    localparam ADD_LATENCY  = 8;           // adder/subtractor IP latency
+    localparam MULT_LATENCY = 1;           // multiplier IP latency (create_projects.tcl)
+    localparam ADD_LATENCY  = 3;           // adder/subtractor IP latency
     localparam LATENCY = MULT_LATENCY + 4*ADD_LATENCY;
 
     reg  signed [15:0] x, x1, x2, y1, y2;  // Q2.14
@@ -766,8 +766,8 @@ module iir_filter (
     output reg  [15:0] out_data
 );
     `include "coefficients.vh"             // B0, B1, B2, A1, A2 from MATLAB
-    localparam MULT_LATENCY = 3;           // multiplier IP latency (create_projects.tcl)
-    localparam ADD_LATENCY  = 8;           // adder/subtractor IP latency
+    localparam MULT_LATENCY = 1;           // multiplier IP latency (create_projects.tcl)
+    localparam ADD_LATENCY  = 3;           // adder/subtractor IP latency
     localparam LATENCY = MULT_LATENCY + 4*ADD_LATENCY;
 
     reg  [15:0] x, x1, x2, y1, y2;         // FP16
@@ -832,8 +832,8 @@ endmodule
 
 - `coefficients.vh`: the same coefficients, here as FP16 bit patterns.
 - `x` to `y2`, `p0` to `p4`, `s1` to `s3`, `y`: all FP16, 16 bits everywhere. No `signed`, no wider sum and no sign extension.
-- `fp_multiplier`: AMD Floating-Point IP set to multiply, 3 cycles, in place of the Multiplier IP.
-- `fp_adder`, `fp_subtractor`: the same IP set to add and subtract, 8 cycles. Same number of IPs and same latency as the fixed point version.
+- `fp_multiplier`: AMD Floating-Point IP set to multiply, 1 cycle, in place of the Multiplier IP.
+- `fp_adder`, `fp_subtractor`: the same IP set to add and subtract, 3 cycles. Same number of IPs and same latency as the fixed point version.
 - The adds are in the same order as in MATLAB, because every result is rounded to FP16 and the order changes the result.
 - `s_axis_a_tvalid(1'b1)`: the IP inputs are always valid, `count` does the timing instead.
 - No truncation wiring: the IP rounds every result back to 16 bits itself.
@@ -863,9 +863,19 @@ Output RMS from MATLAB to the board:
 | Floating point | 0.698052 (double) | 0.696214 (FP16) | 0.696214 (FP16) |
 | Fixed point, Q2.14 | 0.698438 | 0.698438 | 0.698438 |
 
-RMS only tells us the size of the output, not if each sample is correct. So to compare the accuracy, we compare each output sample with the double precision output. The [RMSE](https://en.wikipedia.org/wiki/Root_mean_square_deviation) of this error is 0.000701 for Q2.14 and 0.002111 for FP16. For this application, fixed point was clearly the better choice, as it resulted in fewer resources and better performance.
+RMS only tells us the size of the output, not if each sample is correct. So to compare the accuracy, we compare each output sample with the double precision output. The [RMSE](https://en.wikipedia.org/wiki/Root_mean_square_deviation) of this error is 0.000701 for Q2.14 and 0.002111 for FP16. For this application, fixed point was clearly the better choice, as it used fewer LUTs and DSPs and was more accurate.
 
-## **4. When to Use Which?** {#sec-4}
+## **4. Choosing the Latency** {#sec-4}
+
+Arithmetic in hardware takes some time, especially multiplication. If the clock is too fast and the computation can't finish within one clock period, the design fails to meet timing. The usual way to fix this is to break the long path, i.e. the critical path, into shorter pieces by adding pipeline registers in between. Each piece then only has to finish within one clock period, but the result comes out a few clocks later.
+
+That's what the latency setting in these IPs is. A latency of 2 cycles means the IP adds 2 pipeline registers, so the result comes out 2 clocks after the inputs go in. More latency lets the design run at a faster clock, but it uses more registers and the result takes longer.
+
+One interesting thing to note here is that in fixed point, the multiplication is the critical path. The addition is just a normal integer addition and is usually done in a single cycle. In floating point it's the opposite: the add/subtract is the critical path, because it has more stages, i.e. compare the exponents, shift the smaller number, add, shift the result back and round (Figure 3). The floating point multiply only multiplies the significands and adds the exponents, and the shift back is at most 1 bit, because both significands are between 1 and 2, so their product is always between 1 and 4. So it's simpler.
+
+In our case, we want to keep the latencies the same for a proper comparison, so we take the lower limit of the floating point addition, i.e. 3 cycles (at 2 cycles the floating point adder failed timing). The fixed point addition could easily work at 1 cycle. The multiplication passed timing at 1 cycle for both, so we used that.
+
+## **5. Fixed vs Floating: When to Use Which?** {#sec-5}
 
 So which one should we use? It mainly depends upon our application and the range of values it needs for proper functioning. With the same number of bits, floating point gives us more range, and fixed point gives us finer steps inside the range we choose.
 
@@ -875,13 +885,14 @@ If we know the range, like in our filter, fixed point makes more sense. Most DSP
 
 And on an FPGA it also uses a lot less resources, as we saw in section 2. So if you know your range, fixed point is usually the better choice.
 
-## **5. Summary** {#sec-5}
+## **6. Summary** {#sec-6}
 
 - With the same number of bits, both formats have the same number of values. Floating point spreads them wider, with increasing gaps.
-- Floating point needs extra hardware, so it uses more resources. Our fixed point filter used 36% fewer LUTs, 45% fewer registers and 62% fewer DSPs.
+- Floating point needs extra hardware, so it uses more resources. Our fixed point filter used 65% fewer LUTs and 62% fewer DSPs, with slightly more registers.
 - With fixed point, we choose the format so the largest value fits. Q1.15 didn't work for our filter, Q2.14 did.
 - We also have to truncate at the right bits: `sum[29:14]`. This is the main thing to take care of while working with fixed point numbers in RTL.
 - With the right format and truncation, the fixed point filter matched MATLAB bit for bit, in simulation and on the board. For this test it was also closer to the double result than FP16 (RMSE 0.0007 vs 0.0021).
+- In fixed point the multiplier is the slow part, in floating point it's the adder. At 100 MHz the FP16 adder needed at least 3 clocks, the fixed point adder only 1.
 - Use floating point when you need range, and fixed point when you know your range.
 
 <!-- post-nav -->
