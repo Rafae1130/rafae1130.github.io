@@ -743,6 +743,8 @@ endmodule
 
 ##### **On Board Testing**
 
+On the board, the Zybo's ARM processor sends the same input samples to the filter through AXI GPIO and reads the outputs back. And we view the input and output on the ILA.
+
 ![](images/fixed-point-scaling/fig20_board_q2_14.png)
 
 **Figure 15: ILA capture on the Zybo, output RMS: 0.698438**
@@ -863,7 +865,9 @@ Output RMS from MATLAB to the board:
 | Floating point | 0.698052 (double) | 0.696214 (FP16) | 0.696214 (FP16) |
 | Fixed point, Q2.14 | 0.698438 | 0.698438 | 0.698438 |
 
-RMS only tells us the size of the output, not if each sample is correct. So to compare the accuracy, we compare each output sample with the double precision output. The [RMSE](https://en.wikipedia.org/wiki/Root_mean_square_deviation) of this error is 0.000701 for Q2.14 and 0.002111 for FP16. For this application, fixed point was clearly the better choice, as it used fewer LUTs and DSPs and was more accurate.
+RMS only tells us the size of the output, not if each sample is correct. So to compare the accuracy, we compare each output sample with the double precision output. The [RMSE](https://en.wikipedia.org/wiki/Root_mean_square_deviation) of this error is 0.000701 for Q2.14 and 0.002111 for FP16.
+
+This is where the step size from [section 1](#sec-1) comes into play. Our values stay within ±2, and near 1 an FP16 step is about 0.001, while a Q2.14 step is 0.00006 everywhere. So with the same 16 bits, fixed point puts all its steps in the range we actually use, and the quantization error is very low. For this application, fixed point was clearly the better choice, as it used fewer LUTs and DSPs and was more accurate.
 
 ## **4. Choosing the Latency** {#sec-4}
 
