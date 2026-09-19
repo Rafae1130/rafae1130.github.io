@@ -143,8 +143,6 @@ For fixed point, say Q2.14, we multiply the number by 2¹⁴ and store the resul
 
 To get the value back we just divide by 2¹⁴ again: 28672 / 16384 = 1.75. If a number falls between two steps, like 0.1, it can't be stored exactly and it ends up on one of the steps next to it.
 
-For floating point the conversion takes a few more steps, like bringing the number into the right form, the biased exponent, rounding and special values like infinity. Explaining these in detail is not the goal of this post, and there are already good explanations with examples, e.g. [IEEE 754](https://en.wikipedia.org/wiki/IEEE_754), the [single precision format](https://en.wikipedia.org/wiki/Single-precision_floating-point_format) and this [float converter](https://www.h-schmidt.net/FloatConverter/IEEE754.html), where you can type in a number and see its bits.
-
 Here is the same 1.75 in different fixed point formats:
 
 | Format | Calculation | Stored integer | In binary |
@@ -156,6 +154,8 @@ Here is the same 1.75 in different fixed point formats:
 | Q1.15 | 1.75 × 32768 | 57344 is too big for 16 bits, it wraps to −8192, i.e. −0.25 | 1110000000000000 |
 
 Hence when converting our application to fixed point in Matlab, special care needs to be taken as a wrong format can result in wrong values and wrong results on hardware.
+
+For floating point the conversion takes a few more steps, like bringing the number into the right form, the biased exponent, rounding and special values like infinity. Explaining these in detail is not the goal of this post, and there are already good explanations with examples, e.g. [IEEE 754](https://en.wikipedia.org/wiki/IEEE_754), the [single precision format](https://en.wikipedia.org/wiki/Single-precision_floating-point_format) and this [float converter](https://www.h-schmidt.net/FloatConverter/IEEE754.html), where you can type in a number and see its bits.
 
 ## **2. Why Use Fixed Point in FPGAs?** {#sec-2}
 
@@ -193,7 +193,7 @@ Now we'll go through an actual flow of how to design a fixed point application f
 
 ### **3.1 The IIR Filter** {#sec-3-1}
 
-We'll design an IIR filter to remove noise from our input signal. An IIR filter has a feedback loop. So if we have any error in our output i.e. quantization error, it will be fed back to the loop resulting in more and more errors. Unlike an FIR filter, which only uses past inputs, an IIR filter also uses its own past outputs, so an error in one output gets fed into every output after it. Therefore the selection of correct fixed point format is more important in case of IIR filters. 
+We'll design an IIR filter to remove noise from our input signal. An IIR filter has a feedback loop. So if we have any error in our output i.e. quantization error, it will be fed back to the loop resulting in more and more errors. Therefore the selection of correct fixed point format is more important in case of IIR filters. 
 
 The structure for our IIR filter is as below. It has both feed forward and feed back loop. The square boxes are delay lines, i.e. previous sample, and the triangles are filter coefficients which we'll generate in Matlab. 
 
@@ -271,7 +271,7 @@ We can see that the noise is removed from our signal after passing through the f
 
 #### **Consequences of Choosing Wrong Fixed Format**
 
-Now we can move toward porting our design over to fixed point. For this, we'll need to convert our input and filter coefficients to fixed point. We start with format Q1.15. Which means 1 sign bit and 15 fractional bits. 
+Now we can move toward porting our design over to fixed point. For this, we'll need to convert our input and filter coefficients to fixed point. We start with format Q1.15, since it has the most fraction bits, i.e. the smallest steps, which will reduce the quantization error.
 
 {% highlight matlab linenos mark_lines="9 10 11 12 13 14 15 16 21 27 34" %}
 clear; clc;
