@@ -306,7 +306,7 @@ This is visible in the input waveform as well, which wraps around at its peaks.
 
 #### **How to Select Correct Format**
 
-To select the correct format, find the largest value that has to fit. Here it is a₁, 1.561. One integer bit gives a range of ±2, which is enough for 1.561. With 1 sign bit and 1 integer bit, 16 − 2 = 14 bits are left for the fraction, so the format is Q2.14: range −2 to 1.99994, step 0.00006.
+To select the correct format, find the largest value that has to fit. Here it is a₁, 1.561. One integer bit gives a range of ±2, which is enough for 1.561. The input (peak 1.458) and the output (peak 1.002, see Figure 7) fit in it too. With 1 sign bit and 1 integer bit, 16 − 2 = 14 bits are left for the fraction, so the format is Q2.14: range −2 to 1.99994, step 0.00006.
 
 We lose one bit of precision compared to Q1.15 (step 0.00003), but now everything fits.
 
