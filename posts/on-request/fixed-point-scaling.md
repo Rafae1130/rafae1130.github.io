@@ -41,7 +41,7 @@ Just as a refresher: Qm.n is a fixed point format with m bits before the binary 
 One odd thing you might notice is that the distinct values an 8 bit and 16 bit number can represent is 256 and 65536 values respectively. However, in the [table above](#range-table), an 8 bit floating point is representing 114688 distinct values ( −57,344 to 57,344 ) and a 16 bit fp is representing 131008 ( −65,504 to 65,504 ). How is this possible??? Can a floating point representation magically increase the number of possible distinct values??
 
 That is not the case. 
-One thing to keep in mind is that a n bit fixed point word and n bit floating point can represent same number of values i.e. at most 2^n. For example an 8 bit fixed point number and 8 floating point number can represent 256 different numbers. So if they can represent same number of distinct values, the question arises that how can floating point represent much larger range of numbers. The answer is that it doesn't represent all the values in between, and it takes jumps (gaps/steps/resolution) in between the values. 
+One thing to keep in mind is that a n bit fixed point word and n bit floating point can represent same number of values i.e. at most 2^n. For example an 8 bit fixed point number and 8 floating point number both have 256 bit patterns. So if they can represent same number of distinct values, the question arises that how can floating point represent much larger range of numbers. The answer is that it doesn't represent all the values in between, and it takes jumps (gaps/steps/resolution) in between the values. 
 
 | Format | Bits | Range | Gap between numbers |
 |---|---|---|---|
@@ -88,13 +88,13 @@ The numbers we start with never change, only the multiplier does, and the gap gr
 | 1.11₂ = 1.75 | 1.75 | 3.5 | 7 | 14 |
 | **Gap** | **0.25** | **0.5** | **1** | **2** |
 
-You can think of significand as base numbers similar to 4 5 6 7 in above example, now here we have 1 1.25 1.5 and 1.75. Now if we want to get different numbers from it, we multiply it with a scaling factor. i.e. exponent. That's all an exponent is in floating point is, a multiplier (the exponent can be negative too, which gives multipliers below 1, e.g. 2⁻¹ = 0.5, and so the small numbers). Hence similar to the integer column, when we multiply the same base values with increasing scaling factors, the gaps between the resulting values also increases. Basically, the same scaling factor is multiplied with the gap as well, and it increases accordingly. Multiplying by 2 moves the binary point one place to the right, for example 1.01₂ × 2² = 101₂ = 5, where the point moved two places. So the exponent is what makes the point float. You can notice this in the figure below:
+You can think of significand as base numbers similar to 4 5 6 7 in above example, now here we have 1 1.25 1.5 and 1.75. Now if we want to get different numbers from it, we multiply it with a scaling factor, 2^exponent. That's all an exponent does in floating point: it sets the multiplier value, e.g. an exponent of 3 means multiply by 2³ = 8 (the exponent can be negative too, which gives multipliers below 1, e.g. 2⁻¹ = 0.5, and so the small numbers). Hence similar to the integer column, when we multiply the same base values with increasing scaling factors, the gaps between the resulting values also increases. Basically, the same scaling factor is multiplied with the gap as well, and it increases accordingly. Multiplying by 2 moves the binary point one place to the right, for example 1.01₂ × 2² = 101₂ = 5, where the point moved two places. So the exponent is what makes the point float. You can notice this in the figure below:
 
 ![](images/fixed-point-scaling/fig01_significand_scale.png)
 
 **Figure 2: One set of significands, scaled by 2^exponent: the gap grows with the scale**
 
-A more comprehensive table is given below for a floating point format with 2 bits significand and 2 bits exponent to show scaling resolution concept (the significand always starts with 1, so that 1 isn't stored; the 2 bits are the ones after it):
+A more comprehensive table is given below for a simplified floating point format, just for illustration, with 2 significand bits and 2 exponent bits to show scaling resolution concept (the significand always starts with 1, so that 1 isn't stored; the 2 stored bits are the ones after it):
 
 | Significand bits | Significand | Value | Exponent bits | Scale | Gap to next |
 |---|---|---|---|---|---|
@@ -123,7 +123,7 @@ The significand repeats the same four values for every exponent, only the scale 
 |---|---|---|---|---|---|---|---|---|
 | Value (× 0.25) | 1 | 1.25 | 1.5 | 1.75 | 2 | 2.25 | … | 4.75 |
 
-> **Note:** Since we have control over the step size and that step size is fixed, we can use the fixed point format to reduce quantization noise in DSP and other relevant applications. More on this in [FPGA Quantization: Rounding, Dither and Saturation](fpga-dsp-quantization-error-reduction.md).
+> **Note:** Since we have control over the step size and that step size is fixed, we can put the resolution where our signal is, and for a signal with a known range this can reduce quantization noise in DSP and other relevant applications. More on this in [FPGA Quantization: Rounding, Dither and Saturation](fpga-dsp-quantization-error-reduction.md).
 
 ## **2. Why Use Fixed Point in FPGAs?** {#sec-2}
 
@@ -380,7 +380,7 @@ set(gca, 'Color', 'w', 'XColor', 'k', 'YColor', 'k', ...
 
 **Figure 9: MATLAB, Q2.14, output RMS: 0.698438**
 
-Now we get Output RMS: 0.698438. Which is equivalent to the floating point result.
+Now we get Output RMS: 0.698438, close to the floating point result. Sample by sample, the error against the double result is only 0.0007 ([RMSE](https://en.wikipedia.org/wiki/Root_mean_square_deviation)).
 
 ### **3.3 RTL Flow** {#sec-3-3}
 
@@ -601,7 +601,7 @@ And since `y` goes back into the filter as `y1` and `y2`, a wrong `y` doesn't st
 
 1. **Find the binary point.** Multiplying adds up the fraction bits of the two numbers (like 0.5 × 0.25 = 0.125), and adding doesn't move the point. *Here: Q2.14 × Q2.14 gives 14 + 14 = 28 fraction bits, bits 27 to 0.*
 2. **After the point, keep n bits.** Drop the rest: they are the tiny end of the number, so dropping them rounds down by less than one output step. *Here: keep bits 27 to 14, drop 13 to 0 (worth 0.00003, less than one Q2.14 step of 0.00006).*
-3. **Before the point, keep m bits.** Drop the ones above them. That's only safe if the value fits in Qm.n; then they are just copies of the sign bit (all 0s or all 1s), so nothing is lost. Choosing the format first, in MATLAB, makes sure it fits. *Here: keep bits 29 and 28, drop 35 to 30 (000000).*
+3. **Before the point, keep m bits.** Drop the ones above them. That's only safe if the value fits in Qm.n; then they are just copies of the sign bit (all 0s or all 1s), so nothing is lost. Choosing the format first, in MATLAB, checks that it fits: our output peaks at 1.002, well inside ±2. But that's only for the input and start values we tested, not for every possible input. *Here: keep bits 29 and 28, drop 35 to 30 (000000).*
 
 **Rule:** with F fraction bits in the sum, a Qm.n output is bits [F+m−1 : F−n]. *Here: F = 28 and Q2.14, so [29:14], which is `assign y = sum[29:14];`.*
 
@@ -799,7 +799,7 @@ endmodule
 
 **Figure 18: FP16 ILA capture on the Zybo, shown in hex**
 
-Vivado's ILA can't show values in floating point format, so the capture is shown in hex. If we switch it to analog, it plots the raw bits as if they were integers, and the sign bit and the exponent turn the sine into a square wave. So below is the same capture, decoded to FP16 values and plotted:
+Vivado's ILA can show 32 and 64 bit floating point values, but not 16 bit (FP16) ones, so the capture is shown in hex. If we switch it to analog, it plots the raw bits as if they were integers, and the sign bit and the exponent turn the sine into a square wave. So below is the same capture, decoded to FP16 values and plotted:
 
 ![](images/fixed-point-scaling/fig27_board_fp16_decoded.png)
 
@@ -812,9 +812,11 @@ Output RMS from MATLAB to the board:
 | Floating point | 0.698052 (double) | 0.696214 (FP16) | 0.696214 (FP16) |
 | Fixed point, Q2.14 | 0.698438 | 0.698438 | 0.698438 |
 
+RMS only shows the size of the output, so to compare accuracy we look at the error sample by sample: against the double precision output, the [RMSE](https://en.wikipedia.org/wiki/Root_mean_square_deviation) is 0.000701 for Q2.14 and 0.002111 for FP16. For this application, fixed point was clearly the better choice, as it resulted in fewer resources and better performance.
+
 ## **4. When to Use Which?** {#sec-4}
 
-So which one should we use? For the same number of bits, floating point gives us more range and fixed point gives us more precision.
+So which one should we use? For the same number of bits, floating point gives us more range, and fixed point gives us finer steps over the range we choose.
 
 **Floating point** is the way to go when our values can get very large and very small, or we don't know their range in advance. Its gaps grow with the numbers, so it can cover a huge range with the same number of bits. For example:
 
@@ -823,7 +825,7 @@ So which one should we use? For the same number of bits, floating point gives us
 - training neural networks, where gradients can be tiny or huge
 - algorithms like matrix inversion, where we can't really predict the values in between
 
-**Fixed point** is the better choice when we know the range of our values and need small steps inside it. All the bits are spent on that one range, so the gap is smaller than in a floating point number of the same size. We saw this in our filter as well: Q2.14 has a gap of 0.00006, while FP16 has 0.001 near 1. For example:
+**Fixed point** is the better choice when we know the range of our values and need small steps inside it. All the bits are spent on that one range, so over most of it the gap is smaller than in a floating point number of the same size (only very close to zero is floating point finer). We saw this in our filter as well: Q2.14 has a gap of 0.00006, while FP16 has 0.001 near 1. For example:
 
 - digital filters and audio processing, like our IIR filter
 - ADC and DAC samples, which always have a fixed range
@@ -837,7 +839,7 @@ So which one should we use? For the same number of bits, floating point gives us
 - With the same number of bits, fixed point and floating point can represent the same number of values. Floating point spreads them over a huge range with gaps that grow with the numbers, fixed point keeps the same gap everywhere.
 - Floating point needs special hardware to line up the exponents, add, then shift back and round, so it costs more resources. In our filter, fixed point used 37% fewer LUTs, 43% fewer registers and 62% fewer DSPs.
 - With fixed point, the extra work is ours: choose a format that fits the largest value (Q2.14 for our filter, not Q1.15), and truncate around the binary point (`sum[29:14]`), not just connect the wires.
-- Done right, the fixed point filter matched MATLAB bit for bit in simulation and on the board, and it was even closer to the double precision result than FP16.
+- Done right, the fixed point filter matched MATLAB bit for bit in simulation and on the board, and for this test it was even closer to the double precision result than FP16 (RMSE 0.0007 vs 0.0021).
 - Use floating point when you need range, and fixed point when you know your range and need precision.
 
 <!-- post-nav -->
