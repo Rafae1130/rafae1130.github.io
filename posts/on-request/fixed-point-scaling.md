@@ -179,13 +179,13 @@ Below is the resource usage for the practical example we'll do later, we create 
 
 ![](images/fixed-point-scaling/fig23_fp16_utilization.png)
 
-**Figure 4: FP16: 523 LUTs, 1122 registers, 13 DSPs**
+**Figure 4: FP16: 525 LUTs, 1092 registers, 13 DSPs**
 
 ![](images/fixed-point-scaling/fig22_q2_14_utilization.png)
 
-**Figure 5: Fixed point Q2.14: 332 LUTs, 635 registers, 5 DSPs**
+**Figure 5: Fixed point Q2.14: 334 LUTs, 605 registers, 5 DSPs**
 
-Compared to FP16, the fixed point filter uses 37% fewer LUTs, 43% fewer registers and 62% fewer DSPs (5 instead of 13) for the same application.
+Compared to FP16, the fixed point filter uses 36% fewer LUTs, 45% fewer registers and 62% fewer DSPs (5 instead of 13) for the same application.
 
 ## **3. Practical Example** {#sec-3}
 
@@ -455,11 +455,11 @@ module iir_filter (
     wire signed [31:0] p0, p1, p2, p3, p4; // Q2.14 * Q2.14 = Q4.28
     wire signed [35:0] s1, s2, s3, sum;    // Q8.28: 1 extra bit per addition
     wire signed [15:0] y;                  // Q2.14
-    reg  [LATENCY:0] busy;                 // where the sample is in the pipeline
+    reg  [5:0] count;                      // clocks until y is ready, 0 = idle
 
-    assign in_ready = !reset && busy == 0;
+    assign in_ready = !reset && count == 0;
 
-    // x, x1, x2, y1 and y2 do not change while busy, so no delay lines are needed.
+    // x, x1, x2, y1 and y2 don't change until y is ready, so no delay lines are needed.
     fixed_multiplier mul0 (.CLK(clk), .A(x),  .B(B0), .P(p0));
     fixed_multiplier mul1 (.CLK(clk), .A(x1), .B(B1), .P(p1));
     fixed_multiplier mul2 (.CLK(clk), .A(x2), .B(B2), .P(p2));
@@ -480,18 +480,21 @@ module iir_filter (
 
     always @(posedge clk) begin
         if (reset) begin
-            busy <= 0;
+            count     <= 0;
             out_valid <= 0;
-            out_data <= 0;
+            out_data  <= 0;
             x <= 0; x1 <= 0; x2 <= 0; y1 <= 0; y2 <= 0;
         end else begin
-            busy <= {busy[LATENCY-1:0], in_valid && in_ready};
-            out_valid <= busy[LATENCY];
+            if (in_valid && in_ready) begin
+                x     <= in_data;          // take the new sample
+                count <= LATENCY + 1;      // IP latency + 1 clock to store y
+            end else if (count != 0) begin
+                count <= count - 1;
+            end
 
-            if (in_valid && in_ready)
-                x <= in_data;
+            out_valid <= (count == 1);
 
-            if (busy[LATENCY]) begin       // y is ready
+            if (count == 1) begin          // y is ready
                 out_data <= y;
                 x2 <= x1; x1 <= x;
                 y2 <= y1; y1 <= y;
@@ -505,13 +508,13 @@ We model the same system as in Matlab, and as we know we don't need any special 
 
 - `W = 16; F = 14;` → `reg signed [15:0] x, x1, x2, y1, y2;` (line 19). 16 bit signed registers; the 14 fraction bits only exist in our heads, the hardware just sees integers.
 - `b = fi(b, T, M); a = fi(a, T, M);` → `coefficients.vh` (line 14). The same Q2.14 coefficients, exported from MATLAB as `B0` to `A2`.
-- `x = fi(x, T, M);` → `x <= in_data;` (line 57). The samples already arrive in Q2.14.
+- `x = fi(x, T, M);` → `x <= in_data;` (line 54). The samples already arrive in Q2.14.
 - `x1 = 0; x2 = 0; y1 = 0; y2 = 0;` → the reset (line 51).
 - `b(1)*x(n)` to `a(3)*y2` → `mul0` to `mul4` (lines 28–32). One multiplier per term, 16 × 16 → 32 bit Q4.28, same as in MATLAB.
 - the `+` and `−` in `value` → `add1`, `add2`, `sub3`, `sub4` (lines 37–40). A 36 bit Q8.28 `sum`, the same size as `value`.
 - `y(n) = fi(value, T, M);` → `assign y = sum;` (line 43). Back to 16 bits: the 36 bit sum is connected straight to the 16 bit `y`. Verilog keeps the lowest 16 bits, `sum[15:0]`, and drops the top 20. The simulator compiles it with no error and no warning.
-- `x2 = x1; x1 = x(n); y2 = y1; y1 = y(n);` → the same lines with `<=` (lines 61–62). The delays, z⁻¹ in the figure.
-- `for n = 1:length(x)` → `in_valid`, `in_ready`, `out_valid` and `busy`. One sample at a time; this part only moves the samples through the pipeline and is the same in every version below.
+- `x2 = x1; x1 = x(n); y2 = y1; y1 = y(n);` → the same lines with `<=` (lines 64–65). The delays, z⁻¹ in the figure.
+- `for n = 1:length(x)` → `in_valid`, `in_ready`, `out_valid` and `count`. One sample at a time; this part only moves the samples through the pipeline and is the same in every version below.
 - The plot scale here is ±2.05 instead of ±1.5, so the output fits.
 
 ##### **Simulation**
@@ -547,11 +550,11 @@ module iir_filter (
     wire signed [31:0] p0, p1, p2, p3, p4; // Q2.14 * Q2.14 = Q4.28
     wire signed [35:0] s1, s2, s3, sum;    // Q8.28: 1 extra bit per addition
     wire signed [15:0] y;                  // Q2.14
-    reg  [LATENCY:0] busy;                 // where the sample is in the pipeline
+    reg  [5:0] count;                      // clocks until y is ready, 0 = idle
 
-    assign in_ready = !reset && busy == 0;
+    assign in_ready = !reset && count == 0;
 
-    // x, x1, x2, y1 and y2 do not change while busy, so no delay lines are needed.
+    // x, x1, x2, y1 and y2 don't change until y is ready, so no delay lines are needed.
     fixed_multiplier mul0 (.CLK(clk), .A(x),  .B(B0), .P(p0));
     fixed_multiplier mul1 (.CLK(clk), .A(x1), .B(B1), .P(p1));
     fixed_multiplier mul2 (.CLK(clk), .A(x2), .B(B2), .P(p2));
@@ -572,18 +575,21 @@ module iir_filter (
 
     always @(posedge clk) begin
         if (reset) begin
-            busy <= 0;
+            count     <= 0;
             out_valid <= 0;
-            out_data <= 0;
+            out_data  <= 0;
             x <= 0; x1 <= 0; x2 <= 0; y1 <= 0; y2 <= 0;
         end else begin
-            busy <= {busy[LATENCY-1:0], in_valid && in_ready};
-            out_valid <= busy[LATENCY];
+            if (in_valid && in_ready) begin
+                x     <= in_data;          // take the new sample
+                count <= LATENCY + 1;      // IP latency + 1 clock to store y
+            end else if (count != 0) begin
+                count <= count - 1;
+            end
 
-            if (in_valid && in_ready)
-                x <= in_data;
+            out_valid <= (count == 1);
 
-            if (busy[LATENCY]) begin       // y is ready
+            if (count == 1) begin          // y is ready
                 out_data <= y;
                 x2 <= x1; x1 <= x;
                 y2 <= y1; y1 <= y;
@@ -610,7 +616,7 @@ This is the main thing that needs to be handled differently from normal integer 
 
 The sum coming out of the adders is 36 bits, Q8.28: the sign and 7 integer bits, then 28 fraction bits. So its binary point sits between bit 28 and bit 27. Our output `y` is Q2.14, so the 16 bits we keep have to sit around that same binary point: 2 bits above it (the sign and the integer bit) and 14 below it.
 
-Let's take one real sum from our filter, sample 68, the output peak where the cursor is in Figure 15. Its value is 1.0019834, and in bits:
+Let's take one real sum from our filter, sample 68, the output peak where the cursor is in Figure 14. Its value is 1.0019834, and in bits:
 
 ```
              integer bits             fraction bits
@@ -671,11 +677,11 @@ module iir_filter (
     wire signed [31:0] p0, p1, p2, p3, p4; // Q2.14 * Q2.14 = Q4.28
     wire signed [35:0] s1, s2, s3, sum;    // Q8.28: 1 extra bit per addition
     wire signed [15:0] y;                  // Q2.14
-    reg  [LATENCY:0] busy;                 // where the sample is in the pipeline
+    reg  [5:0] count;                      // clocks until y is ready, 0 = idle
 
-    assign in_ready = !reset && busy == 0;
+    assign in_ready = !reset && count == 0;
 
-    // x, x1, x2, y1 and y2 do not change while busy, so no delay lines are needed.
+    // x, x1, x2, y1 and y2 don't change until y is ready, so no delay lines are needed.
     fixed_multiplier mul0 (.CLK(clk), .A(x),  .B(B0), .P(p0));
     fixed_multiplier mul1 (.CLK(clk), .A(x1), .B(B1), .P(p1));
     fixed_multiplier mul2 (.CLK(clk), .A(x2), .B(B2), .P(p2));
@@ -701,18 +707,21 @@ module iir_filter (
 
     always @(posedge clk) begin
         if (reset) begin
-            busy <= 0;
+            count     <= 0;
             out_valid <= 0;
-            out_data <= 0;
+            out_data  <= 0;
             x <= 0; x1 <= 0; x2 <= 0; y1 <= 0; y2 <= 0;
         end else begin
-            busy <= {busy[LATENCY-1:0], in_valid && in_ready};
-            out_valid <= busy[LATENCY];
+            if (in_valid && in_ready) begin
+                x     <= in_data;          // take the new sample
+                count <= LATENCY + 1;      // IP latency + 1 clock to store y
+            end else if (count != 0) begin
+                count <= count - 1;
+            end
 
-            if (in_valid && in_ready)
-                x <= in_data;
+            out_valid <= (count == 1);
 
-            if (busy[LATENCY]) begin       // y is ready
+            if (count == 1) begin          // y is ready
                 out_data <= y;
                 x2 <= x1; x1 <= x;
                 y2 <= y1; y1 <= y;
@@ -726,21 +735,17 @@ endmodule
 - Truncation wiring: keeps bits [29:14] of the 36 bit Q8.28 sum. That drops the lowest 14 bits (the extra fraction bits) and the top 6 bits (the extra integer bits), leaving 16 bit Q2.14. This is what `fi(value, T, M)` does in MATLAB.
 - No rounding and no saturation: dropping the low bits rounds down, and dropping the top bits is safe because with the correct format they are only copies of the sign bit.
 
-<div style="overflow-x:auto"><img src="images/fixed-point-scaling/fig07c_iir_q2_14_elaborated_datapath.png" style="height:500px;max-width:none"></div>
-
-**Figure 14: Elaborated schematic of the Q2.14 filter in Vivado**
-
 ##### **Simulation**
 
 ![](images/fixed-point-scaling/fig15_vivado_q2_14.png)
 
-**Figure 15: Simulation of `assign y = sum[29:14];`, output RMS: 0.698438**
+**Figure 14: Simulation of `assign y = sum[29:14];`, output RMS: 0.698438**
 
 ##### **On Board Testing**
 
 ![](images/fixed-point-scaling/fig20_board_q2_14.png)
 
-**Figure 16: ILA capture on the Zybo, output RMS: 0.698438**
+**Figure 15: ILA capture on the Zybo, output RMS: 0.698438**
 
 #### **Floating Point (FP16)**
 
@@ -769,11 +774,11 @@ module iir_filter (
     wire [15:0] p0, p1, p2, p3, p4;        // FP16 * FP16 = FP16 (rounded by the IP)
     wire [15:0] s1, s2, s3;                // running sum, FP16
     wire [15:0] y;                         // FP16
-    reg  [LATENCY:0] busy;                 // where the sample is in the pipeline
+    reg  [5:0] count;                      // clocks until y is ready, 0 = idle
 
-    assign in_ready = !reset && busy == 0;
+    assign in_ready = !reset && count == 0;
 
-    // x, x1, x2, y1 and y2 do not change while busy, so no delay lines are needed.
+    // x, x1, x2, y1 and y2 don't change until y is ready, so no delay lines are needed.
     fp_multiplier mul0 (.aclk(clk), .s_axis_a_tvalid(1'b1), .s_axis_a_tdata(x),
                         .s_axis_b_tvalid(1'b1), .s_axis_b_tdata(B0), .m_axis_result_tdata(p0));
     fp_multiplier mul1 (.aclk(clk), .s_axis_a_tvalid(1'b1), .s_axis_a_tdata(x1),
@@ -801,18 +806,21 @@ module iir_filter (
 
     always @(posedge clk) begin
         if (reset) begin
-            busy <= 0;
+            count     <= 0;
             out_valid <= 0;
-            out_data <= 0;
+            out_data  <= 0;
             x <= 0; x1 <= 0; x2 <= 0; y1 <= 0; y2 <= 0;
         end else begin
-            busy <= {busy[LATENCY-1:0], in_valid && in_ready};
-            out_valid <= busy[LATENCY];
+            if (in_valid && in_ready) begin
+                x     <= in_data;          // take the new sample
+                count <= LATENCY + 1;      // IP latency + 1 clock to store y
+            end else if (count != 0) begin
+                count <= count - 1;
+            end
 
-            if (in_valid && in_ready)
-                x <= in_data;
+            out_valid <= (count == 1);
 
-            if (busy[LATENCY]) begin       // y is ready
+            if (count == 1) begin          // y is ready
                 out_data <= y;
                 x2 <= x1; x1 <= x;
                 y2 <= y1; y1 <= y;
@@ -827,26 +835,26 @@ endmodule
 - `fp_multiplier`: AMD Floating-Point IP set to multiply, 3 cycles, in place of the Multiplier IP.
 - `fp_adder`, `fp_subtractor`: the same IP set to add and subtract, 8 cycles. Same number of IPs and same latency as the fixed point version.
 - The adds are in the same order as in MATLAB, because every result is rounded to FP16 and the order changes the result.
-- `s_axis_a_tvalid(1'b1)`: the IP inputs are always valid, `busy` does the timing instead.
+- `s_axis_a_tvalid(1'b1)`: the IP inputs are always valid, `count` does the timing instead.
 - No truncation wiring: the IP rounds every result back to 16 bits itself.
 
 ##### **Simulation**
 
 ![](images/fixed-point-scaling/fig13_vivado_fp16.png)
 
-**Figure 17: FP16 simulation, output RMS: 0.696214**
+**Figure 16: FP16 simulation, output RMS: 0.696214**
 
 ##### **On Board Testing**
 
 ![](images/fixed-point-scaling/fig18_board_fp16.png)
 
-**Figure 18: FP16 ILA capture on the Zybo, shown in hex**
+**Figure 17: FP16 ILA capture on the Zybo, shown in hex**
 
 Vivado's ILA can show 32 and 64 bit floating point values, but not 16 bit (FP16) ones, so the capture is shown in hex. If we switch it to analog, it plots the raw bits as if they were integers, and the sign bit and the exponent turn the sine into a square wave. So below is the same capture, decoded to FP16 values and plotted:
 
 ![](images/fixed-point-scaling/fig27_board_fp16_decoded.png)
 
-**Figure 19: FP16 ILA capture, decoded, output RMS: 0.696214**
+**Figure 18: FP16 ILA capture, decoded, output RMS: 0.696214**
 
 Output RMS from MATLAB to the board:
 
@@ -870,7 +878,7 @@ And on an FPGA it also uses a lot less resources, as we saw in section 2. So if 
 ## **5. Summary** {#sec-5}
 
 - With the same number of bits, both formats have the same number of values. Floating point spreads them wider, with increasing gaps.
-- Floating point needs extra hardware, so it uses more resources. Our fixed point filter used 37% fewer LUTs, 43% fewer registers and 62% fewer DSPs.
+- Floating point needs extra hardware, so it uses more resources. Our fixed point filter used 36% fewer LUTs, 45% fewer registers and 62% fewer DSPs.
 - With fixed point, we choose the format so the largest value fits. Q1.15 didn't work for our filter, Q2.14 did.
 - We also have to truncate at the right bits: `sum[29:14]`. This is the main thing to take care of while working with fixed point numbers in RTL.
 - With the right format and truncation, the fixed point filter matched MATLAB bit for bit, in simulation and on the board. For this test it was also closer to the double result than FP16 (RMSE 0.0007 vs 0.0021).
