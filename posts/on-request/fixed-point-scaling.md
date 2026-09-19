@@ -135,11 +135,11 @@ Mainly because of resource usage and precision. Fixed point arithmetic can be tr
 
 ### **2.1 Arithmetic Difference Between Floating and Fixed Point** {#sec-2-1}
 
-**Why does floating point need special hardware?** A floating point number isn't one integer, it's two: a significand and an exponent (plus the sign), and its value is significand × 2^exponent. The hardware has to handle these parts separately, so it can't use a normal integer adder or multiplier.
+So why does floating point need special hardware? A floating point number is stored as separate parts, a sign, a significand and an exponent, and its value is significand x 2^exponent. The hardware has to handle each part separately, so we can't just use a normal integer adder or multiplier on it.
 
-Adding shows it best. Two numbers can only be added when they have the same scale, i.e. the same exponent. It's like adding 3 m and 5 cm: you can't just add 3 + 5, you first write both in the same unit, 3 m + 0.05 m = 3.05 m. In the figure below, 6 is 1.10₂ × 2² and 2 is 1.00₂ × 2¹; adding 1.10 + 1.00 directly would mix fours with twos. So the hardware first compares the exponents, shifts the smaller number until the scales match, adds, then shifts the result back into the 1.xx form and rounds it. Each step is extra logic: a subtractor, shifters and rounding. Multiplying is simpler (multiply the significands, add the exponents), but it still needs the shift back and the rounding.
+Addition is a good example. We can only add two numbers when they have the same scale, i.e. the same exponent. It's like adding 3 m and 5 cm: we can't just do 3 + 5, we first have to write both in the same unit, 3 m + 0.05 m = 3.05 m. In the figure below, 6 is 1.10 x 2^2 and 2 is 1.00 x 2^1, so if we add 1.10 + 1.00 directly, the result is wrong because the two numbers have different scales. So the hardware first compares the exponents, shifts the smaller number until both have the same exponent, adds them, and then shifts the result back and rounds it. All of these steps need extra logic: a subtractor, shifters and rounding logic. Multiplication is a bit simpler, we multiply the significands and add the exponents, but it still needs the shift back and the rounding.
 
-In fixed point all numbers have the same scale, because the binary point is fixed at design time. So adding is just a normal integer add.
+In fixed point, all numbers have the same scale since the binary point is fixed at design time, so adding is just a normal integer addition.
 
 ![](images/fixed-point-scaling/fig26_float_add_steps.png)
 
@@ -597,31 +597,33 @@ bit:   35 34 33 32 31 30 29 28 . 27 .......... 14   13 ........... 0
 sum:    0  0  0  0  0  0  0  1 . 00000000100000     01111110111100
 ```
 
-Now the two wirings, all on this same sum:
+Now let's see what the two wirings give for this same sum:
 
 | Wiring | Bits kept | The 16 bits | Read as Q2.14 |
 |---|---|---|---|
 | `assign y = sum;` | [15:0] | 0001 1111 1011 1100 | 0.495850 |
 | `assign y = sum[35:20];` | [35:20] | 0000 0001 0000 0000 | 0.015625 |
 
-- `sum[15:0]`: the last 16 fraction bits, the tiny end of the number. In the sum they are worth only 0.00003, but read as Q2.14 they become 0.4958. The 1 before the binary point is gone, so the result has nothing to do with the real value.
-- `sum[35:20]`: the 1 is kept, but only 8 fraction bits come with it (bits 27 to 20). `y` is still read with 14 fraction bits, so the binary point ends up 6 bits off and the value is 2^6 = 64 times too small: 0.0156 instead of 1.0019.
+- `sum[15:0]`: these are the lowest 16 fraction bits of the sum. In the sum they are worth only 0.00003, but when we read them as Q2.14 they become 0.4958. The integer part (the 1 before the binary point) is dropped, so the result is completely wrong.
+- `sum[35:20]`: here the 1 is kept, but only 8 fraction bits come with it (bits 27 to 20). Since `y` is still read as Q2.14, i.e. with 14 fraction bits, the binary point is 6 bits off and the value is 2^6 = 64 times too small: 0.0156 instead of 1.0019.
 
-And since `y` goes back into the filter as `y1` and `y2`, a wrong `y` doesn't stay in one sample. It is used again in the next two sums, so the error goes around the loop. That's why the first output was noise and the second almost zero.
+And since `y` is fed back into the filter as `y1` and `y2`, this error is also used in the next two samples, and from there it goes around the loop. That's why the first output is just noise and the second one is almost zero.
 
 #### **Proper Truncation** {#sec-truncation}
 
-**The proper way to truncate:** find the binary point in the sum, then keep the bits around it that fit the output format. An output in Qm.n has m bits before the point (the sign included) and n bits after it. *Here: Q2.14, so m = 2 and n = 14.*
+So how do we truncate properly? First we need to know where the binary point is in the sum, and then we keep the bits around it that fit our output format. For an output in Qm.n, that means m bits before the point (sign included) and n bits after it. In our case the output is Q2.14, so m = 2 and n = 14.
 
 ![](images/fixed-point-scaling/fig25_truncation_bits.png)
 
 **Figure 13: Truncating the sum: keep the bits around the binary point**
 
-1. **Find the binary point.** Multiplying adds up the fraction bits of the two numbers (like 0.5 × 0.25 = 0.125), and adding doesn't move the point. *Here: Q2.14 × Q2.14 gives 14 + 14 = 28 fraction bits, bits 27 to 0.*
-2. **After the point, keep n bits.** Drop the rest: they are the tiny end of the number, so dropping them rounds down by less than one output step. *Here: keep bits 27 to 14, drop 13 to 0 (worth 0.00003, less than one Q2.14 step of 0.00006).*
-3. **Before the point, keep m bits.** Drop the ones above them. That's only safe if the value fits in Qm.n; then they are just copies of the sign bit (all 0s or all 1s), so nothing is lost. Choosing the format first, in MATLAB, checks that it fits: our output peaks at 1.002, well inside ±2. But that's only for the input and start values we tested, not for every possible input. *Here: keep bits 29 and 28, drop 35 to 30 (000000).*
+To find the binary point, remember that when we multiply two fixed point numbers, their fraction bits add up, same as with decimals, e.g. 0.5 x 0.25 = 0.125 has 1 + 2 = 3 digits after the point. Adding doesn't move the point. In our case Q2.14 x Q2.14 gives 14 + 14 = 28 fraction bits, so bits 27 to 0 of the sum are the fraction.
 
-**Rule:** with F fraction bits in the sum, a Qm.n output is bits [F+m−1 : F−n]. *Here: F = 28 and Q2.14, so [29:14], which is `assign y = sum[29:14];`.*
+After the point, we keep only the n bits we need and drop the rest. The dropped bits are very small, so dropping them just rounds the value down by less than one step. In our case we keep bits 27 to 14 and drop bits 13 to 0, which were worth only 0.00003, less than one Q2.14 step (0.00006).
+
+Before the point, we keep m bits and drop the ones above them. This is only safe if the value fits in Qm.n, because then the dropped bits are just copies of the sign bit (all 0s or all 1s) and we don't lose anything. That's why we selected the format in MATLAB first. In our case we keep bits 29 and 28 and drop bits 35 to 30, which are all 0 here. Note that MATLAB only checked this for the input we tested. Our output peaks at 1.002, well inside ±2, but a different input could still overflow.
+
+So in general, if the sum has F fraction bits and the output is Qm.n, we keep bits [F+m-1 : F-n]. For us that's F = 28, m = 2 and n = 14, i.e. bits [29:14], which is `assign y = sum[29:14];`.
 
 #### **Q2.14 RTL with Correct Truncation**
 
@@ -834,31 +836,22 @@ RMS only shows the size of the output, so to compare accuracy we look at the err
 
 ## **5. When to Use Which?** {#sec-5}
 
-So which one should we use? For the same number of bits, floating point gives us more range, and fixed point gives us finer steps over the range we choose.
+So which one should we use? It mainly depends upon our application and the range of values it needs for proper functioning. With the same number of bits, floating point gives us more range, and fixed point gives us finer steps inside the range we choose.
 
-**Floating point** is the way to go when our values can get very large and very small, or we don't know their range in advance. Its gaps grow with the numbers, so it can cover a huge range with the same number of bits. For example:
+If the values can get very large and very small, or we don't know the range in advance, floating point is the easier choice, since its gaps grow with the numbers and it can cover a huge range. That's why it's used in things like scientific simulations, 3D graphics and training neural networks.
 
-- scientific computing and simulations, where values can go from very tiny to very large
-- 3D graphics, where coordinates can be both near and far
-- training neural networks, where gradients can be tiny or huge
-- algorithms like matrix inversion, where we can't really predict the values in between
+If we know the range, like in our filter, fixed point makes more sense. Most DSP work falls here: filters, audio, ADC and DAC samples, motor control and image processing.
 
-**Fixed point** is the better choice when we know the range of our values and need small steps inside it. All the bits are spent on that one range, so over most of it the gap is smaller than in a floating point number of the same size (only very close to zero is floating point finer). We saw this in our filter as well: Q2.14 has a gap of 0.00006, while FP16 has 0.001 near 1. For example:
-
-- digital filters and audio processing, like our IIR filter
-- ADC and DAC samples, which always have a fixed range
-- motor control and PID loops
-- image and video processing, where pixel values are always from 0 to 255
-
-**On an FPGA**, fixed point also uses a lot less resources, as we saw in section 2. So if you know your range, fixed point is usually the better choice.
+And on an FPGA it also uses a lot less resources, as we saw in section 2. So if you know your range, fixed point is usually the better choice.
 
 ## **6. Summary** {#sec-6}
 
-- With the same number of bits, fixed point and floating point can represent the same number of values. Floating point spreads them over a huge range with gaps that grow with the numbers, fixed point keeps the same gap everywhere.
-- Floating point needs special hardware to line up the exponents, add, then shift back and round, so it costs more resources. In our filter, fixed point used 37% fewer LUTs, 43% fewer registers and 62% fewer DSPs.
-- With fixed point, the extra work is ours: choose a format that fits the largest value (Q2.14 for our filter, not Q1.15), and truncate around the binary point (`sum[29:14]`), not just connect the wires.
-- Done right, the fixed point filter matched MATLAB bit for bit in simulation and on the board, and for this test it was even closer to the double precision result than FP16 (RMSE 0.0007 vs 0.0021).
-- Use floating point when you need range, and fixed point when you know your range and need precision.
+- With the same number of bits, both formats have the same number of values. Floating point spreads them wider, with increasing gaps.
+- Floating point needs extra hardware, so it uses more resources. Our fixed point filter used 37% fewer LUTs, 43% fewer registers and 62% fewer DSPs.
+- With fixed point, we choose the format so the largest value fits. Q1.15 didn't work for our filter, Q2.14 did.
+- We also have to truncate at the right bits: `sum[29:14]`. This is the main thing to take care of while working with fixed point numbers in RTL.
+- With the right format and truncation, the fixed point filter matched MATLAB bit for bit, in simulation and on the board. For this test it was also closer to the double result than FP16 (RMSE 0.0007 vs 0.0021).
+- Use floating point when you need range, and fixed point when you know your range.
 
 <!-- post-nav -->
 <div class="post-nav">
