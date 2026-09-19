@@ -33,7 +33,7 @@ Just as a refresher: Qm.n is a fixed point format with m bits before the binary 
 | Floating point, FP16 (half precision) | 16 | −65,504 to 65,504 |
 {: #range-table}
 
-One odd thing you might notice is that the distinct values an 8 bit and 16 bit number can represent is 256 and 65536 values respectively. However, in the [table above](#range-table), an 8 bit floating point in representing 114688 distinct values ( −57,344 to 57,344 ) and a 16 bit fp is representing 131008 ( −65,504 to 65,504 ). How is this possible??? Can a floating point representation magically increase the number of possible distinct values??
+One odd thing you might notice is that the distinct values an 8 bit and 16 bit number can represent is 256 and 65536 values respectively. However, in the [table above](#range-table), an 8 bit floating point is representing 114688 distinct values ( −57,344 to 57,344 ) and a 16 bit fp is representing 131008 ( −65,504 to 65,504 ). How is this possible??? Can a floating point representation magically increase the number of possible distinct values??
 
 That is not the case. 
 One thing to keep in mind is that a n bit fixed point word and n bit floating point can represent same number of values i.e. at most 2^n. For example an 8 bit fixed point number and 8 floating point number can represent 256 different numbers. So if they can represent same number of distinct values, the question arises that how can floating point represent much larger range of numbers. The answer is that it doesn't represent all the values in between, and it takes jumps (gaps/steps/resolution) in between the values. 
@@ -48,8 +48,8 @@ One thing to keep in mind is that a n bit fixed point word and n bit floating po
 | Fixed point, Q1.15 | 16 | −1 to 0.99997 | 0.00003, everywhere |
 | Floating point, FP16 (half precision) | 16 | −65,504 to 65,504 | 0.001 near 1, 32 near 65,504 |
 
-This is the same table as above with gaps column included. You might notice one detail, that the gaps (jumps/resolution between two consecutive number whatever you want to call it) in case of fixed point numbers are fixed, however in case of floating point, its less at lower numbers and high at larger numbers. 
-this is explained better in the figure below.
+This is the same table as above with gaps column included. You might notice one detail, that the gaps (jumps/resolution between two consecutive number whatever you want to call it) in case of fixed point numbers are fixed, however in case of floating point, it's less at lower numbers and high at larger numbers. 
+This is explained better in the figure below.
 
 ![](images/fixed-point-scaling/fig02_fixed_vs_scaled_spacing.png)
 
@@ -57,7 +57,7 @@ this is explained better in the figure below.
 
 Why is that?? 
 
-The answer is in the name of the formats, i.e. fixed and floating point. The jumps between two consecutive represented numbers in either format depends upon the location of its fractional point (or binary point). In case of fixed point, that fractional point is fixed, thus the jumps also remain fixed. However, as its name suggests, in floating point, the fractional point is floating, i.e. can move around. therefore, the jumps also changes. 
+The answer is in the name of the formats, i.e. fixed and floating point. The jumps between two consecutive represented numbers in either format depends upon the location of its fractional point (or binary point). In case of fixed point, that fractional point is fixed, thus the jumps also remain fixed. However, as its name suggests, in floating point, the fractional point is floating, i.e. can move around. Therefore, the jumps also change. 
 
 But how does that explain the gap/resolution getting bigger with larger numbers. 
 
@@ -110,7 +110,7 @@ A more comprehensive table is given below for a floating point format with 2 bit
 
 The significand repeats the same four values for every exponent, only the scale changes. And the gap is 0.25 × scale, so it doubles with every step of the exponent: 0.25, 0.5, 1, 2. These 16 values are the floating point dots in Figure 1.
 
-**And fixed point?** Fixed point uses the same idea, but unlike the floating point which can have different multiplier/scales, a fixed point's multiplier/scale is fixed at design time. for example if we have a 8 bit number and we choose the format Q6.2 (6 bits before the binary point, the sign included, and 2 after it), the multiplier is 2⁻² = 0.25 for every number. The stored integer (the whole 8 bit word) is simply multiplied by 0.25. For example, the word 00000101 is the integer 5, so its value is 5 × 0.25 = 1.25, which is 000001.01₂ with the binary point in place. So 4 → 1, 5 → 1.25, 6 → 1.5, 7 → 1.75, the same values as the floating point significand. But the next integers keep the same multiplier, 8 → 2, 9 → 2.25, so the gap stays 0.25 everywhere, over the whole range from −32 to 31.75:
+**And fixed point?** Fixed point uses the same idea, but unlike the floating point which can have different multiplier/scales, a fixed point's multiplier/scale is fixed at design time. For example, if we have an 8 bit number and we choose the format Q6.2 (6 bits before the binary point, the sign included, and 2 after it), the multiplier is 2⁻² = 0.25 for every number. The stored integer (the whole 8 bit word) is simply multiplied by 0.25. For example, the word 00000101 is the integer 5, so its value is 5 × 0.25 = 1.25, which is 000001.01₂ with the binary point in place. So 4 → 1, 5 → 1.25, 6 → 1.5, 7 → 1.75, the same values as the floating point significand. But the next integers keep the same multiplier, 8 → 2, 9 → 2.25, so the gap stays 0.25 everywhere, over the whole range from −32 to 31.75:
 
 | Stored integer | 4 | 5 | 6 | 7 | 8 | 9 | … | 19 |
 |---|---|---|---|---|---|---|---|---|
@@ -120,7 +120,7 @@ The significand repeats the same four values for every exponent, only the scale 
 
 ## **2. Why Use Fixed Point in FPGAs?** {#sec-2}
 
-mainly because of resource usage and precision. fixed point arithmetic can be treated simply as normal arithmetic for the most part. However, floating point requires special hardware which in turn result in extra resource usage. So its a trade off whether your design requires more range or more precision and more efficient resource usage.
+Mainly because of resource usage and precision. Fixed point arithmetic can be treated simply as normal arithmetic for the most part. However, floating point requires special hardware which in turn result in extra resource usage. So it's a trade off whether your design requires more range or more precision and more efficient resource usage.
 
 **Why does floating point need special hardware?** A floating point number isn't one integer, it's two: a significand and an exponent (plus the sign), and its value is significand × 2^exponent. The hardware has to handle these parts separately, so it can't use a normal integer adder or multiplier.
 
@@ -146,8 +146,8 @@ Compared to FP16, the fixed point filter uses 37% fewer LUTs, 43% fewer register
 
 ## **3. Practical Example** {#sec-3}
 
-Now we'll go through an actual flow of how to design a fixed point application for an FPGA. Usually when we design a system, we first model it in software using tools such as Matlab, to validate and ensure that is algorithm is working as intended. This is how we'll start here. 
-We'll design an IIR filter to remove noise from our input signal. An IIR filter has a feedback loop. So if we have any error in our output i.e. quantization error, it will fed back to the loop resulting in more and more errors. Unlike an FIR filter, which only uses past inputs, an IIR filter also uses its own past outputs, so an error in one output gets fed into every output after it. Therefore the selection of correct fixed point format is more important in case of IIR filters. 
+Now we'll go through an actual flow of how to design a fixed point application for an FPGA. Usually when we design a system, we first model it in software using tools such as Matlab, to validate and ensure that the algorithm is working as intended. This is how we'll start here. 
+We'll design an IIR filter to remove noise from our input signal. An IIR filter has a feedback loop. So if we have any error in our output i.e. quantization error, it will be fed back to the loop resulting in more and more errors. Unlike an FIR filter, which only uses past inputs, an IIR filter also uses its own past outputs, so an error in one output gets fed into every output after it. Therefore the selection of correct fixed point format is more important in case of IIR filters. 
 
 The structure for our IIR filter is as below. It has both feed forward and feed back loop. The square boxes are delay lines, i.e. previous sample, and the triangles are filter coefficients which we'll generate in Matlab. 
 
@@ -208,10 +208,10 @@ set(gca, 'Color', 'w', 'XColor', 'k', 'YColor', 'k', ...
 - `t`: time of each sample, 0 to 0.999 s.
 - `x`: input signal, a 20 Hz sine to keep plus a 200 Hz sine noise which we have to remove.
 - `butter`: designs the second-order Butterworth low-pass filter, cutoff 50 Hz. 
-- `b`: feed-forward coefficients b₀, b₁, b₂. The triangles in the above figure 
+- `b`: feed-forward coefficients b₀, b₁, b₂, the triangles in Figure 6.
 - `a`: feedback coefficients; `a(1)` is 1, `a(2)` and `a(3)` are a₁ and a₂.
-- `x1`, `x2`: the previous two input samples. see figure.
-- `y1`, `y2`: the previous two output samples. see figure.
+- `x1`, `x2`: the previous two input samples. See Figure 6.
+- `y1`, `y2`: the previous two output samples. See Figure 6.
 - `y`: output signal, one value per input sample.
 - `n`: index of the current sample.
 - `value`: filter output for the current sample.
@@ -299,10 +299,10 @@ In the output we see that magnitude is very less as compared to our floating poi
 The issue here is wrong selection of the fixed point format. 
 Since we're working with signed numbers, Q1.15 has 1 sign bit and 15 fraction bits, so it can only hold values from −1 (1.000000000000000) to 0.99997(0.111111111111111). Our filter needs bigger numbers than that because: 
 
-The input goes up to 1.458, so it wraps around to −0.542.
-The coefficient a₁ is −1.561, so it wraps around to +0.439.
+- The input goes up to 1.458, so it wraps around to −0.542.
+- The coefficient a₁ is −1.561, so it wraps around to +0.439.
 
-This is visible in the Input waveform as well. which wraps around at its peaks.
+This is visible in the input waveform as well, which wraps around at its peaks.
 
 #### **How to Select Correct Format**
 
@@ -370,8 +370,8 @@ Now we get Output RMS: 0.698438. Which is equivalent to the floating point resul
 
 ### **3.2 RTL Flow** {#sec-3-2}
 
-Now that we have test our design and have our correct fixed point format, we can move toward rtl. 
-The following figure represents a block level design for our RTL flow. Notice that its same as the [Matlab block diagram above](#fig-iir), just the delays are replaced with registers. 
+Now that we have tested our design and have our correct fixed point format, we can move toward RTL. 
+The following figure represents a block level design for our RTL flow. Notice that it's the same as the [Matlab block diagram above](#fig-iir), just the delays are replaced with registers. 
 
 ![](images/fixed-point-scaling/fig07b_iir_rtl_datapath.png)
 
@@ -467,7 +467,7 @@ The RTL does exactly what the MATLAB loop does. Here's how each MATLAB line maps
 
 **Figure 11: Simulation of `assign y = sum;`, output RMS: 1.177154**
 
-Why is this? we did everything correctly. Used the matlab generated coefficients, same fixed point format as tested in Matlab, then why still incorrect result. The reason is truncation. Remember y(n) = fi(value, T, M); in the matlab code, we discussed that this is needed to convert the 36 bit output of the filter back to 16 bits. But this function hides the detail of how the truncation is actually done. In the above RTL we're just truncating the MSBs and keeping the 16 LSBs. Before explaining why this causes problem, lets see what happens if we do the inverse, i.e. discard the LSBs and keep the 16 MSBs.
+Why is this? We did everything correctly. Used the matlab generated coefficients, same fixed point format as tested in Matlab, then why still incorrect result. The reason is truncation. Remember y(n) = fi(value, T, M); in the matlab code, we discussed that this is needed to convert the 36 bit output of the filter back to 16 bits. But this function hides the detail of how the truncation is actually done. In the above RTL we're just truncating the MSBs and keeping the 16 LSBs. Before explaining why this causes problem, lets see what happens if we do the inverse, i.e. discard the LSBs and keep the 16 MSBs.
 
 #### **Q2.14, Lowest 20 Bits Dropped**
 
@@ -553,11 +553,11 @@ The output isn't any better.
 
 #### **Why This Happens and How to Truncate Properly** {#sec-truncation}
 
-This is mainly the only things that needs to be catered differently from normal integer arithmetic in FPGAs. 
+This is mainly the only thing that needs to be handled differently from normal integer arithmetic in FPGAs. 
 
 The sum coming out of the adders is 36 bits, Q8.28: the sign and 7 integer bits, then 28 fraction bits. So its binary point sits between bit 28 and bit 27. Our output `y` is Q2.14, so the 16 bits we keep have to sit around that same binary point: 2 bits above it (the sign and the integer bit) and 14 below it.
 
-Lets take one real sum from our filter, sample 68, the output peak where the cursor is in the simulation pictures. Its value is 1.0019834, and in bits:
+Let's take one real sum from our filter, sample 68, the output peak where the cursor is in Figure 15. Its value is 1.0019834, and in bits:
 
 ```
              integer bits             fraction bits
