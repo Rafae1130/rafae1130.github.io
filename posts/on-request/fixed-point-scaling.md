@@ -193,7 +193,7 @@ Now we'll go through an actual flow of how to design a fixed point application f
 
 ### **3.1 The IIR Filter** {#sec-3-1}
 
-We'll design an IIR filter to remove noise from our input signal. An IIR filter has a feedback loop. So if we have any error in our output i.e. quantization error, it will be fed back to the loop resulting in more and more errors. Therefore the selection of correct fixed point format is more important in case of IIR filters. 
+We'll design an IIR filter to remove noise from our input signal. An IIR filter has a feedback loop. So if we have any error in our output i.e. quantization error, it will be fed back to the loop resulting in more and more errors. Therefore the selection of correct fixed point format is more important in case of IIR filters than in FIR filters, which have no feedback. 
 
 The structure for our IIR filter is as below. It has both feed forward and feed back loop. The square boxes are delay lines, i.e. previous sample, and the triangles are filter coefficients which we'll generate in Matlab. 
 
@@ -606,7 +606,7 @@ The output isn't any better.
 
 ##### **Why This Happens** {#sec-why}
 
-This is mainly the only thing that needs to be handled differently from normal integer arithmetic in FPGAs. 
+This is the main thing that needs to be handled differently from normal integer arithmetic in FPGAs. 
 
 The sum coming out of the adders is 36 bits, Q8.28: the sign and 7 integer bits, then 28 fraction bits. So its binary point sits between bit 28 and bit 27. Our output `y` is Q2.14, so the 16 bits we keep have to sit around that same binary point: 2 bits above it (the sign and the integer bit) and 14 below it.
 
