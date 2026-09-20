@@ -223,7 +223,7 @@ x1 = 0; x2 = 0;
 y1 = 0; y2 = 0;
 y = zeros(size(x));
 
-% Same filter equation in every script
+% The filter equation
 for n = 1:length(x)
     value = b(1)*x(n) + b(2)*x1 + b(3)*x2 ...
                       - a(2)*y1 - a(3)*y2;
@@ -295,7 +295,7 @@ x1 = 0; x2 = 0;
 y1 = 0; y2 = 0;
 y = fi(zeros(size(x)), T, M);
 
-% Same filter equation in every script
+% The filter equation
 for n = 1:length(x)
     value = b(1)*x(n) + b(2)*x1 + b(3)*x2 ...
                       - a(2)*y1 - a(3)*y2;
@@ -385,7 +385,7 @@ x1 = 0; x2 = 0;
 y1 = 0; y2 = 0;
 y = fi(zeros(size(x)), T, M);
 
-% Same filter equation in every script
+% The filter equation
 for n = 1:length(x)
     value = b(1)*x(n) + b(2)*x1 + b(3)*x2 ...
                       - a(2)*y1 - a(3)*y2;
@@ -446,7 +446,7 @@ module iir_filter (
     output reg  [15:0] out_data
 );
     `include "coefficients.vh"             // B0, B1, B2, A1, A2 from MATLAB
-    localparam MULT_LATENCY = 1;           // multiplier IP latency (create_projects.tcl)
+    localparam MULT_LATENCY = 1;           // multiplier IP latency
     localparam ADD_LATENCY  = 3;           // adder/subtractor IP latency
     localparam LATENCY = MULT_LATENCY + 4*ADD_LATENCY;
 
@@ -465,8 +465,8 @@ module iir_filter (
     fixed_multiplier mul3 (.CLK(clk), .A(y1), .B(A1), .P(p3));
     fixed_multiplier mul4 (.CLK(clk), .A(y2), .B(A2), .P(p4));
 
-    // The sum, in the same order as the FP16 version. The products are
-    // sign-extended to the full sum width, so nothing is dropped yet.
+    // The products are sign-extended to the full sum width, so nothing is
+    // dropped yet.
     wire signed [35:0] t0 = p0, t1 = p1, t2 = p2, t3 = p3, t4 = p4;
     fixed_adder      add1 (.CLK(clk), .A(t0), .B(t1), .S(s1));
     fixed_adder      add2 (.CLK(clk), .A(s1), .B(t2), .S(s2));
@@ -543,7 +543,7 @@ module iir_filter (
     output reg  [15:0] out_data
 );
     `include "coefficients.vh"             // B0, B1, B2, A1, A2 from MATLAB
-    localparam MULT_LATENCY = 1;           // multiplier IP latency (create_projects.tcl)
+    localparam MULT_LATENCY = 1;           // multiplier IP latency
     localparam ADD_LATENCY  = 3;           // adder/subtractor IP latency
     localparam LATENCY = MULT_LATENCY + 4*ADD_LATENCY;
 
@@ -562,8 +562,8 @@ module iir_filter (
     fixed_multiplier mul3 (.CLK(clk), .A(y1), .B(A1), .P(p3));
     fixed_multiplier mul4 (.CLK(clk), .A(y2), .B(A2), .P(p4));
 
-    // The sum, in the same order as the FP16 version. The products are
-    // sign-extended to the full sum width, so nothing is dropped yet.
+    // The products are sign-extended to the full sum width, so nothing is
+    // dropped yet.
     wire signed [35:0] t0 = p0, t1 = p1, t2 = p2, t3 = p3, t4 = p4;
     fixed_adder      add1 (.CLK(clk), .A(t0), .B(t1), .S(s1));
     fixed_adder      add2 (.CLK(clk), .A(s1), .B(t2), .S(s2));
@@ -670,7 +670,7 @@ module iir_filter (
     output reg  [15:0] out_data
 );
     `include "coefficients.vh"             // B0, B1, B2, A1, A2 from MATLAB
-    localparam MULT_LATENCY = 1;           // multiplier IP latency (create_projects.tcl)
+    localparam MULT_LATENCY = 1;           // multiplier IP latency
     localparam ADD_LATENCY  = 3;           // adder/subtractor IP latency
     localparam LATENCY = MULT_LATENCY + 4*ADD_LATENCY;
 
@@ -689,8 +689,8 @@ module iir_filter (
     fixed_multiplier mul3 (.CLK(clk), .A(y1), .B(A1), .P(p3));
     fixed_multiplier mul4 (.CLK(clk), .A(y2), .B(A2), .P(p4));
 
-    // The sum, in the same order as the FP16 version. The products are
-    // sign-extended to the full sum width, so nothing is dropped yet.
+    // The products are sign-extended to the full sum width, so nothing is
+    // dropped yet.
     wire signed [35:0] t0 = p0, t1 = p1, t2 = p2, t3 = p3, t4 = p4;
     fixed_adder      add1 (.CLK(clk), .A(t0), .B(t1), .S(s1));
     fixed_adder      add2 (.CLK(clk), .A(s1), .B(t2), .S(s2));
@@ -769,7 +769,7 @@ module iir_filter (
     output reg  [15:0] out_data
 );
     `include "coefficients.vh"             // B0, B1, B2, A1, A2 from MATLAB
-    localparam MULT_LATENCY = 1;           // multiplier IP latency (create_projects.tcl)
+    localparam MULT_LATENCY = 1;           // multiplier IP latency
     localparam ADD_LATENCY  = 3;           // adder/subtractor IP latency
     localparam LATENCY = MULT_LATENCY + 4*ADD_LATENCY;
 
@@ -794,7 +794,7 @@ module iir_filter (
                         .s_axis_b_tvalid(1'b1), .s_axis_b_tdata(A2), .m_axis_result_tdata(p4));
 
     // Every IP result is rounded to FP16, so the order of the sums matters. It is
-    // the same order as the MATLAB FP16 reference:
+    // the same order as in MATLAB:
     //   y = (((B0*x + B1*x1) + B2*x2) - A1*y1) - A2*y2
     fp_adder      add1 (.aclk(clk), .s_axis_a_tvalid(1'b1), .s_axis_a_tdata(p0),
                         .s_axis_b_tvalid(1'b1), .s_axis_b_tdata(p1), .m_axis_result_tdata(s1));
