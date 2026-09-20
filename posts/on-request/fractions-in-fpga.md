@@ -26,7 +26,7 @@ Almost all of the systems or applications running on FPGAs deal with numbers. If
 
 ## **1. Fixed Point vs Floating Point** {#sec-1}
 
-We won't go into much details about the exact format as there are a lot of resources available for those, e.g. [Q number format](https://en.wikipedia.org/wiki/Q_%28number_format%29), [half precision floating point](https://en.wikipedia.org/wiki/Half-precision_floating-point_format) and MathWorks' [precision and range](https://www.mathworks.com/help/fixedpoint/ug/precision-and-range.html). I'll focus on the understanding and intuition of those formats. In terms of number representation, the floating point number can represent a very large range of numbers. 
+We won't go into much details about the exact format as there are a lot of resources available for those, e.g. [Q number format](https://en.wikipedia.org/wiki/Q_%28number_format%29), [half precision floating point](https://en.wikipedia.org/wiki/Half-precision_floating-point_format) and MathWorks' [precision and range](https://www.mathworks.com/help/fixedpoint/ug/precision-and-range.html). I'll focus on the understanding and intuition of those formats. 
 
 Just as a refresher: Qm.n is a fixed point format with m bits before the binary point (the sign included) and n bits after it. E5M2 is an 8 bit floating point format with 5 exponent and 2 significand bits (plus a sign bit); FP16 has 5 and 10 (plus a sign bit).
 
