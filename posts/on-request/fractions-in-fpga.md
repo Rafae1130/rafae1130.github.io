@@ -515,13 +515,14 @@ We model the same system as in Matlab, and as we know we don't need any special 
 - `x2 = x1; x1 = x(n); y2 = y1; y1 = y(n);` → the same lines with `<=` (lines 64–65). The delays, z⁻¹ in the figure.
 - `for n = 1:length(x)` → `in_valid`, `in_ready`, `out_valid` and `count`. One sample at a time; this part only moves the samples through the pipeline and is the same in every version below.
 - `count` (lines 53–62): the five multipliers work in parallel and take 1 clock, then the two adders and two subtractors work one after the other, 3 clocks each, so a sample needs 1 + 4 × 3 = 13 clocks (`LATENCY`, line 17). How we chose these latencies is discussed in more detail in [section 4](#sec-4). When a sample comes in, `count` starts at `LATENCY + 1` and counts down every clock. At 1 the result is ready and gets stored in `out_data` and the delays (the + 1 is this clock), and at 0 the next sample can come in.
-- The plot scale here is ±2.05 instead of ±1.5, so the output fits.
 
 ##### **Simulation**
 
 ![](images/fixed-point-scaling/fig16_vivado_q2_14_trunc.png)
 
 **Figure 11: Simulation of `assign y = sum;`, output RMS: 1.177154**
+
+The plot scale here is ±2.05 instead of ±1.5, so the output fits.
 
 Why is this? We did everything correctly. Used the matlab generated coefficients, same fixed point format as tested in Matlab, then why still incorrect result. The reason is truncation. Remember y(n) = fi(value, T, M); in the matlab code, we discussed that this is needed to convert the 36 bit output of the filter back to 16 bits. But this function hides the detail of how the truncation is actually done. In the above RTL we're just truncating the MSBs and keeping the 16 LSBs. Before explaining why this causes problem, lets see what happens if we do the inverse, i.e. discard the LSBs and keep the 16 MSBs.
 
