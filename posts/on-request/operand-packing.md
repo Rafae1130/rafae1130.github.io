@@ -133,9 +133,11 @@ For a signed number, if all teh operands are positive then there isnt much diffe
 
 ### **2.1 Packing the Inputs** {#sec-2-1}
 
-For signed numbers, we use the same spacing rule, but form the packed input by sign extending, shifting and adding the values.
+For signed numbers, we use the same spacing rule, but unlike unsigned packing, we cant just concatenate the operands as that can result in dynamically incorrect outputs. 
 
-If a lower packed value is negative, we cannot just sign extend the gap and concatenate the values, as the output error will then change with the value in the other input.
+The most important thing is sign extention. While adding the gaps for unsigned packing, we just added zeroes. However, in case of signed numbers, we have to perform sign extention. So if the first number is negative, the gap will also be sign extended with 1s.
+
+But even after sign extention, we cant concatenate the operands, we cannot just sign extend the gap and concatenate the values, as the output error will then change with the value in the other input.
 
 For example, lets pack `a1 = 3` and `a0 = −1`, with four bits for each value and four bits for the gap.
 
@@ -152,11 +154,11 @@ Just filling the gap with ones:
 | 2 | 6, −2 | 7, −2 | +1 |
 | 3 | 9, −3 | 11, −3 | +2 |
 
-Here, the error changes with B, so adding or subtracting a fixed 1 from the upper product will not correct all these cases.
+Here, the error changes with B input, the error is not fixed/predictable, so adding a correction is also not easier. 
 
 So instead of concatenating, we pack them using signed addition, `A = (a1 <<< 8) + a0`, after sign extending both values to the full input width.
 
-The upper sign-extension bits of `a0` contribute −1 to the upper field, for any negative `a0` that fits the lower slot.
+If a0 is negative, this roughly translate to same as concatenation, with the difference that 1 is subtracted from a1. 
 
 Using `a0 = −3` and a 16-bit packed word:
 
@@ -176,11 +178,11 @@ The upper eight bits of sign-extended `a0` are `11111111`, which represents −1
 
 Those upper bits are `11111111` whether `a0` is −1, −2, −3, or another negative value that fits the lower slot. Only the lower bits change with the value of `a0`.
 
-Since this adjustment happens before multiplication, the 1 taken from the upper input is also multiplied by B.
-
-For this two-product layout, a negative lower product now leaves the upper slot exactly 1 less than expected, so we add 1 to recover the correct product.
-
 ![](images/dsp48-operand-packing/fig_signed_gap.png)
+
+This can be seen in the image above as well. 3 is 11 in binary, but in the negative case, its represented as 10.
+
+For negative first outputs, this will now result in the 2nd output always being 1 less than the correct value. Which is predictable and can be easily corrected. We'll se this in more detial in next section.
 
 ### **2.2 Reading the Products** {#sec-2-2}
 
@@ -328,12 +330,11 @@ All 1,048,576 products match the separate multiplications.
 
 ## **4. Summary** {#sec-4}
 
-- Packing several small values into one DSP input, with gaps between them, gives several products from one multiplication.
-- A product starts at the position of its first value plus the position of its second value, and is as wide as the two values combined. The gaps keep the products from overlapping.
-- For signed values, sign extend each operand to the full packed width before shifting and adding the operands.
-- A negative product makes the slot above it read 1 less. Adding the sign bit of the slot below corrects it.
-- In the 2×2 signed example, 16 multiplications of 4 × 4 bits take 16 DSPs without packing and 4 DSPs with packing, plus 88 LUTs and 128 registers for the packing and correction.
-- The simulation checks all 1,048,576 products against separate multiplications, with no differences.
+- We can get better resource utilization if we pack more operands into same inputs.
+- For unsigned operands, the position of operands needs to be decided by adding appropriate gaps with 0s so that the results dont overlap.
+- For signed operands, the gaps must be sign extented, and instead of concatenation, the operands should be shifted and added.
+- A negative product makes the next result 1 less than correct value. Adding the sign bit of the slot below corrects it.
+- In the 2×2 signed example, 16 multiplications of 4 × 4 bits take 16 DSPs without packing and 4 DSPs with packing.
 
 <!-- post-nav -->
 <div class="post-nav">
