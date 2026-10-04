@@ -25,7 +25,18 @@ The dsp48e1 block is shown in the below diagram.  dont worry about all the other
 
 ![](images/dsp48-operand-packing/screenshot_2026-10-01_182837.png)
 
-The main thing to focus here is the width of the multiplier. which is 25x18. Now imagine a scenario where we have to perform a 1000 multiplication in a system in parallel, but each of multplication is only 4x4. Now if i use a single dsp block for each of these multiplicaiton, I would need a 1000 dsp blocks. where most of the devices contain less than this ( todo: add resources of different boards here). And even if these are available, its not really efficient. becuase out of 25x18, we only using 4x4 bits and wasting all the rest of available computational resources available to us. 
+The main thing to focus here is the width of the multiplier. which is 25x18. Now imagine a scenario where we have to perform a 1000 multiplication in a system in parallel, but each of multplication is only 4x4. Now if i use a single dsp block for each of these multiplicaiton, I would need a 1000 dsp blocks. where most of the devices contain less than this. And even if these are available, its not really efficient. becuase out of 25x18, we only using 4x4 bits and wasting all the rest of available computational resources available to us.
+
+| Board | Device | DSP slices | Price (USD, approx.) |
+|---|---|---|---|
+| Basys 3 | XC7A35T | 90 | 165 |
+| PYNQ-Z2 | XC7Z020 | 220 | 129 |
+| Ultra96-V2 | XCZU3EG | 360 | 290 |
+| Zybo Z7-10 | XC7Z010 | 80 | 299 |
+| Nexys A7-100T | XC7A100T | 240 | 383 |
+| KC705 | XC7K325T | 840 | 2,995 |
+| ZCU102 | XCZU9EG | 2,520 | 3,234 |
+| Alveo U200 | XCU200 | 6,840 | 5,500–6,400 | 
 
 So the question is, how can we use those unused bits? To move forward, we need to revise our decimal arithmetic concepts a bit to lay the groundwork. 
 
@@ -183,10 +194,10 @@ If we assume A and B as our inputs, then we can have floowing cases:
 
 | Values in A | Values in B | Special rules |
 |---|---|---|
-| Unsigned | Unsigned | Adding gaps as discussed in unsigned packing rule( todo add link here)|
-| Unsigned | Signed | Keep the unsigned packing rule for A. If B contains multiple values, use sign-extended packing for B. Add correction logic for negative products (todo add link here) |
-| Signed | Unsigned | Use sign-extended packing for A. Keep the unsigned packing rule for B. Add correction logic for negative products (todo add link here) . |
-| Signed | Signed | Use sign-extended packing in both inputs. Add correction logic for negative products (todo add link here)  |
+| Unsigned | Unsigned | Adding gaps as discussed in [unsigned packing rule](#sec-1-2) |
+| Unsigned | Signed | Keep the unsigned packing rule for A. If B contains multiple values, use [sign-extended packing](#sec-2-1) for B. Add [correction logic](#sec-2-2) for negative products |
+| Signed | Unsigned | Use [sign-extended packing](#sec-2-1) for A. Keep the [unsigned packing rule](#sec-1-2) for B. Add [correction logic](#sec-2-2) for negative products |
+| Signed | Signed | Use [sign-extended packing](#sec-2-1) in both inputs. Add [correction logic](#sec-2-2) for negative products |
 
 ## **3. Packing on the DSP48E1** {#sec-3}
 
