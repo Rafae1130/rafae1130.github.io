@@ -326,7 +326,7 @@ All 1,048,576 products match the separate multiplications.
 
 ![](images/dsp48-operand-packing/wave_2x2_fixed.png)
 
-**The waveform shows three test cases for pair 0. The testbench displays copies of the inputs delayed by two clocks and a copy of the packed product delayed by one clock. This lines them up with the corrected outputs, making each test case easier to follow.**
+**The waveform shows three test cases for pair 0, along with the complete `operands` and `products` buses. The packed product appears one clock after the inputs, and the corrected outputs one clock after that.**
 
 ## **4. Summary** {#sec-4}
 
